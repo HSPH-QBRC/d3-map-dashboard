@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "d3-maps": {
+    "test-d3-leaflet": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -20,7 +20,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/d3-maps",
+            "outputPath": "dist/test-d3-leaflet",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -31,6 +31,7 @@
               "src/assets"
             ],
             "styles": [
+              "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
             "scripts": []
@@ -72,10 +73,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "d3-maps:build:production"
+              "browserTarget": "test-d3-leaflet:build:production"
             },
             "development": {
-              "browserTarget": "d3-maps:build:development"
+              "browserTarget": "test-d3-leaflet:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -83,7 +84,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "d3-maps:build"
+            "browserTarget": "test-d3-leaflet:build"
           }
         },
         "test": {
@@ -99,6 +100,7 @@
               "src/assets"
             ],
             "styles": [
+              "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
             "scripts": []
@@ -107,5 +109,5 @@
       }
     }
   },
-  "defaultProject": "d3-maps"
+  "defaultProject": "test-d3-leaflet"
 }
