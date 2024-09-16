@@ -1,5 +1,5 @@
 <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
-<p>state</p>
+<p>state map</p>
 <mat-form-field class="form-control dropDown" color="accent" appearance="outline">
     <mat-label>Year: </mat-label>
     <mat-select [formControl]="yearVal" (selectionChange)="onSelectionChange($event, 'year')">
