@@ -2,6 +2,8 @@ import { Component, AfterViewInit } from '@angular/core';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
+import fipsToStateJson from '../../assets/data/fipsToState.json'
+import fipsToCountyJson from '../../assets/data/fipsToCounty.json'
 
 interface GroceryData {
   id: string;
@@ -20,6 +22,7 @@ export class StateMapsComponent implements AfterViewInit {
   private us: any;
   private mass: any;
   private nj: any;
+
 
   constructor() { }
 
@@ -46,11 +49,14 @@ export class StateMapsComponent implements AfterViewInit {
   data2Obj = {}
   data3Obj = {}
 
-  useBivariate: boolean = false
+  useBivariate: boolean = true
 
   ngAfterViewInit() {
     this.getData()
   }
+
+  fipsToState = fipsToStateJson
+  fipsToCounty = fipsToCountyJson
 
   async getData() {
     this.isLoading = true
@@ -117,14 +123,17 @@ export class StateMapsComponent implements AfterViewInit {
     this.columns.push('--')
     this.columns.sort()
 
-    this.us = await d3.json('./assets/counties-albers-10m.json');
-    this.mass = await d3.json('./assets/cb_2023_25_tract_500k.json')
-    this.nj = await d3.json('./assets/nj-tracts.json')
+    // this.us = await d3.json('./assets/counties-albers-10m.json');
+    // this.mass = await d3.json('./assets/cb_2023_25_tract_500k.json')
+    this.mass = await d3.json('./assets/maps/cb_2017_06_tract_500k.json')
+    // this.nj = await d3.json('./assets/nj-tracts.json')
+    this.topoJsonObjectsKey = Object.keys(this.mass.objects)[0]
     // this.createChart();
     this.createNJChart()
   }
 
   scatterplotContainerId = '#map'
+  topoJsonObjectsKey = ''
 
 
   private createChart(): void {
@@ -139,8 +148,8 @@ export class StateMapsComponent implements AfterViewInit {
     const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
 
     // const counties = topojson.feature(this.us, this.us.objects.counties);
-    // const states = topojson.feature(this.us, this.us.objects.states);
-    const states = topojson.feature(this.nj, this.nj.objects.tracts)
+    const states = topojson.feature(this.us, this.us.objects.states);
+    // const states = topojson.feature(this.nj, this.nj.objects.tracts)
 
     const statemap = new Map(states['features'].map(d => [d.id, d]));
 
@@ -371,7 +380,7 @@ export class StateMapsComponent implements AfterViewInit {
 
 
     svg.append("path")
-      .datum(topojson.mesh(this.mass, this.mass.objects.cb_2023_25_tract_500k, (a, b) => a !== b))
+      .datum(topojson.mesh(this.mass, this.mass.objects[this.topoJsonObjectsKey], (a, b) => a !== b))
       .attr("fill", "none")
       .attr("stroke", "white")
       .attr("stroke-linejoin", "round")
@@ -415,9 +424,10 @@ export class StateMapsComponent implements AfterViewInit {
   }
 
   createNJChart() {
-    const tractName = 'cb_2023_25_tract_500k'
-    const width = 3000;
-    const height = 2500;
+    const scaleFactor = 1;
+    const tractName = this.topoJsonObjectsKey
+    const width = 975 * scaleFactor;
+    const height = 610 * scaleFactor;
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
 
@@ -448,7 +458,7 @@ export class StateMapsComponent implements AfterViewInit {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .attr("style", "max-width: 100%; height: auto;")
+      .attr("style", "max-width: 100%; height: auto; scale: 2") //scale is how you control the zoom
 
     const land = topojson.feature(this.mass, {
       type: "GeometryCollection",
@@ -466,8 +476,8 @@ export class StateMapsComponent implements AfterViewInit {
       .enter().append("path")
       .attr("class", "tract")
       .attr("d", path)
-      // .append("title")
-      // .text(function (d) { return d.properties.geoid; });
+    // .append("title")
+    // .text(function (d) { return d.properties.geoid; });
 
     svg.append("path")
       .datum(topojson.mesh(this.mass, this.mass.objects[tractName], function (a, b) { return a !== b; }))
@@ -478,12 +488,13 @@ export class StateMapsComponent implements AfterViewInit {
       .tract:hover {fill: orange }
       .tract-border {
         fill: none;
-        stroke: #777;
-        stroke-width: 1px;
+        stroke: rgba(119, 119, 119, .5);
+        stroke-width: .1px;
         pointer-events: pointer;
       }
     `);
-
+    const fipsToState = this.fipsToState
+    const fipsToCounty = this.fipsToCounty
     const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
     const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
     svg.selectAll(".tract")
@@ -511,19 +522,21 @@ export class StateMapsComponent implements AfterViewInit {
         } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
           return this.colors[8];
         } else {
-          return "tomato"
+          return "white"
         }
       })
       .on("mouseover", function (event, d) {
         const prop = d['properties']
-        const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5): 'N/A'
-        const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5): 'N/A'
-
+        const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
+        const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A'
+        console.log("prop: ", prop)
         d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
         tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
-            tooltip.html(`State: ${prop.STATE_NAME}<br>County: ${prop.NAMELSADCO}<br>Census Tract: ${prop.NAMELSAD}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`) 
-              .style("left", (event.pageX + 10) + "px")  // Position tooltip
-              .style("top", (event.pageY - 10) + "px");
+        const fipscode = prop.STATEFP + prop.COUNTYFP
+        const countyName = `${fipsToCounty[fipscode]['County']}`
+        tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+          .style("left", (event.pageX + 10) + "px")  // Position tooltip
+          .style("top", (event.pageY - 10) + "px");
       })
       .on("mouseout", function (event, d) {
         d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
@@ -534,10 +547,11 @@ export class StateMapsComponent implements AfterViewInit {
     // Create the grid for the legend
     const k = 24; // size of each cell in the grid
     const n = 3 // Grid size for the legend
+    // const scaleFactor = 3
     const legendGroup = svg.append('g')
       .attr('font-family', 'sans-serif')
       .attr('font-size', 10)
-      .attr('transform', `translate(${width - 100}, ${height - 175}) rotate(-45 ${k * n / 2},${k * n / 2})`);
+      .attr('transform', `translate(${width - 100*scaleFactor}, ${height - 175*scaleFactor}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${scaleFactor})`);
 
     // Add the squares to the legend
     d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
