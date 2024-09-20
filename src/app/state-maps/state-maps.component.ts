@@ -109,7 +109,7 @@ export class StateMapsComponent implements AfterViewInit {
         let rate2 = Math.log(Number(d[this.selectedCol2]) + 1);
         let rate3 = Math.log(Number(d[this.selectedCol3]) + 1);
 
-        if (!isNaN(rate1) && rate1 !== null && rate1 !== undefined && rate1 !== -1) {
+        if (!isNaN(rate1) && rate1 !== null && rate1 !== undefined && rate1 !== -1 && rate1 !== -Infinity) {
           this.min1 = Math.min(this.min1, rate1)
           this.max1 = Math.max(this.max1, rate1)
           this.data1.push({
@@ -118,7 +118,7 @@ export class StateMapsComponent implements AfterViewInit {
           } as GroceryData);
         }
 
-        if (!isNaN(rate2) && rate2 !== null && rate2 !== undefined && rate2 !== -1) {
+        if (!isNaN(rate2) && rate2 !== null && rate2 !== undefined && rate2 !== -1 && rate2 !== -Infinity) {
           this.min2 = Math.min(this.min2, rate2)
           this.max2 = Math.max(this.max2, rate2)
           this.data2.push({
@@ -132,7 +132,7 @@ export class StateMapsComponent implements AfterViewInit {
           }
         }
 
-        if (!isNaN(rate3) && rate3 !== null && rate3 !== undefined && rate3 !== -1) {
+        if (!isNaN(rate3) && rate3 !== null && rate3 !== undefined && rate3 !== -1 && rate3 !== -Infinity) {
           this.min3 = Math.min(this.min3, rate3)
           this.max3 = Math.max(this.max3, rate3)
           this.data3.push({
@@ -201,7 +201,7 @@ export class StateMapsComponent implements AfterViewInit {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .attr("style", "max-width: 100%; height: auto;")
+      .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`)
 
     const g = svg.append("g");
     const defs = svg.append("defs");
@@ -227,20 +227,22 @@ export class StateMapsComponent implements AfterViewInit {
       .attr("stroke", "yellow")
       .attr("stroke-width", 1);
 
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("padding", "6px")
+      .style("background", "#fff")
+      .style("border", "1px solid #ccc")
+      .style("border-radius", "4px")
+      .style("box-shadow", "0px 0px 10px rgba(0,0,0,0.2)")
+      .style("pointer-events", "none")
+      .style("opacity", 0); // Initially hidden
+
     // Draw the counties with the color fill
     if (this.useBivariate === false) {
       if (this.selectedCol1 !== '--') {
-        const tooltip = d3.select("body")
-          .append("div")
-          .attr("class", "tooltip")
-          .style("position", "absolute")
-          .style("padding", "6px")
-          .style("background", "#fff")
-          .style("border", "1px solid #ccc")
-          .style("border-radius", "4px")
-          .style("box-shadow", "0px 0px 10px rgba(0,0,0,0.2)")
-          .style("pointer-events", "none")
-          .style("opacity", 0); // Initially hidden
+
 
         const land = topojson.feature(this.state, {
           type: "GeometryCollection",
@@ -301,6 +303,9 @@ export class StateMapsComponent implements AfterViewInit {
             d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
             tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
           })
+          .on("click", function (event, d) {
+            tooltip.transition().duration(200).style("opacity", 0);
+          })
           .attr("d", path)
 
         // Draw the pattern layer on top of the colored counties
@@ -325,6 +330,9 @@ export class StateMapsComponent implements AfterViewInit {
             .on("mouseout", function (event, d) {
               d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
               tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
+            })
+            .on("click", function (event, d) {
+              tooltip.transition().duration(200).style("opacity", 0);
             })
             .attr("d", path)
             .attr("opacity", d => {
@@ -359,6 +367,9 @@ export class StateMapsComponent implements AfterViewInit {
             .on("mouseout", function (event, d) {
               d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
               tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
+            })
+            .on("click", function (event, d) {
+              tooltip.transition().duration(200).style("opacity", 0);
             })
             .attr("d", path)
             .attr("opacity", d => {
@@ -414,6 +425,9 @@ export class StateMapsComponent implements AfterViewInit {
           })
           .on("mouseout", function (event, d) {
             d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+          })
+          .on("click", function (event, d) {
+            tooltip.transition().duration(200).style("opacity", 0);
           })
           .attr("d", path)
         // .append("title")
@@ -519,6 +533,7 @@ export class StateMapsComponent implements AfterViewInit {
 
   onChangeBivariate(event) {
     this.useBivariate = event.checked;
+    this.zoomScale = 1;
     this.resetVariables()
     this.getData()
   }
@@ -533,10 +548,10 @@ export class StateMapsComponent implements AfterViewInit {
   }
 
   createNJChart() {
-    const scaleFactor = 1;
+    // const scaleFactor = 1;
     const tractName = this.topoJsonObjectsKey
-    const width = 975 * scaleFactor;
-    const height = 610 * scaleFactor;
+    const width = 975 * this.zoomScale;
+    const height = 610 * this.zoomScale;
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
 
@@ -571,7 +586,7 @@ export class StateMapsComponent implements AfterViewInit {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .attr("style", `max-width: 100%; height: auto; scale: ${scaleFactor}`) //scale is how you control the zoom
+      .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`) //scale is how you control the zoom
 
     const land = topojson.feature(this.state, {
       type: "GeometryCollection",
@@ -636,7 +651,7 @@ export class StateMapsComponent implements AfterViewInit {
         } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
           return this.colors[8];
         } else {
-          return "white"
+          return "yellow"
         }
       })
       .on("mouseover", function (event, d) {
@@ -655,16 +670,19 @@ export class StateMapsComponent implements AfterViewInit {
         d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
         tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
       })
+      .on("click", function (event, d) {
+        tooltip.transition().duration(200).style("opacity", 0);
+      })
       .attr("d", path)
 
     // Create the grid for the legend
     const k = 24; // size of each cell in the grid
     const n = 3 // Grid size for the legend
-    // const scaleFactor = 3
+    // const this.zoomScale = 3
     const legendGroup = svg.append('g')
       .attr('font-family', 'sans-serif')
       .attr('font-size', 10)
-      .attr('transform', `translate(${width - 100 * scaleFactor}, ${height - 175 * scaleFactor}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${scaleFactor})`);
+      .attr('transform', `translate(${width - 100 * this.zoomScale}, ${height - 175 * this.zoomScale}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${this.zoomScale})`);
 
     // Add the squares to the legend
     d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
@@ -720,5 +738,70 @@ export class StateMapsComponent implements AfterViewInit {
       .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
       .attr('text-anchor', 'middle')
       .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
+  }
+  zoomScale = 1
+  applyZoom(direction) {
+    d3.select('.tooltip').style('opacity', 0);
+
+    if (direction === '+' && this.zoomScale < 10) {
+      this.zoomScale++
+    } else if (direction === '-' && this.zoomScale !== 1) {
+      this.zoomScale--
+    }
+    if(this.useBivariate){
+      this.createNJChart()
+    }else{
+      this.createChart()
+    }
+    
+    console.log("zoom scale: ", this.zoomScale)
+  }
+
+  preventHistoryNavigation(event: WheelEvent): void {
+    const container = event.currentTarget as HTMLElement;
+
+    // Get the maximum horizontal scroll position
+    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+
+    // Check if we're at the extreme left or right of the scrollable area
+    if ((container.scrollLeft === 0 && event.deltaX < 0) ||
+      (container.scrollLeft >= maxScrollLeft && event.deltaX > 0)) {
+      // Prevent history navigation if scrolling at the extremes
+      event.preventDefault();
+    }
+  }
+
+  transformOriginX = 0; // X origin for zoom
+  transformOriginY = 0; // Y origin for zoom
+
+  previousZoomScale = 1;
+
+  zoomToClick(event: MouseEvent): void {
+    const container = event.currentTarget as HTMLElement;
+    const scatterContainer = container.closest('.scrollableMapContainer') as HTMLElement;
+
+    const svgElement = container.querySelector('svg') as SVGElement;
+    const rect = container.getBoundingClientRect();
+
+    // Get the click position relative to the SVG
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+
+    // Save the current zoom scale for calculation
+    const previousZoomScale = this.zoomScale;
+
+    // Apply zoom in
+    this.applyZoom('+');
+
+    // Calculate the factor of change in zoom scale
+    const zoomFactor = this.zoomScale / previousZoomScale;
+
+    // Adjust the scroll position based on the click position
+    const newScrollX = (clickX + scatterContainer.scrollLeft) * zoomFactor - scatterContainer.clientWidth / 2;
+    const newScrollY = (clickY + scatterContainer.scrollTop) * zoomFactor - scatterContainer.clientHeight / 2;
+
+    // Update the scroll position after zoom
+    scatterContainer.scrollLeft = newScrollX;
+    scatterContainer.scrollTop = newScrollY;
   }
 }

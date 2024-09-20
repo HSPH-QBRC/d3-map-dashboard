@@ -40,5 +40,18 @@
     </mat-select>
 </mat-form-field>
 <br>
-<mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeBivariate($event)">Use Bivariate Choropleth</mat-slide-toggle>
-<div #scatter id="map"></div>
+
+<mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeBivariate($event)">Use Bivariate
+    Choropleth</mat-slide-toggle>
+<div class="mapContainer"(wheel)="preventHistoryNavigation($event)">
+    <div class="zoomButtonContainer" [style.left.px]="20">
+        <button class="zoomButton" matTooltip="Zoom In" (click)="applyZoom('+')" [disabled]="zoomScale >= 10">
+            <mat-icon>add</mat-icon>
+        </button>
+        <button class="zoomButton" matTooltip="Zoom Out" (click)="applyZoom('-')" [disabled]="zoomScale === 1">
+            <mat-icon>remove</mat-icon>
+        </button>
+    </div>
+    
+    <div #scatter id="map" (click)="zoomToClick($event)"></div>
+</div>    

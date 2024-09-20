@@ -10,3 +10,32 @@
 .example-margin {
     margin: 10px;
 }
+
+.zoomButtonContainer {
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.5);
+    position: absolute;
+    bottom: 10px;
+    z-index: 100;
+}
+
+.zoomButton {
+    background-color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    margin: 1px;
+}
+
+.mapContainer {
+    background-color: tomato;
+    width: 100vw;
+    height: 100vh;
+    overflow: auto;
+}
+
