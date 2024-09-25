@@ -1,0 +1,59 @@
+<p>tiles-map works!</p>
+<app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+<mat-form-field class="form-control dropDown" color="accent" appearance="outline">
+    <mat-label>Year: </mat-label>
+    <mat-select [formControl]="yearVal" (selectionChange)="onSelectionChange($event, 'year')">
+        <mat-option *ngFor="let col of yearCols" [value]="col">
+            {{ col }}
+        </mat-option>
+    </mat-select>
+</mat-form-field>
+<mat-form-field class="form-control dropDown" color="accent" appearance="outline">
+    <mat-label>Column 1 (Blue Fill): </mat-label>
+    <mat-select [formControl]="columnVal1" (selectionChange)="onSelectionChange($event, 'column1')">
+        <mat-option *ngFor="let col of columns" [value]="col">
+            {{ col }}
+        </mat-option>
+    </mat-select>
+</mat-form-field>
+<mat-form-field class="form-control dropDown" color="accent" appearance="outline">
+    <mat-label>Column 2 (Diagonal Dash): </mat-label>
+    <mat-select [formControl]="columnVal2" (selectionChange)="onSelectionChange($event, 'column2')">
+        <mat-option *ngFor="let col of columns" [value]="col">
+            {{ col }}
+        </mat-option>
+    </mat-select>
+</mat-form-field>
+<mat-form-field class="form-control dropDown" color="accent" appearance="outline">
+    <mat-label>Column 3 (Cross Hatch): </mat-label>
+    <mat-select [formControl]="columnVal3" (selectionChange)="onSelectionChange($event, 'column3')">
+        <mat-option *ngFor="let col of columns" [value]="col">
+            {{ col }}
+        </mat-option>
+    </mat-select>
+</mat-form-field>
+<mat-form-field class="form-control dropDown" color="accent" appearance="outline">
+    <mat-label>State: </mat-label>
+    <mat-select [formControl]="statesVal" (selectionChange)="onSelectionChange($event, 'states')">
+        <mat-option *ngFor="let col of statesArr" [value]="col">
+            {{ col }}
+        </mat-option>
+    </mat-select>
+</mat-form-field>
+<br>
+
+<mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeBivariate($event)">Use Bivariate
+    Choropleth</mat-slide-toggle>
+<div class="mapContainer"(wheel)="preventHistoryNavigation($event)">
+    <div class="zoomButtonContainer" [style.left.px]="20">
+        <button class="zoomButton" matTooltip="Zoom In" (click)="applyZoom('+')" [disabled]="zoomScale >= 30">
+            <mat-icon>add</mat-icon>
+        </button>
+        <button class="zoomButton" matTooltip="Zoom Out" (click)="applyZoom('-')" [disabled]="zoomScale === 1">
+            <mat-icon>remove</mat-icon>
+        </button>
+    </div>
+    
+    <div #scatter id="map"></div>
+</div>    
+

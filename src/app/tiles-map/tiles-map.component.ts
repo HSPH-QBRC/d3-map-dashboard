@@ -4,17 +4,19 @@ import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
 import fipsToStateJson from '../../assets/data/fipsToState.json'
 import fipsToCountyJson from '../../assets/data/fipsToCounty.json';
+import { tile as d3Tile } from 'd3-tile';
 
 interface GroceryData {
   id: string;
   rate: number;
 }
+
 @Component({
-  selector: 'app-state-maps',
-  templateUrl: './state-maps.component.html',
-  styleUrls: ['./state-maps.component.scss']
+  selector: 'app-tiles-map',
+  templateUrl: './tiles-map.component.html',
+  styleUrls: ['./tiles-map.component.scss']
 })
-export class StateMapsComponent implements AfterViewInit {
+export class TilesMapComponent implements AfterViewInit {
 
   private data1: GroceryData[] = [];
   private data2: GroceryData[] = [];
@@ -40,7 +42,7 @@ export class StateMapsComponent implements AfterViewInit {
 
   statesArr = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
     'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana',
-    'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massacheusetts']
+    'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massacheusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   selectedCol1: string = 'population';
   // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
@@ -86,8 +88,43 @@ export class StateMapsComponent implements AfterViewInit {
     "Louisiana": "cb_2017_22_tract_500k.json",
     "Maine": "cb_2017_23_tract_500k.json",
     "Maryland": "cb_2017_24_tract_500k.json",
-    "Massacheusetts": "cb_2017_25_tract_500k.json"
+    "Massacheusetts": "cb_2017_25_tract_500k.json",
+    "Michigan": "cb_2017_26_tract_500k.json",
+    "Minnesota": "cb_2017_27_tract_500k.json",
+    "Mississippi": "cb_2017_28_tract_500k.json",
+    "Missouri": "cb_2017_29_tract_500k.json",
+    "Montana": "cb_2017_30_tract_500k.json",
+    "Nebraska": "cb_2017_31_tract_500k.json",
+    "Nevada": "cb_2017_32_tract_500k.json",
+    "New Hampshire": "cb_2017_33_tract_500k.json",
+    "New Jersey": "cb_2017_34_tract_500k.json",
+    "New Mexico": "cb_2017_35_tract_500k.json",
+    "New York": "cb_2017_36_tract_500k.json",
+    "North Carolina": "cb_2017_37_tract_500k.json",
+    "North Dakota": "cb_2017_38_tract_500k.json",
+    "Ohio": "cb_2017_39_tract_500k.json",
+    "Oklahoma": "cb_2017_40_tract_500k.json",
+    "Oregon": "cb_2017_41_tract_500k.json",
+    "Pennsylvania": "cb_2017_42_tract_500k.json",
+    "Rhode Island": "cb_2017_44_tract_500k.json",
+    "South Carolina": "cb_2017_45_tract_500k.json",
+    "South Dakota": "cb_2017_46_tract_500k.json",
+    "Tennessee": "cb_2017_47_tract_500k.json",
+    "Texas": "cb_2017_48_tract_500k.json",
+    "Utah": "cb_2017_49_tract_500k.json",
+    "Vermont": "cb_2017_50_tract_500k.json",
+    "Virginia": "cb_2017_51_tract_500k.json",
+    "Washington": "cb_2017_53_tract_500k.json",
+    "West Virginia": "cb_2017_54_tract_500k.json",
+    "Wisconsin": "cb_2017_55_tract_500k.json",
+    "Wyoming": "cb_2017_56_tract_500k.json"
+
   }
+
+  transformOriginX = 0; // X origin for zoom
+  transformOriginY = 0; // Y origin for zoom
+  mouseX = 975 / 2;
+  mouseY = 600 / 2;
 
   async getData() {
     this.isLoading = true
@@ -113,7 +150,7 @@ export class StateMapsComponent implements AfterViewInit {
           this.min1 = Math.min(this.min1, rate1)
           this.max1 = Math.max(this.max1, rate1)
           this.data1.push({
-            id: d['tract_fips10'],  // Taking the first 5 characters
+            id: d['tract_fips10'],
             rate: rate1
           } as GroceryData);
         }
@@ -122,7 +159,7 @@ export class StateMapsComponent implements AfterViewInit {
           this.min2 = Math.min(this.min2, rate2)
           this.max2 = Math.max(this.max2, rate2)
           this.data2.push({
-            id: d['tract_fips10'],  // Taking the first 5 characters
+            id: d['tract_fips10'],
             rate: rate2
           } as GroceryData);
 
@@ -136,7 +173,7 @@ export class StateMapsComponent implements AfterViewInit {
           this.min3 = Math.min(this.min3, rate3)
           this.max3 = Math.max(this.max3, rate3)
           this.data3.push({
-            id: d['tract_fips10'],  // Taking the first 5 characters
+            id: d['tract_fips10'],
             rate: rate3
           } as GroceryData);
 
@@ -219,6 +256,8 @@ export class StateMapsComponent implements AfterViewInit {
       .attr("stroke", "yellow")
       .attr("stroke-width", 1);
 
+    d3.selectAll(".tooltip").transition().duration(200).style("opacity", 0)
+
     const tooltip = d3.select("body")
       .append("div")
       .attr("class", "tooltip")
@@ -234,8 +273,6 @@ export class StateMapsComponent implements AfterViewInit {
     // Draw the counties with the color fill
     if (this.useBivariate === false) {
       if (this.selectedCol1 !== '--') {
-
-
         const land = topojson.feature(this.state, {
           type: "GeometryCollection",
           geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
@@ -244,7 +281,8 @@ export class StateMapsComponent implements AfterViewInit {
         // EPSG:32111
         const path = d3.geoPath()
           .projection(d3.geoTransverseMercator()
-            .rotate([90, 0])
+            // .rotate([90, 0])
+            .rotate([74 + 30 / 60, -38 - 50 / 60])
             .fitExtent([[20, 20], [width - 20, height - 20]], land));
 
         svg.selectAll("path")
@@ -522,6 +560,8 @@ export class StateMapsComponent implements AfterViewInit {
 
     this.resetVariables()
     this.getData()
+
+
   }
 
   onChangeBivariate(event) {
@@ -544,8 +584,8 @@ export class StateMapsComponent implements AfterViewInit {
 
   createNJChart() {
     const tractName = this.topoJsonObjectsKey
-    const width = 975 * this.zoomScale;
-    const height = 610 * this.zoomScale;
+    const width = 975;
+    const height = 610;
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
 
@@ -559,6 +599,8 @@ export class StateMapsComponent implements AfterViewInit {
     let yRange3 = 2 * ((this.max2 - this.min2) / 3) + this.min2
     let yRange4 = this.max2
 
+    d3.selectAll(".tooltip").transition().duration(200).style("opacity", 0)
+
     const tooltip = d3.select("body")
       .append("div")
       .attr("class", "tooltip")
@@ -571,6 +613,8 @@ export class StateMapsComponent implements AfterViewInit {
       .style("pointer-events", "none")
       .style("opacity", 0); // Initially hidden
 
+
+
     d3.select(this.scatterplotContainerId)
       .selectAll('svg')
       .remove();
@@ -580,30 +624,13 @@ export class StateMapsComponent implements AfterViewInit {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; translate(${this.newX}px, ${this.newY}px); transform-origin: 0 0;`) //scale is how you control the zoom
+      // .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; translate(${this.newX}px, ${this.newY}px); transform-origin: 0 0;`) //scale is how you control the zoom
+      .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
 
     const land = topojson.feature(this.state, {
       type: "GeometryCollection",
       geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
     });
-
-    // EPSG:32111
-    const path = d3.geoPath()
-      .projection(d3.geoTransverseMercator()
-        .rotate([74 + 30 / 60, -38 - 50 / 60])
-        // .rotate([90, 0])
-        .fitExtent([[20, 20], [width - 20, height - 20]], land));
-
-    svg.selectAll("path")
-      .data(land.features)
-      .enter().append("path")
-      .attr("class", "tract")
-      .attr("d", path)
-
-    svg.append("path")
-      .datum(topojson.mesh(this.state, this.state.objects[tractName], function (a, b) { return a !== b; }))
-      .attr("class", "tract-border")
-      .attr("d", path)
 
     svg.append("style").text(`
       .tract:hover {fill: orange }
@@ -619,58 +646,136 @@ export class StateMapsComponent implements AfterViewInit {
     const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
     const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
 
-    svg.selectAll(".tract")
-      .attr("class", "tract")
-      .attr("fill", d => {
-        const id = d['properties']['GEOID']
-        const val1 = valuemap1.get(id)
-        const val2 = valuemap2.get(id)
-        if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
-          return this.colors[0];
-        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
-          return this.colors[1];
-        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
-          return this.colors[2];
-        } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
-          return this.colors[3];
-        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
-          return this.colors[4];
-        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
-          return this.colors[5];
-        } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
-          return this.colors[6];
-        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
-          return this.colors[7];
-        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
-          return this.colors[8];
-        } else {
-          return "yellow"
-        }
-      })
-      // .on("click", clicked)
-      .on("mouseover", function (event, d) {
-        const prop = d['properties']
-        const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
-        const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A'
-        d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
-        tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
-        const fipscode = prop.STATEFP + prop.COUNTYFP
-        const countyName = `${fipsToCounty[fipscode]['County']}`
-        tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-          .style("left", (event.pageX + 10) + "px")  // Position tooltip
-          .style("top", (event.pageY - 10) + "px");
-      })
-      .on("mouseout", function (event, d) {
-        d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-        tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
-      })
-      .on("click", function (event, d) {
-        tooltip.transition().duration(200).style("opacity", 0);
-      })
-      .attr("d", path)
+    // Number of tiles in the x and y directions
+    const tileWidth = width; // or adjust based on your map size
+    const tileHeight = height; // or adjust based on your map size
+
+    // // Calculate number of tiles needed in both dimensions
+    const numTilesX = Math.ceil(width / tileWidth);
+    const numTilesY = Math.ceil(height / tileHeight);
+
+    // Function to render a specific tile
+    const renderTile = (tileX, tileY) => {
+      // Define the boundaries of the current tile
+      const tileMinX = tileX * tileWidth;
+      const tileMinY = tileY * tileHeight;
+      const tileMaxX = tileMinX + tileWidth;
+      const tileMaxY = tileMinY + tileHeight;
+
+      // Create a new projection for each tile
+      const tileProjection = d3.geoTransverseMercator()
+        .rotate([74 + 30 / 60, -38 - 50 / 60])
+        .fitExtent([[tileMinX, tileMinY], [tileMaxX, tileMaxY]], land); // Adjust projection for each tile
+
+      // Create a new path generator for each tile using the tile-specific projection
+      const tilePath = d3.geoPath().projection(tileProjection);
+
+      // Append a group for the current tile
+      const tileGroup = svg.append('g')
+        .attr('class', `tile-${tileX}-${tileY}`)
+        .attr('transform', `translate(${tileMinX}, ${tileMinY})`)
+
+      // Add the part of the map corresponding to this tile
+      tileGroup.selectAll('path')
+        .data(land.features)
+        .enter().append('path')
+        .attr('d', tilePath)
+        .attr("class", "tract")
+        .attr("fill", d => {
+          const id = d['properties']['GEOID'];
+          const val1 = valuemap1.get(id);
+          const val2 = valuemap2.get(id);
+          if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
+            return this.colors[0];
+          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
+            return this.colors[1];
+          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
+            return this.colors[2];
+          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
+            return this.colors[3];
+          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
+            return this.colors[4];
+          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
+            return this.colors[5];
+          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
+            return this.colors[6];
+          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
+            return this.colors[7];
+          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
+            return this.colors[8];
+          } else {
+            return "yellow";
+          }
+        })
+        .on("mouseover", function (event, d) {
+          const prop = d['properties'];
+          const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A';
+          const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A';
+          d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
+          tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
+          const fipscode = prop.STATEFP + prop.COUNTYFP;
+          const countyName = `${fipsToCounty[fipscode]['County']}`;
+          tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+            .style("left", (event.pageX + 10) + "px")  // Position tooltip
+            .style("top", (event.pageY - 10) + "px");
+        })
+        .on("mouseout", function (event, d) {
+          d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+          tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
+        })
+        .attr('stroke', 'rgba(119, 119, 119, .7)')
+        .attr('stroke-width', .2);
+    };
+
+    // Loop over the tiles and render each one
+    for (let x = 0; x < numTilesX; x++) {
+      for (let y = 0; y < numTilesY; y++) {
+        renderTile(x, y);
+      }
+    }
+
+    // Set up zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([1, 100])
+      .on('zoom', (event) => {
+        svg.attr('transform', event.transform);
+      });
+
+    // Function to zoom into a specific point (x, y)
+    const zoomTo = (x, y, scale) => {
+      console.log("scalle: ", scale)
+      svg.transition()
+        .duration(200)
+        .call(zoom.transform, d3.zoomIdentity.translate(width / 2 - scale * x, height / 2 - scale * y).scale(scale));
+    };
+
+    svg.call(zoom)
+      .on("wheel.zoom", null)     // Disable zooming with the mouse wheel
+      .on("mousedown.zoom", null) // Disable zooming by dragging
+      .on("dblclick.zoom", null); // Disable zooming by double-clicking
+
+    // Call zoomTo() immediately after creating the SVG
+    zoomTo(this.mouseX, this.mouseY, this.zoomScale);
+
+    const largeStates = ['California', 'Florida', 'Georgia', 'Illinois', 'New York', 'North Carolina', 'Pennsylvania', 'Texas']
+    // let currZoomScale = this.zoomScale
+
+    svg.on('click', (event) => {
+      const [mouseX, mouseY] = d3.pointer(event);
+      this.mouseX = mouseX
+      this.mouseY = mouseY
+
+      if (largeStates.includes(this.selectedState)) {
+        this.zoomScale = this.zoomScale < 5 ? 20 + this.zoomScale : this.zoomScale + 1
+      } else {
+        this.zoomScale = this.zoomScale < 5 ? 6 + this.zoomScale : this.zoomScale + 1
+      }
+
+      zoomTo(mouseX, mouseY, this.zoomScale);
+    });
 
     // Create the grid for the legend
-    const k = 24; // size of each cell in the grid
+    const k = 24; // size of each cell in the grid 
     const n = 3 // Grid size for the legend
     const legendGroup = svg.append('g')
       .attr('font-family', 'sans-serif')
@@ -731,12 +836,15 @@ export class StateMapsComponent implements AfterViewInit {
       .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
       .attr('text-anchor', 'middle')
       .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
+
+
   }
   zoomScale = 1
+
   applyZoom(direction) {
     // d3.select('.tooltip').style('opacity', 0);
 
-    if (direction === '+' && this.zoomScale < 10) {
+    if (direction === '+' && this.zoomScale < 30) {
       this.zoomScale++
     } else if (direction === '-' && this.zoomScale !== 1) {
       this.zoomScale--
@@ -764,20 +872,4 @@ export class StateMapsComponent implements AfterViewInit {
     }
   }
 
-  transformOriginX = 0; // X origin for zoom
-  transformOriginY = 0; // Y origin for zoom
-  newX = 0;
-  newY = 0;
-
-  //problem is translate doesn't move map to the new location. why??
-  zoomToClick(event: MouseEvent): void {
-    console.log("event: ", event.clientX, event.clientY)
-    const x = event.clientX
-    const y = event.clientY
-
-    this.newX = x
-    this.newY = y
-
-    this.applyZoom('+');
-  }
 }

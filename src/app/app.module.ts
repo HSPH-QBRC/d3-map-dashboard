@@ -14,13 +14,15 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {MatCardModule} from '@angular/material/card';
 import { StateMapsComponent } from './state-maps/state-maps.component';
 import {MatIconModule} from '@angular/material/icon';
+import { TilesMapComponent } from './tiles-map/tiles-map.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     MapsComponent,
     LoadingSpinnerComponent,
-    StateMapsComponent
+    StateMapsComponent,
+    TilesMapComponent
   ],
   imports: [
     BrowserModule,
