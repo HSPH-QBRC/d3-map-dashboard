@@ -40,14 +40,16 @@ export class TilesMapComponent implements AfterViewInit {
   yearCols = []
   columns = []
 
-  statesArr = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  statesArr = ['USA 2000 Mainland', 'USA 2018 Mainland', 'USA 2020 Mainland', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
     'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana',
     'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massacheusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+  fullCountryArr = ['USA 2000 Mainland', 'USA 2018 Mainland', 'USA 2020 Mainland']
   selectedCol1: string = 'population';
   // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
   selectedCol3: string = '--';
-  selectedState = 'Massacheusetts'
+  // selectedState = 'Massacheusetts'
+  selectedState = 'USA 2018 Mainland'
   columnVal1 = new FormControl(this.selectedCol1);
   columnVal2 = new FormControl(this.selectedCol2);
   columnVal3 = new FormControl(this.selectedCol3);
@@ -67,6 +69,9 @@ export class TilesMapComponent implements AfterViewInit {
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
+    "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
+    "USA 2018 Mainland": "SVI2018_US_mainland_tract.json",
+    "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
     "Alabama": "cb_2017_01_tract_500k.json",
     "Alaska": "cb_2017_02_tract_500k.json",
     "Arizona": "cb_2017_04_tract_500k.json",
@@ -210,6 +215,10 @@ export class TilesMapComponent implements AfterViewInit {
 
 
   private createChart(): void {
+    const fullCountryArr = this.fullCountryArr
+    const selectedState = this.selectedState
+    let useCountry = fullCountryArr.includes(selectedState) ? true : false;
+
     const tractName = this.topoJsonObjectsKey
     const width = 975;
     const height = 610;
@@ -230,7 +239,7 @@ export class TilesMapComponent implements AfterViewInit {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`)
+      .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
 
     const g = svg.append("g");
     const defs = svg.append("defs");
@@ -270,33 +279,72 @@ export class TilesMapComponent implements AfterViewInit {
       .style("pointer-events", "none")
       .style("opacity", 0); // Initially hidden
 
+    // Set up zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([1, 100])
+      .on('zoom', (event) => {
+        svg.attr('transform', event.transform);
+      });
+
+    // Function to zoom into a specific point (x, y)
+    const zoomTo = (x, y, scale) => {
+      svg.transition()
+        .duration(200)
+        .call(zoom.transform, d3.zoomIdentity.translate(width / 2 - scale * x, height / 2 - scale * y).scale(scale));
+    };
+
+    svg.call(zoom)
+      .on("wheel.zoom", null)     // Disable zooming with the mouse wheel
+      .on("mousedown.zoom", null) // Disable zooming by dragging
+      .on("dblclick.zoom", null); // Disable zooming by double-clicking
+
+    // Call zoomTo() immediately after creating the SVG
+    zoomTo(this.mouseX, this.mouseY, this.zoomScale);
+
+    const largeStates = ['California', 'Florida', 'Georgia', 'Illinois', 'New York', 'North Carolina', 'Pennsylvania', 'Texas']
+
+    svg.on('click', (event) => {
+      const [mouseX, mouseY] = d3.pointer(event);
+      this.mouseX = mouseX
+      this.mouseY = mouseY
+
+      if (largeStates.includes(this.selectedState)) {
+        this.zoomScale = this.zoomScale < 5 ? 20 + this.zoomScale : this.zoomScale + 1
+      } if (this.fullCountryArr.includes(this.selectedState)) {
+        this.zoomScale = this.zoomScale < 5 ? 25 + this.zoomScale : this.zoomScale + 1
+      } else {
+        this.zoomScale = this.zoomScale < 5 ? 4 + this.zoomScale : this.zoomScale + 1
+      }
+
+      zoomTo(mouseX, mouseY, this.zoomScale);
+    });
+
     // Draw the counties with the color fill
-    if (this.useBivariate === false) {
-      if (this.selectedCol1 !== '--') {
-        const land = topojson.feature(this.state, {
-          type: "GeometryCollection",
-          geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
-        });
 
-        // EPSG:32111
-        const path = d3.geoPath()
-          .projection(d3.geoTransverseMercator()
-            // .rotate([90, 0])
-            .rotate([74 + 30 / 60, -38 - 50 / 60])
-            .fitExtent([[20, 20], [width - 20, height - 20]], land));
+    if (this.selectedCol1 !== '--') {
+      const land = topojson.feature(this.state, {
+        type: "GeometryCollection",
+        geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
+      });
 
-        svg.selectAll("path")
-          .data(land.features)
-          .enter().append("path")
-          .attr("class", "tract")
-          .attr("d", path)
+      // EPSG:32111
+      const path = d3.geoPath()
+        .projection(d3.geoTransverseMercator()
+          .rotate([74 + 30 / 60, -38 - 50 / 60])
+          .fitExtent([[20, 20], [width - 20, height - 20]], land));
 
-        svg.append("path")
-          .datum(topojson.mesh(this.state, this.state.objects[tractName], function (a, b) { return a !== b; }))
-          .attr("class", "tract-border")
-          .attr("d", path)
+      svg.selectAll("path")
+        .data(land.features)
+        .enter().append("path")
+        .attr("class", "tract")
+        .attr("d", path)
 
-        svg.append("style").text(`
+      svg.append("path")
+        .datum(topojson.mesh(this.state, this.state.objects[tractName], function (a, b) { return a !== b; }))
+        .attr("class", "tract-border")
+        .attr("d", path)
+
+      svg.append("style").text(`
           .tract:hover {fill: orange }
           .tract-border {
             fill: none;
@@ -305,29 +353,88 @@ export class TilesMapComponent implements AfterViewInit {
             pointer-events: pointer;
           }
         `);
-        const fipsToState = this.fipsToState
-        const fipsToCounty = this.fipsToCounty
-        const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
-        const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
-        const col3Name = this.selectedCol3.charAt(0).toUpperCase() + this.selectedCol3.slice(1).toLowerCase();
-        svg.selectAll(".tract")
-          .attr("class", "tract")
-          .attr("fill", d => {
-            const id = d['properties']['GEOID']
-            const val1 = valuemap1.get(id)
-            return color1(val1)
-          })
+      const fipsToState = this.fipsToState
+      const fipsToCounty = this.fipsToCounty
+      const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
+      const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
+      const col3Name = this.selectedCol3.charAt(0).toUpperCase() + this.selectedCol3.slice(1).toLowerCase();
+      svg.selectAll(".tract")
+        .attr("class", "tract")
+        .attr("fill", d => {
+          // const id = d['properties']['GEOID']
+          const prop = d['properties'];
+          const id = useCountry ? prop['FIPS'] : prop['GEOID']
+          const val1 = valuemap1.get(id)
+          return color1(val1)
+        })
+        // .on("mouseover", function (event, d) {
+        //   const prop = d['properties']
+        //   const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
+        //   d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
+        //   tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
+        //   const fipscode = prop.STATEFP + prop.COUNTYFP
+        //   const countyName = `${fipsToCounty[fipscode]['County']}`
+        //   tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}`)
+        //     .style("left", (event.pageX + 10) + "px")  // Position tooltip
+        //     .style("top", (event.pageY - 10) + "px");
+        // })
+        .on("mouseover", function (event, d) {
+          const prop = d['properties'];
+          const id = useCountry ? prop.FIPS : prop.GEOID;
+          const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+          d3.select(this).style("cursor", "pointer");
+          tooltip.transition().duration(200).style("opacity", 1);
+          const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+          const stateId = useCountry ? prop.ST : prop.STATEFP
+          const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
+          const fipscode = useCountry ? prop.STCNTY : prop.STATEFP + prop.COUNTYFP;
+          const countyName = useCountry ? prop.COUNTY : `${fipsToCounty[fipscode]['County']}`;
+          tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 10) + "px");
+        })
+        .on("mouseout", function (event, d) {
+          d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+          tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
+        })
+        .on("click", function (event, d) {
+          tooltip.transition().duration(200).style("opacity", 0);
+        })
+        .attr("d", path)
 
+      // Draw the pattern layer on top of the colored counties
+      if (this.selectedCol2 !== '--') {
+        svg.append("g")
+          .selectAll("path")
+          .data(topojson.feature(this.state, this.state.objects[tractName])['features'])
+          .join("path")
+          .attr("fill", "url(#diagonal-stripe)")  // Second layer: pattern fill with opacity
+          // .on("mouseover", function (event, d) {
+          //   const prop = d['properties']
+          //   const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
+          //   const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A'
+          //   d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
+          //   tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
+          //   const fipscode = prop.STATEFP + prop.COUNTYFP
+          //   const countyName = `${fipsToCounty[fipscode]['County']}`
+          //   tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+          //     .style("left", (event.pageX + 10) + "px")  // Position tooltip
+          //     .style("top", (event.pageY - 10) + "px");
+          // })
           .on("mouseover", function (event, d) {
-            const prop = d['properties']
-            const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
-            // const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A'
-            d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
-            tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
-            const fipscode = prop.STATEFP + prop.COUNTYFP
-            const countyName = `${fipsToCounty[fipscode]['County']}`
-            tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}`)
-              .style("left", (event.pageX + 10) + "px")  // Position tooltip
+            const prop = d['properties'];
+            const id = useCountry ? prop.FIPS : prop.GEOID;
+            const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+            const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
+            d3.select(this).style("cursor", "pointer");
+            tooltip.transition().duration(200).style("opacity", 1);
+            const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+            const stateId = useCountry ? prop.ST : prop.STATEFP
+            const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
+            const fipscode = useCountry ? prop.STCNTY : prop.STATEFP + prop.COUNTYFP;
+            const countyName = useCountry ? prop.COUNTY : `${fipsToCounty[fipscode]['County']}`;
+            tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+              .style("left", (event.pageX + 10) + "px")
               .style("top", (event.pageY - 10) + "px");
           })
           .on("mouseout", function (event, d) {
@@ -338,129 +445,74 @@ export class TilesMapComponent implements AfterViewInit {
             tooltip.transition().duration(200).style("opacity", 0);
           })
           .attr("d", path)
-
-        // Draw the pattern layer on top of the colored counties
-        if (this.selectedCol2 !== '--') {
-          svg.append("g")
-            .selectAll("path")
-            .data(topojson.feature(this.state, this.state.objects[tractName])['features'])
-            .join("path")
-            .attr("fill", "url(#diagonal-stripe)")  // Second layer: pattern fill with opacity
-            .on("mouseover", function (event, d) {
-              const prop = d['properties']
-              const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
-              const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A'
-              d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
-              tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
-              const fipscode = prop.STATEFP + prop.COUNTYFP
-              const countyName = `${fipsToCounty[fipscode]['County']}`
-              tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-                .style("left", (event.pageX + 10) + "px")  // Position tooltip
-                .style("top", (event.pageY - 10) + "px");
-            })
-            .on("mouseout", function (event, d) {
-              d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-              tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
-            })
-            .on("click", function (event, d) {
-              tooltip.transition().duration(200).style("opacity", 0);
-            })
-            .attr("d", path)
-            .attr("opacity", d => {
-              const id = d['properties']['GEOID']
-              const rate = this.data2Obj[id]['rate']
-              if (id !== undefined && rate !== 0) {
-                return rate / this.max2 + 0.2
-              }
-              return 0
-            })
-        }
-
-        if (this.selectedCol3 !== '--') {
-          svg.append("g")
-            .selectAll("path")
-            .data(topojson.feature(this.state, this.state.objects[tractName])['features'])
-            .join("path")
-            .attr("fill", "url(#crosshatch)")  // Second layer: polka dot pattern
-            .on("mouseover", function (event, d) {
-              const prop = d['properties']
-              const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
-              const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A'
-              const val3String = valuemap3.get(prop['GEOID']) !== undefined ? valuemap3.get(prop['GEOID']).toFixed(5) : 'N/A'
-              d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
-              tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
-              const fipscode = prop.STATEFP + prop.COUNTYFP
-              const countyName = `${fipsToCounty[fipscode]['County']}`
-              tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}<br>${col3Name}: ${val3String}`)
-                .style("left", (event.pageX + 10) + "px")  // Position tooltip
-                .style("top", (event.pageY - 10) + "px");
-            })
-            .on("mouseout", function (event, d) {
-              d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-              tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
-            })
-            .on("click", function (event, d) {
-              tooltip.transition().duration(200).style("opacity", 0);
-            })
-            .attr("d", path)
-            .attr("opacity", d => {
-              const id = d['properties']['GEOID']
-              const rate = this.data3Obj[id]['rate']
-              if (id !== undefined && rate !== 0) {
-                return rate / this.max3 + 0.2
-              }
-              return 0
-            })
-        }
+          .attr("opacity", d => {
+            const prop = d['properties']
+            const id = useCountry ? prop['FIPS'] : prop['GEOID']
+            const rate = this.data2Obj[id]['rate']
+            if (id !== undefined && rate !== 0) {
+              return rate / this.max2 + 0.2
+            }
+            return 0
+          })
       }
-    } else {
-      if (this.selectedCol1 !== '--' && this.selectedCol2 !== '--') {
-        let xRange1 = this.min1;
-        let xRange2 = (this.max1 - this.min1) / 3 + this.min1
-        let xRange3 = 2 * ((this.max1 - this.min1) / 3) + this.min1
-        let xRange4 = this.max1
 
-        let yRange1 = this.min2;
-        let yRange2 = (this.max2 - this.min2) / 3 + this.min2
-        let yRange3 = 2 * ((this.max2 - this.min2) / 3) + this.min2
-        let yRange4 = this.max2
-
-        g.append("g")
+      if (this.selectedCol3 !== '--') {
+        svg.append("g")
           .selectAll("path")
           .data(topojson.feature(this.state, this.state.objects[tractName])['features'])
           .join("path")
-          .attr("fill", d => {
-            if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
-              return this.colors[0]
-            } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
-              return this.colors[1]
-            } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
-              return this.colors[2]
-            } else if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
-              return this.colors[3]
-            } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
-              return this.colors[4]
-            } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
-              return this.colors[5]
-            } else if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
-              return this.colors[6]
-            } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
-              return this.colors[7]
-            } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
-              return this.colors[8]
-            }
-
-          })  // First layer: color fill
+          .attr("fill", "url(#crosshatch)")  // Second layer: polka dot pattern
+          // .on("mouseover", function (event, d) {
+          //   const prop = d['properties']
+          //   const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A'
+          //   const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A'
+          //   const val3String = valuemap3.get(prop['GEOID']) !== undefined ? valuemap3.get(prop['GEOID']).toFixed(5) : 'N/A'
+          //   d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
+          //   tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
+          //   const fipscode = prop.STATEFP + prop.COUNTYFP
+          //   const countyName = `${fipsToCounty[fipscode]['County']}`
+          //   tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}<br>${col3Name}: ${val3String}`)
+          //     .style("left", (event.pageX + 10) + "px")  // Position tooltip
+          //     .style("top", (event.pageY - 10) + "px");
+          // })
           .on("mouseover", function (event, d) {
-            d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
+            const prop = d['properties'];
+            const id = useCountry ? prop.FIPS : prop.GEOID;
+            const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+            const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
+            const val3String = valuemap3.get(id) !== undefined ? valuemap3.get(id).toFixed(5) : 'N/A';
+            d3.select(this).style("cursor", "pointer");
+            tooltip.transition().duration(200).style("opacity", 1);
+            const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+            const stateId = useCountry ? prop.ST : prop.STATEFP
+            const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
+            const fipscode = useCountry ? prop.STCNTY : prop.STATEFP + prop.COUNTYFP;
+            const countyName = useCountry ? prop.COUNTY : `${fipsToCounty[fipscode]['County']}`;
+            tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}<br>${col3Name}: ${val3String}`)
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 10) + "px");
           })
           .on("mouseout", function (event, d) {
             d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+            tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
           })
           .on("click", function (event, d) {
             tooltip.transition().duration(200).style("opacity", 0);
           })
           .attr("d", path)
+          .attr("opacity", d => {
+            // const id = d['properties']['GEOID']
+            const prop = d['properties']
+            const id = useCountry ? prop['FIPS'] : prop['GEOID']
+            const rate = this.data3Obj[id]['rate']
+            if (id !== undefined && rate !== 0) {
+              return rate / this.max3 + 0.2
+            }
+            return 0
+          })
+
+
+
         // .append("title")
         // .text(d => `${d['properties'].name}, ${statemap.get(d['id'].slice(0, 2))['properties'].name}\n${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}: ${valuemap1.get(d['id'])?.toFixed(5)}\n${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}: ${valuemap2.get(d['id'])?.toFixed(5)}`);
 
@@ -583,6 +635,10 @@ export class TilesMapComponent implements AfterViewInit {
   }
 
   createNJChart() {
+    const fullCountryArr = this.fullCountryArr
+    const selectedState = this.selectedState
+    let useCountry = fullCountryArr.includes(selectedState) ? true : false;
+
     const tractName = this.topoJsonObjectsKey
     const width = 975;
     const height = 610;
@@ -612,8 +668,6 @@ export class TilesMapComponent implements AfterViewInit {
       .style("box-shadow", "0px 0px 10px rgba(0,0,0,0.2)")
       .style("pointer-events", "none")
       .style("opacity", 0); // Initially hidden
-
-
 
     d3.select(this.scatterplotContainerId)
       .selectAll('svg')
@@ -682,7 +736,7 @@ export class TilesMapComponent implements AfterViewInit {
         .attr('d', tilePath)
         .attr("class", "tract")
         .attr("fill", d => {
-          const id = d['properties']['GEOID'];
+          const id = this.fullCountryArr.includes(this.selectedState) ? d['properties']['FIPS'] : d['properties']['GEOID'];
           const val1 = valuemap1.get(id);
           const val2 = valuemap2.get(id);
           if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
@@ -709,13 +763,17 @@ export class TilesMapComponent implements AfterViewInit {
         })
         .on("mouseover", function (event, d) {
           const prop = d['properties'];
-          const val1String = valuemap1.get(prop['GEOID']) !== undefined ? valuemap1.get(prop['GEOID']).toFixed(5) : 'N/A';
-          const val2String = valuemap2.get(prop['GEOID']) !== undefined ? valuemap2.get(prop['GEOID']).toFixed(5) : 'N/A';
+          const id = useCountry ? prop['FIPS'] : prop['GEOID']
+          const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+          const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
           d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
           tooltip.transition().duration(200).style("opacity", 1);  // Show tooltip
-          const fipscode = prop.STATEFP + prop.COUNTYFP;
-          const countyName = `${fipsToCounty[fipscode]['County']}`;
-          tooltip.html(`State: ${fipsToState[prop.STATEFP]} (${prop.STATEFP})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${prop.NAME}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+          const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+          const stateId = useCountry ? prop.ST : prop.STATEFP
+          const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
+          const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
+          const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
+          tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
             .style("left", (event.pageX + 10) + "px")  // Position tooltip
             .style("top", (event.pageY - 10) + "px");
         })
@@ -743,7 +801,6 @@ export class TilesMapComponent implements AfterViewInit {
 
     // Function to zoom into a specific point (x, y)
     const zoomTo = (x, y, scale) => {
-      console.log("scalle: ", scale)
       svg.transition()
         .duration(200)
         .call(zoom.transform, d3.zoomIdentity.translate(width / 2 - scale * x, height / 2 - scale * y).scale(scale));
@@ -767,8 +824,10 @@ export class TilesMapComponent implements AfterViewInit {
 
       if (largeStates.includes(this.selectedState)) {
         this.zoomScale = this.zoomScale < 5 ? 20 + this.zoomScale : this.zoomScale + 1
+      } if (this.fullCountryArr.includes(this.selectedState)) {
+        this.zoomScale = this.zoomScale < 5 ? 25 + this.zoomScale : this.zoomScale + 1
       } else {
-        this.zoomScale = this.zoomScale < 5 ? 6 + this.zoomScale : this.zoomScale + 1
+        this.zoomScale = this.zoomScale < 5 ? 4 + this.zoomScale : this.zoomScale + 1
       }
 
       zoomTo(mouseX, mouseY, this.zoomScale);
@@ -854,8 +913,6 @@ export class TilesMapComponent implements AfterViewInit {
     } else {
       this.createChart()
     }
-
-    console.log("zoom scale: ", this.zoomScale)
   }
 
   preventHistoryNavigation(event: WheelEvent): void {

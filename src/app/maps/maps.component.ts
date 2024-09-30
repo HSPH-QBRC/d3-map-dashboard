@@ -19,6 +19,7 @@ export class MapsComponent implements AfterViewInit {
   private data1: GroceryData[] = [];
   private data2: GroceryData[] = [];
   private data3: GroceryData[] = [];
+
   private us: any;
 
   constructor() { }
@@ -35,7 +36,7 @@ export class MapsComponent implements AfterViewInit {
   yearCols = []
   columns = []
   selectedCol1: string = 'population';
-  selectedCol2: string = 'count_sales_445110';
+  selectedCol2: string = 'count_emp_445110';
   // selectedCol3: string = 'aden_emp_445110';
   selectedCol3: string = '--';
   columnVal1 = new FormControl(this.selectedCol1);
@@ -50,6 +51,9 @@ export class MapsComponent implements AfterViewInit {
   zoomedId = '';
 
   useBivariate: boolean = true
+
+  avgData1 = {}
+  avgData2 = {}
 
   ngAfterViewInit() {
     this.getData()
@@ -75,7 +79,7 @@ export class MapsComponent implements AfterViewInit {
         let rate2 = Math.log(Number(d[this.selectedCol2]) + 1);
         let rate3 = Math.log(Number(d[this.selectedCol3]) + 1);
 
-        if (!isNaN(rate1) && rate1 !== null && rate1 !== undefined && rate1 !== -1) {
+        if (!isNaN(rate1) && rate1 !== null && rate1 !== undefined && rate1 !== -1 && rate1 !== -Infinity) {
           this.min1 = Math.min(this.min1, rate1)
           this.max1 = Math.max(this.max1, rate1)
           this.data1.push({
@@ -84,7 +88,7 @@ export class MapsComponent implements AfterViewInit {
           } as GroceryData);
         }
 
-        if (!isNaN(rate2) && rate2 !== null && rate2 !== undefined && rate2 !== -1) {
+        if (!isNaN(rate2) && rate2 !== null && rate2 !== undefined && rate2 !== -1 && rate2 !== -Infinity) {
           this.min2 = Math.min(this.min2, rate2)
           this.max2 = Math.max(this.max2, rate2)
           this.data2.push({
@@ -98,7 +102,7 @@ export class MapsComponent implements AfterViewInit {
           }
         }
 
-        if (!isNaN(rate3) && rate3 !== null && rate3 !== undefined && rate3 !== -1) {
+        if (!isNaN(rate3) && rate3 !== null && rate3 !== undefined && rate3 !== -1 && rate3 !== -Infinity) {
           this.min3 = Math.min(this.min3, rate3)
           this.max3 = Math.max(this.max3, rate3)
           this.data3.push({
@@ -112,9 +116,57 @@ export class MapsComponent implements AfterViewInit {
           }
         }
         this.isLoading = false;
+
       }
 
     }
+    console.log("min2: ", this.min2, this.max2)
+
+    for (let i of this.data1) {
+      let id = i['id']
+      let rate = i['rate']
+
+      if (!this.avgData1[id]) {
+        this.avgData1[id] = {
+          rateArr: []
+        }
+      }
+      this.avgData1[id].rateArr.push(rate)
+    }
+
+    for (let i in this.avgData1) {
+      if(this.avgData1[i]['rateArr'].length !== 0){
+        this.avgData1[i]['avg'] = this.avgData1[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData1[i]['rateArr'].length
+      }else{
+        this.avgData1[i]['avg'] = 0
+      }
+      
+    }
+
+
+    for (let i of this.data2) {
+      let id = i['id']
+      let rate = i['rate']
+
+      if (!this.avgData2[id]) {
+        this.avgData2[id] = {
+          rateArr: []
+        }
+      }
+      this.avgData2[id].rateArr.push(rate)
+    }
+
+    for (let i in this.avgData2) {
+      if(this.avgData2[i]['rateArr'].length !== 0){
+        this.avgData2[i]['avg'] = this.avgData2[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData2[i]['rateArr'].length
+      }else{
+        this.avgData2[i]['avg'] = 0
+      }
+      
+    }
+
+    console.log("avg: ", this.avgData2)
+
 
     this.columns = csvData.columns
     this.columns.push('--')
@@ -122,7 +174,6 @@ export class MapsComponent implements AfterViewInit {
 
     this.us = await d3.json('./assets/counties-albers-10m.json');
     const mass = await d3.json('./assets/cb_2023_25_tract_500k.json')
-    console.log("this.us: ", this.us, mass)
     this.createChart();
   }
 
@@ -316,32 +367,57 @@ export class MapsComponent implements AfterViewInit {
         let yRange3 = 2 * ((this.max2 - this.min2) / 3) + this.min2
         let yRange4 = this.max2
 
+        console.log("xrange: ", xRange1, xRange2, xRange3, xRange4)
+        console.log("yrange: ", yRange1, yRange2, yRange3, yRange4)
         g.append("g")
           .selectAll("path")
           .data(topojson.feature(this.us, this.us.objects.counties)['features'])
           .join("path")
+          // .attr("fill", d => {
+          //   if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
+          //     return this.colors[0]
+          //   } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
+          //     return this.colors[1]
+          //   } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
+          //     return this.colors[2]
+          //   } else if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
+          //     return this.colors[3]
+          //   } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
+          //     return this.colors[4]
+          //   } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
+          //     return this.colors[5]
+          //   } else if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
+          //     return this.colors[6]
+          //   } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
+          //     return this.colors[7]
+          //   } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
+          //     return this.colors[8]
+          //   }
+
+          // })  // First layer: color fill
+          // this.avgData1[d['id']]['avg]
           .attr("fill", d => {
-            if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
+            if (this.avgData1[d['id']]['avg'] >= xRange1 && this.avgData1[d['id']]['avg'] < xRange2 && this.avgData2[d['id']]['avg'] >= yRange1 && this.avgData2[d['id']]['avg'] < yRange2) {
               return this.colors[0]
-            } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange2 && this.avgData1[d['id']]['avg'] < xRange3 && this.avgData2[d['id']]['avg'] >= yRange1 && this.avgData2[d['id']]['avg'] < yRange2) {
               return this.colors[1]
-            } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange1 && valuemap2.get(d['id']) < yRange2) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange3 && this.avgData1[d['id']]['avg'] <= xRange4 && this.avgData2[d['id']]['avg'] >= yRange1 && this.avgData2[d['id']]['avg'] < yRange2) {
               return this.colors[2]
-            } else if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange1 && this.avgData1[d['id']]['avg'] < xRange2 && this.avgData2[d['id']]['avg'] >= yRange2 && this.avgData2[d['id']]['avg'] < yRange3) {
               return this.colors[3]
-            } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange2 && this.avgData1[d['id']]['avg'] < xRange3 && this.avgData2[d['id']]['avg'] >= yRange2 && this.avgData2[d['id']]['avg'] < yRange3) {
               return this.colors[4]
-            } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange2 && valuemap2.get(d['id']) < yRange3) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange3 && this.avgData1[d['id']]['avg'] <= xRange4 && this.avgData2[d['id']]['avg'] >= yRange2 && this.avgData2[d['id']]['avg'] < yRange3) {
               return this.colors[5]
-            } else if (valuemap1.get(d['id']) >= xRange1 && valuemap1.get(d['id']) < xRange2 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange1 && this.avgData1[d['id']]['avg'] < xRange2 && this.avgData2[d['id']]['avg'] >= yRange3 && this.avgData2[d['id']]['avg'] <= yRange4) {
               return this.colors[6]
-            } else if (valuemap1.get(d['id']) >= xRange2 && valuemap1.get(d['id']) < xRange3 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange2 && this.avgData1[d['id']]['avg'] < xRange3 && this.avgData2[d['id']]['avg'] >= yRange3 && this.avgData2[d['id']]['avg'] <= yRange4) {
               return this.colors[7]
-            } else if (valuemap1.get(d['id']) >= xRange3 && valuemap1.get(d['id']) <= xRange4 && valuemap2.get(d['id']) >= yRange3 && valuemap2.get(d['id']) <= yRange4) {
+            } else if (this.avgData1[d['id']]['avg'] >= xRange3 && this.avgData1[d['id']]['avg'] <= xRange4 && this.avgData2[d['id']]['avg'] >= yRange3 && this.avgData2[d['id']]['avg'] <= yRange4) {
               return this.colors[8]
             }
 
-          })  // First layer: color fill
+          })
           .on("click", clicked)
           .on("mouseover", function (event, d) {
             d3.select(this).style("cursor", "pointer");  // Change cursor to pointer on hover
@@ -351,7 +427,7 @@ export class MapsComponent implements AfterViewInit {
           })
           .attr("d", path)
           .append("title")
-          .text(d => `${d['properties'].name}, ${statemap.get(d['id'].slice(0, 2))['properties'].name}\n${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}: ${valuemap1.get(d['id'])?.toFixed(5)}\n${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}: ${valuemap2.get(d['id'])?.toFixed(5)}`);
+          .text(d => `${d['properties'].name}, ${statemap.get(d['id'].slice(0, 2))['properties'].name}\n${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}: ${this.avgData1[d['id']]['avg']?.toFixed(5)}\n${this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}: ${this.avgData2[d['id']]['avg']?.toFixed(5)}`);
 
         // Create the grid for the legend
         const k = 24; // size of each cell in the grid
@@ -446,13 +522,12 @@ export class MapsComponent implements AfterViewInit {
     }
 
     this.resetVariables()
-    this.getData()
+    
   }
 
   onChangeBivariate(event) {
     this.useBivariate = event.checked;
     this.resetVariables()
-    this.getData()
   }
 
   resetVariables() {
@@ -462,5 +537,10 @@ export class MapsComponent implements AfterViewInit {
     this.max2 = 0;
     this.min3 = 10000000000;
     this.max3 = 0;
+
+    this.avgData1 = {}
+    this.avgData2 = {}
+
+    this.getData()
   }
 }
