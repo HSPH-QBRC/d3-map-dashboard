@@ -15,6 +15,7 @@ import {MatCardModule} from '@angular/material/card';
 import { StateMapsComponent } from './state-maps/state-maps.component';
 import {MatIconModule} from '@angular/material/icon';
 import { TilesMapComponent } from './tiles-map/tiles-map.component';
+import { TileTestComponent } from './tile-test/tile-test.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { TilesMapComponent } from './tiles-map/tiles-map.component';
     MapsComponent,
     LoadingSpinnerComponent,
     StateMapsComponent,
-    TilesMapComponent
+    TilesMapComponent,
+    TileTestComponent
   ],
   imports: [
     BrowserModule,

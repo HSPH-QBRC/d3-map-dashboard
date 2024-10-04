@@ -120,7 +120,6 @@ export class MapsComponent implements AfterViewInit {
       }
 
     }
-    console.log("min2: ", this.min2, this.max2)
 
     for (let i of this.data1) {
       let id = i['id']
@@ -165,7 +164,6 @@ export class MapsComponent implements AfterViewInit {
       
     }
 
-    console.log("avg: ", this.avgData2)
 
 
     this.columns = csvData.columns
