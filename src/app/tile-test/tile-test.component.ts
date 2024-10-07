@@ -297,6 +297,7 @@ export class TileTestComponent implements AfterViewInit {
     this.columns.push('--')
     this.columns.sort()
 
+    // this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
     this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
     this.topoJsonObjectsKey = Object.keys(this.state.objects)[0]
 
@@ -845,43 +846,43 @@ export class TileTestComponent implements AfterViewInit {
 
     // const tiles = tileGenerator(); // Generate the tiles for the map
 
-    let filteredArr = []
-    let foundIds = {}
-    function filterTiles(xMin, xMax, yMin, yMax) {
-      let xxMin = 10000
-      let xxMax = -10000
-      let yyMin = 10000
-      let yyMax = -10000
-      for (let obj of land['features']) {
-        if (obj['geometry'] && obj['geometry']['coordinates']) {
-          let coords = obj['geometry']['coordinates']
-          for (let xyArr of coords) {
-            for (let xy of xyArr) {
-              let [x, y] = xy
-              if (!isNaN(x)) {
-                xxMin = Math.min(xxMin, x)
-                xxMax = Math.max(xxMax, x)
-              }
-              if (!isNaN(y)) {
-                yyMin = Math.min(yyMin, y)
-                yyMax = Math.max(yyMax, y)
-              }
-              if (x >= xMin && x <= xMax && y >= yMin && y <= yMax) {
-                let id = obj['properties']['OBJECTID']
-                if (foundIds[id] === undefined) {
-                  filteredArr.push(obj)
-                  foundIds[id] = 1
-                }
-              }
-            }
-          }
-        }
+    // let filteredArr = []
+    // let foundIds = {}
+    // function filterTiles(xMin, xMax, yMin, yMax) {
+    //   let xxMin = 10000
+    //   let xxMax = -10000
+    //   let yyMin = 10000
+    //   let yyMax = -10000
+    //   for (let obj of land['features']) {
+    //     if (obj['geometry'] && obj['geometry']['coordinates']) {
+    //       let coords = obj['geometry']['coordinates']
+    //       for (let xyArr of coords) {
+    //         for (let xy of xyArr) {
+    //           let [x, y] = xy
+    //           if (!isNaN(x)) {
+    //             xxMin = Math.min(xxMin, x)
+    //             xxMax = Math.max(xxMax, x)
+    //           }
+    //           if (!isNaN(y)) {
+    //             yyMin = Math.min(yyMin, y)
+    //             yyMax = Math.max(yyMax, y)
+    //           }
+    //           if (x >= xMin && x <= xMax && y >= yMin && y <= yMax) {
+    //             let id = obj['properties']['OBJECTID']
+    //             if (foundIds[id] === undefined) {
+    //               filteredArr.push(obj)
+    //               foundIds[id] = 1
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
 
-      }
-    }
+    //   }
+    // }
 
-    //sets the boundaries for clipping the map
-    filterTiles(-100, -95, 40, 50)
+    // //sets the boundaries for clipping the map
+    // filterTiles(-100, -95, 40, 50)
 
     svg.append('clipPath')
       .attr('id', 'clip-top-left')  // Unique ID for the clip path
@@ -895,8 +896,8 @@ export class TileTestComponent implements AfterViewInit {
     svg.append('g')
       // .attr('clip-path', 'url(#clip-top-left)')
       .selectAll('path')
-      // .data(land['features'])
-      .data(filteredArr)
+      .data(land['features'])
+      // .data(filteredArr)
       .enter().append('path')
       .attr('d', path)
       .attr("class", "tract")
