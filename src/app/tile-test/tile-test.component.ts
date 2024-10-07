@@ -821,17 +821,10 @@ export class TileTestComponent implements AfterViewInit {
         // Render only visible tiles
         this.visibleTiles.forEach(([tileX, tileY]) => {
           const tileId = `tile-${tileX}-${tileY}`;
-          // Create a group for each tile
           tileGroup.append('g')
             .attr('class', 'tile')
             .attr('data-tile-id', tileId)  // Add unique identifier
             .attr('transform', `translate(${tileX * tileSize}, ${tileY * tileSize})`)
-
-          // Render the content for the tile (e.g., draw the relevant parts of your map here)
-          // tileGroup.append('path')  // Replace this with your actual map rendering logic
-          //   .attr('d', path)
-          //   .attr('class', 'tract')
-          //   .attr('fill', 'some color or logic based on your data');
         });
 
         // Apply the transform to the SVG
