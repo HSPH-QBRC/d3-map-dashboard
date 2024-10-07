@@ -16,15 +16,14 @@ interface GroceryData {
   templateUrl: './tile-test.component.html',
   styleUrls: ['./tile-test.component.scss']
 })
-export class TileTestComponent implements AfterViewInit {
 
+export class TileTestComponent implements AfterViewInit {
   private data1: GroceryData[] = [];
   private data2: GroceryData[] = [];
   private data3: GroceryData[] = [];
   private us: any;
   private state: any;
   private nj: any;
-
 
   constructor() { }
 
@@ -183,19 +182,18 @@ export class TileTestComponent implements AfterViewInit {
     "USA 2020 Mainland": [-98.5795, 39.8283],
     "USA 2000 Mainland": [-98.5795, 39.8283]
   };
-  transformOriginX = 0; // X origin for zoom
-  transformOriginY = 0; // Y origin for zoom
+  transformOriginX = 0; 
+  transformOriginY = 0;
   mouseX = 975 / 2;
   mouseY = 600 / 2;
 
-  avgData1 = {}
-  avgData2 = {}
+  avgData1 = {};
+  avgData2 = {};
 
   zoomScale = 1;
 
   async getData() {
-    this.isLoading = true
-    // Load data and TopoJSON files
+    this.isLoading = true;
     const csvData = await d3.csv('assets/nanda_grocery_tract_2003-2017_01P.csv');
 
     if (this.yearCols.length === 0) {
@@ -271,7 +269,6 @@ export class TileTestComponent implements AfterViewInit {
       } else {
         this.avgData1[i]['avg'] = 0
       }
-
     }
 
     for (let i of this.data2) {
@@ -302,11 +299,9 @@ export class TileTestComponent implements AfterViewInit {
 
     this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
     this.topoJsonObjectsKey = Object.keys(this.state.objects)[0]
-    console.log("state: ", this.state)
-
 
     if (this.useBivariate) {
-      this.createNJChart()
+      this.createBivariateChart()
     } else {
       this.createChart();
     }
@@ -587,7 +582,6 @@ export class TileTestComponent implements AfterViewInit {
         // Create the grid for the legend
         const k = 24; // size of each cell in the grid
         const n = 3 // Grid size for the legend
-        // const arrowId = 'arrowMarker';  // Unique ID for the arrow marker
         const legendGroup = g.append('g')
           .attr('font-family', 'sans-serif')
           .attr('font-size', 10)
@@ -703,7 +697,7 @@ export class TileTestComponent implements AfterViewInit {
   }
 
   visibleTiles = []
-  createNJChart() {
+  createBivariateChart() {
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
     let useCountry = fullCountryArr.includes(selectedState) ? true : false;
@@ -712,7 +706,7 @@ export class TileTestComponent implements AfterViewInit {
     const tractName = this.topoJsonObjectsKey
     const width = 975;
     const height = 610;
-    const tileSize = 256; // Standard tile size
+    const tileSize = 256;
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
     const avgData1 = this.avgData1
@@ -858,7 +852,6 @@ export class TileTestComponent implements AfterViewInit {
 
     // const tiles = tileGenerator(); // Generate the tiles for the map
 
-    // console.log("tiles: ", this.visibleTiles)
     // let filteredArr = []
     // let foundIds = {}
     // function filterTiles(xMin, xMax, yMin, yMax) {
@@ -957,7 +950,7 @@ export class TileTestComponent implements AfterViewInit {
           const val1String = avgData1[id] !== undefined ? avgData1[id].avg.toFixed(5) : 'N/A'
           const val2String = avgData2[id] !== undefined ? avgData2[id].avg.toFixed(5) : 'N/A'
           tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-            .style("left", (event.pageX + 10) + "px")  // Position tooltip
+            .style("left", (event.pageX + 10) + "px") 
             .style("top", (event.pageY - 10) + "px");
         }
         else {
@@ -1004,7 +997,6 @@ export class TileTestComponent implements AfterViewInit {
       zoomTo(this.mouseX, this.mouseY, this.zoomScale);
     }
 
-
     const largeStates = ['California', 'Florida', 'Georgia', 'Illinois', 'New York', 'North Carolina', 'Pennsylvania', 'Texas']
 
     svg.on('click', (event) => {
@@ -1015,15 +1007,12 @@ export class TileTestComponent implements AfterViewInit {
       if (largeStates.includes(this.selectedState)) {
         this.zoomScale = this.zoomScale < 5 ? 15 + this.zoomScale : this.zoomScale + 1
       } if (this.fullCountryArr.includes(this.selectedState)) {
-        console.log("using this zoom: ", this.zoomScale)
         this.zoomScale = this.zoomScale < 5 ? 3 + this.zoomScale : this.zoomScale + 1
       } else {
         this.zoomScale = this.zoomScale < 5 ? 3 + this.zoomScale : this.zoomScale + 1
       }
 
-      console.log("zoomscale: ", this.zoomScale, mouseX, mouseY)
       if (this.zoomScale > 2 && this.selectedState === 'USA 2000 Mainland (County)') {
-        console.log("map switched")
         this.selectedState = 'USA 2018 Mainland'
         this.getData()
       }
@@ -1078,7 +1067,6 @@ export class TileTestComponent implements AfterViewInit {
       .attr('stroke', 'black')
       .attr('stroke-width', 1.75);
 
-    // Add labels to the axes
     legendGroup.append('text')
       .attr('font-weight', 'bold')
       .attr('dy', '0.71em')
@@ -1092,8 +1080,6 @@ export class TileTestComponent implements AfterViewInit {
       .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
       .attr('text-anchor', 'middle')
       .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
-
-
   }
 
   applyZoom(direction) {
@@ -1105,7 +1091,7 @@ export class TileTestComponent implements AfterViewInit {
       this.zoomScale--
     }
     if (this.useBivariate) {
-      this.createNJChart()
+      this.createBivariateChart()
     } else {
       this.createChart()
     }
@@ -1113,11 +1099,8 @@ export class TileTestComponent implements AfterViewInit {
 
   preventHistoryNavigation(event: WheelEvent): void {
     const container = event.currentTarget as HTMLElement;
-
-    // Get the maximum horizontal scroll position
     const maxScrollLeft = container.scrollWidth - container.clientWidth;
 
-    // Check if we're at the extreme left or right of the scrollable area
     if ((container.scrollLeft === 0 && event.deltaX < 0) ||
       (container.scrollLeft >= maxScrollLeft && event.deltaX > 0)) {
       // Prevent history navigation if scrolling at the extremes
