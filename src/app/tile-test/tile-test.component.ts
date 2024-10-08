@@ -44,12 +44,10 @@ export class TileTestComponent implements AfterViewInit {
     'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
   selectedCol1: string = 'population';
-  // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
   selectedCol3: string = '--';
-  // selectedState = 'Massachusetts'
-  // selectedState = 'USA 2000 Mainland (County)'
-  selectedState = 'USA 2018 Mainland'
+  selectedState = 'USA 2000 Mainland (County)'
+  // selectedState = 'USA 2018 Mainland'
   columnVal1 = new FormControl(this.selectedCol1);
   columnVal2 = new FormControl(this.selectedCol2);
   columnVal3 = new FormControl(this.selectedCol3);
@@ -69,7 +67,7 @@ export class TileTestComponent implements AfterViewInit {
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
-    "USA 2018 Mainland": "SVI2018_US_mainland_tract.json",
+    "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
     "USA 2000 Mainland (County)": "SVI_2000_US_County.json",
@@ -182,7 +180,7 @@ export class TileTestComponent implements AfterViewInit {
     "USA 2020 Mainland": [-98.5795, 39.8283],
     "USA 2000 Mainland": [-98.5795, 39.8283]
   };
-  transformOriginX = 0; 
+  transformOriginX = 0;
   transformOriginY = 0;
   mouseX = 975 / 2;
   mouseY = 600 / 2;
@@ -251,7 +249,7 @@ export class TileTestComponent implements AfterViewInit {
     }
 
     for (let i of this.data1) {
-
+console.log("i: ", i)
       let id = i['id'].substring(0, 5);
       let rate = i['rate']
 
@@ -887,10 +885,10 @@ export class TileTestComponent implements AfterViewInit {
     svg.append('clipPath')
       .attr('id', 'clip-top-left')  // Unique ID for the clip path
       .append('rect')
-      .attr('x', tileSize * 2)  
-      .attr('y', 0)  
-      .attr('width', tileSize)  
-      .attr('height', tileSize);  
+      .attr('x', tileSize * 2)
+      .attr('y', 0)
+      .attr('width', tileSize)
+      .attr('height', tileSize);
 
     // Add the part of the map corresponding to this tile
     svg.append('g')
@@ -928,7 +926,8 @@ export class TileTestComponent implements AfterViewInit {
         } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
           return this.colors[8];
         } else {
-          return "yellow";
+          // return "yellow";
+          return "white";
         }
       })
       .on("mouseover", function (event, d) {
@@ -945,7 +944,7 @@ export class TileTestComponent implements AfterViewInit {
           const val1String = avgData1[id] !== undefined ? avgData1[id].avg.toFixed(5) : 'N/A'
           const val2String = avgData2[id] !== undefined ? avgData2[id].avg.toFixed(5) : 'N/A'
           tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-            .style("left", (event.pageX + 10) + "px") 
+            .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 10) + "px");
         }
         else {
@@ -1002,13 +1001,16 @@ export class TileTestComponent implements AfterViewInit {
       if (largeStates.includes(this.selectedState)) {
         this.zoomScale = this.zoomScale < 5 ? 15 + this.zoomScale : this.zoomScale + 1
       } if (this.fullCountryArr.includes(this.selectedState)) {
-        this.zoomScale = this.zoomScale < 5 ? 3 + this.zoomScale : this.zoomScale + 1
+        this.zoomScale = this.zoomScale < 5 ? 5 + this.zoomScale : this.zoomScale + 1
       } else {
         this.zoomScale = this.zoomScale < 5 ? 3 + this.zoomScale : this.zoomScale + 1
       }
 
-      if (this.zoomScale > 2 && this.selectedState === 'USA 2000 Mainland (County)') {
+      if (this.zoomScale >= 5 && this.selectedState === 'USA 2000 Mainland (County)') {
         this.selectedState = 'USA 2018 Mainland'
+        this.getData()
+      } else if (this.zoomScale < 5 && this.selectedState === 'USA 2018 Mainland') {
+        this.selectedState = 'USA 2000 Mainland (County)'
         this.getData()
       }
       zoomTo(mouseX, mouseY, this.zoomScale);
@@ -1080,16 +1082,33 @@ export class TileTestComponent implements AfterViewInit {
   applyZoom(direction) {
     // d3.select('.tooltip').style('opacity', 0);
 
+
     if (direction === '+' && this.zoomScale < 30) {
-      this.zoomScale++
-    } else if (direction === '-' && this.zoomScale !== 1) {
-      this.zoomScale--
+      this.zoomScale += 5
+    } else if (direction === '-' && this.zoomScale > 5) {
+      this.zoomScale -= 5
+    } else if (direction === '-' && this.zoomScale <= 5) {
+      this.zoomScale = 1
     }
-    if (this.useBivariate) {
-      this.createBivariateChart()
-    } else {
-      this.createChart()
+
+    if (this.zoomScale >= 5 && this.selectedState === 'USA 2000 Mainland (County)') {
+      this.selectedState = 'USA 2018 Mainland';
+      this.getData()
+    } else if (this.zoomScale <= 9 && this.selectedState === 'USA 2018 Mainland') {
+      this.selectedState = 'USA 2000 Mainland (County)';
+      this.getData();
+    }else{
+      if (this.useBivariate) {
+        this.createBivariateChart()
+      } else {
+        this.createChart()
+      }
     }
+
+    console.log("zoom: ", direction, this.zoomScale)
+
+
+    
   }
 
   preventHistoryNavigation(event: WheelEvent): void {
