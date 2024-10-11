@@ -39,15 +39,16 @@ export class TileTestComponent implements AfterViewInit {
   yearCols = []
   columns = []
 
-  statesArr = ['USA 2000 Mainland (County)', 'USA 2000 Mainland', 'USA 2018 Mainland', 'USA 2020 Mainland', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  statesArr = ['single tile','USA 2000 Mainland (County)', 'USA 2000 Mainland', 'USA 2018 Mainland', 'USA 2020 Mainland', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
     'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana',
     'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
-  fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
+  fullCountryArr = ['single tile', 'USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
   selectedCol1: string = 'population';
   selectedCol2: string = 'count_sales_445110';
   selectedCol3: string = '--';
-  selectedState = 'USA 2000 Mainland (County)'
+  // selectedState = 'USA 2000 Mainland (County)'
   // selectedState = 'USA 2018 Mainland'
+  selectedState = 'single tile'
   columnVal1 = new FormControl(this.selectedCol1);
   columnVal2 = new FormControl(this.selectedCol2);
   columnVal3 = new FormControl(this.selectedCol3);
@@ -67,6 +68,7 @@ export class TileTestComponent implements AfterViewInit {
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
+    "single tile": "tile_id_15_5.json",
     "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
@@ -125,6 +127,7 @@ export class TileTestComponent implements AfterViewInit {
   }
 
   stateCentroids = {
+    "single tile": [0, 0],
     "Alabama": [-86.9023, 32.8067],
     "Alaska": [-152.4044, 61.3707],
     "Arizona": [-111.4312, 34.0489],
@@ -249,7 +252,6 @@ export class TileTestComponent implements AfterViewInit {
     }
 
     for (let i of this.data1) {
-console.log("i: ", i)
       let id = i['id'].substring(0, 5);
       let rate = i['rate']
 
@@ -700,7 +702,7 @@ console.log("i: ", i)
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
     let useCountry = fullCountryArr.includes(selectedState) ? true : false;
-    let useCensusCountry = selectedState === 'USA 2018 Mainland' ? true : false
+    let useCensusCountry = selectedState === 'USA 2018 Mainland'|| selectedState === 'single tile' ? true : false
 
     const tractName = this.topoJsonObjectsKey
     const width = 975;
@@ -900,6 +902,7 @@ console.log("i: ", i)
       .attr('d', path)
       .attr("class", "tract")
       .attr("fill", d => {
+        console.log("d: ", d)
         const fips = selectedState === 'USA 2000 Mainland (County)' ? 'STCOFIPS' : 'FIPS'
 
         const id = this.fullCountryArr.includes(this.selectedState) ? d['properties'][fips] : d['properties']['GEOID'];
@@ -926,8 +929,7 @@ console.log("i: ", i)
         } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
           return this.colors[8];
         } else {
-          // return "yellow";
-          return "white";
+          return "yellow";
         }
       })
       .on("mouseover", function (event, d) {
@@ -936,7 +938,7 @@ console.log("i: ", i)
         tooltip.transition().duration(200).style("opacity", 1);
         const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
         const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
-
+console.log("use country: ", useCountry, useCensusCountry)
         if (useCountry && !useCensusCountry) {
           const id = prop.STCOFIPS
           const state = prop.STATE_NAME
