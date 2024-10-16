@@ -4,7 +4,7 @@ import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
 import fipsToStateJson from '../../assets/data/fipsToState.json'
 import fipsToCountyJson from '../../assets/data/fipsToCounty.json';
-import { tile as d3Tile } from 'd3-tile';
+// import { tile as d3Tile } from 'd3-tile';
 
 interface GroceryData {
   id: string;
@@ -731,12 +731,12 @@ export class TilesMapComponent implements AfterViewInit {
     const path = d3.geoPath().projection(projection);
 
     // **D3 Tile Generation**
-    const tileGenerator = d3Tile()
-      .size([width, height])
-      .scale(projection.scale() * 2 * Math.PI)
-      .translate(projection([longitude, latitude]));
+    // const tileGenerator = d3Tile()
+    //   .size([width, height])
+    //   .scale(projection.scale() * 2 * Math.PI)
+    //   .translate(projection([longitude, latitude]));
 
-    const tiles = tileGenerator(); // Generate the tiles for the map
+    // const tiles = tileGenerator(); // Generate the tiles for the map
 
     // Add the part of the map corresponding to this tile
     svg.append('g')

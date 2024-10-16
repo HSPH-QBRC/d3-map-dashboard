@@ -6,5 +6,9 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'd3-maps';
+  zoomScale = 1
+
+  handleZoomData(data: string) {
+    this.zoomScale = Number(data)
+  }
 }

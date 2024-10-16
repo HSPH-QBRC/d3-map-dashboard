@@ -4,7 +4,6 @@ import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
 import fipsToStateJson from '../../assets/data/fipsToState.json'
 import fipsToCountyJson from '../../assets/data/fipsToCounty.json';
-import { tile as d3Tile } from 'd3-tile';
 
 interface GroceryData {
   id: string;
@@ -333,18 +332,15 @@ export class TileTestOnlyComponent implements AfterViewInit {
   minRow = 100
 
   createTilesChart() {
-
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
     let useCountry = fullCountryArr.includes(selectedState) ? true : false;
     let useCensusCountry = selectedState === 'USA 2018 Mainland' || selectedState === 'single tile' ? true : false
 
-    // const tractName = this.topoJsonObjectsKey
     const width = 975;
     const height = 600;
     const tileWidth = 300;
     const tileHeight = 300;
-    const tileSize = 50;
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
     const avgData1 = this.avgData1
@@ -365,9 +361,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
     const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
     const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
 
-    d3.selectAll(".tooltip").transition().duration(200).style("opacity", 0)
-
-
+    d3.selectAll(".tooltip").transition().duration(100).style("opacity", 0)
 
     const tooltip = d3.select("body")
       .append("div")
@@ -403,9 +397,6 @@ export class TileTestOnlyComponent implements AfterViewInit {
       svg.append("style").text(`.tract:hover {fill: orange }`);
 
       const [longitude, latitude] = this.stateCentroids['single tile'];
-      // const projection = d3.geoTransverseMercator()
-      //   .rotate([-longitude, -latitude])
-      //   .fitExtent([[0, 0], [tileWidth, tileHeight]], land);
 
       //d3.geoEquirectangular keeps its in a rectangular shape for tiling
       const projection = d3.geoEquirectangular()
@@ -456,7 +447,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
         .on("mouseover", function (event, d) {
           const prop = d['properties'];
           d3.select(this).style("cursor", "pointer");
-          tooltip.transition().duration(200).style("opacity", 1);
+          tooltip.transition().duration(100).style("opacity", 1);
           const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
           const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
           if (useCountry && !useCensusCountry) {
@@ -486,30 +477,12 @@ export class TileTestOnlyComponent implements AfterViewInit {
         })
         .on("mouseout", function (event, d) {
           d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-          tooltip.transition().duration(200).style("opacity", 0);  // Hide tooltip
+          tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
         })
         .attr('stroke', 'rgba(119, 119, 119, .7)')
         .attr('stroke-width', .2);
 
-      
-
     })
-
-    // Set up zoom behavior
-    // const zoom = d3.zoom()
-    //   .scaleExtent([1, 100])  // Limit zoom extent
-    //   .on('zoom', (event) => {
-
-    //   });
-
-    // // Function to zoom into a specific point (x, y) with a defined scale
-    // const zoomTo = (x, y, scale) => {
-    //   svg.transition()
-    //     .duration(200)
-    //     .call(zoom.transform, d3.zoomIdentity
-    //       .translate(width / 2 - scale * x, height / 2 - scale * y)  // Adjust translation
-    //       .scale(scale));  // Set zoom scale
-    // };
   }
 
 
@@ -527,6 +500,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
     if (this.zoomScale >= 5 && this.selectedState === 'USA 2000 Mainland (County)') {
       this.selectedState = 'USA 2018 Mainland';
       this.getData()
+  
     } else if (this.zoomScale <= 9 && this.selectedState === 'USA 2018 Mainland') {
       this.selectedState = 'USA 2000 Mainland (County)';
       this.getData();

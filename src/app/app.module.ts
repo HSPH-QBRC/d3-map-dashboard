@@ -17,6 +17,7 @@ import {MatIconModule} from '@angular/material/icon';
 import { TilesMapComponent } from './tiles-map/tiles-map.component';
 import { TileTestComponent } from './tile-test/tile-test.component';
 import { TileTestOnlyComponent } from './tile-test-only/tile-test-only.component';
+import { CountyMapComponent } from './county-map/county-map.component';
 
 @NgModule({
   declarations: [
@@ -26,7 +27,8 @@ import { TileTestOnlyComponent } from './tile-test-only/tile-test-only.component
     StateMapsComponent,
     TilesMapComponent,
     TileTestComponent,
-    TileTestOnlyComponent
+    TileTestOnlyComponent,
+    CountyMapComponent
   ],
   imports: [
     BrowserModule,
