@@ -69,7 +69,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
-    "single tile": "tile_id_15_7.json",
+    "single tile": "tiles/tile_id_15_7.json",
     "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
@@ -195,7 +195,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
   zoomScale = 1;
 
   scatterplotContainerId = '#map'
-  topoJsonObjectsKey = []
+  // topoJsonObjectsKey = []
 
 
   colors = [
@@ -312,7 +312,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
 
     for (let i in this.tileArr) {
       let fileName = this.tileArr[i]
-      this.stateTile[i] = await d3.json(`./assets/maps/${fileName}.json`)
+      this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
 
       let row = Number(fileName.substring(11))
       let col = Number(fileName.substring(8, 10))
@@ -320,12 +320,56 @@ export class TileTestOnlyComponent implements AfterViewInit {
       this.minCol = Math.min(this.minCol, col)
     }
 
+    let minx = 10000000
+    let miny = 10000000
+    let maxx = 0
+    let maxy = 0
+    for (let i in this.stateTile[1]['arcs']) {
+      const [x, y] = this.stateTile[1]['arcs'][i][0]
+      minx = Math.min(x, minx)
+      miny = Math.min(y, miny)
+      maxx = Math.max(x, maxx)
+      maxy = Math.max(y, maxy)
+    }
+
     if (this.useBivariate) {
       this.createTilesChart()
     }
+
+    //create dictionary to match county with tile_id
+    for (let tileObj of this.stateTile) {
+      let tile_id = Object.keys(tileObj['objects'])[0]
+      for (let tile_geometry of tileObj.objects[tile_id]['geometries']) {
+        let county_id = tile_geometry['properties']['STCNTY']
+        if (!this.countyidToTileid[county_id]) {
+          this.countyidToTileid[county_id] = []
+        }
+        if (!this.countyidToTileid[county_id].includes(tile_id)) {
+          this.countyidToTileid[county_id].push(tile_id)
+        }
+
+      }
+    }
+    console.log("dict: ", this.countyidToTileid)
   }
 
-  tileArr = ['tile_id_15_7', 'tile_id_16_7', 'tile_id_17_7', 'tile_id_15_8', 'tile_id_16_8', 'tile_id_17_8']
+  countyidToTileid = {}
+
+  tileArr = [
+    'tile_id_11_5', 'tile_id_11_6', 'tile_id_11_7',
+    'tile_id_12_5','tile_id_12_6','tile_id_12_7','tile_id_12_8',
+    'tile_id_13_5','tile_id_13_6','tile_id_13_7','tile_id_13_8',
+    'tile_id_14_5','tile_id_14_6','tile_id_14_7','tile_id_14_8',
+    'tile_id_15_5','tile_id_15_6','tile_id_15_7','tile_id_15_8',
+    'tile_id_16_5','tile_id_16_6','tile_id_16_7','tile_id_16_8','tile_id_16_9',
+    'tile_id_17_5','tile_id_17_6','tile_id_17_7','tile_id_17_8','tile_id_17_9',
+    'tile_id_18_5','tile_id_18_6','tile_id_18_7','tile_id_18_8','tile_id_18_9',
+    'tile_id_19_5','tile_id_19_6','tile_id_19_7','tile_id_19_8','tile_id_19_9',
+    'tile_id_20_6','tile_id_20_7','tile_id_20_8','tile_id_20_9',
+    'tile_id_21_5','tile_id_21_6','tile_id_21_7','tile_id_21_8',
+    'tile_id_22_5','tile_id_22_6',
+    'tile_id_23_5','tile_id_23_6',
+  ]
 
   visibleTiles = []
   minCol = 1000
@@ -339,8 +383,8 @@ export class TileTestOnlyComponent implements AfterViewInit {
 
     const width = 975;
     const height = 600;
-    const tileWidth = 300;
-    const tileHeight = 300;
+    const tileWidth = 75;
+    const tileHeight = 75;
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
     const avgData1 = this.avgData1
@@ -451,7 +495,6 @@ export class TileTestOnlyComponent implements AfterViewInit {
           const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
           const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
           if (useCountry && !useCensusCountry) {
-            console.log("did it go here?")
             const id = prop.STCOFIPS
             const state = prop.STATE_NAME
             const stateId = prop.STATE_FIPS
@@ -462,16 +505,15 @@ export class TileTestOnlyComponent implements AfterViewInit {
               .style("top", (event.pageY - 10) + "px");
           }
           else {
-            console.log("prop: ", prop.LOCATION, prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1], useCountry)
-            const id = useCountry ? prop['FIPS'] : prop['GEOID']
-            const stateId = useCountry ? prop.ST : prop.STATEFP
-            const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
-            const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1] : prop.NAME
-            const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
-            const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
-            tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-              .style("left", (event.pageX + 10) + "px")  // Position tooltip
-              .style("top", (event.pageY - 10) + "px");
+            // const id = useCountry ? prop['FIPS'] : prop['GEOID']
+            // const stateId = useCountry ? prop.ST : prop.STATEFP
+            // const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+            // const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1] : prop.NAME
+            // const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+            // const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
+            // tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+            //   .style("left", (event.pageX + 10) + "px")  // Position tooltip
+            //   .style("top", (event.pageY - 10) + "px");
           }
 
         })
@@ -500,7 +542,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
     if (this.zoomScale >= 5 && this.selectedState === 'USA 2000 Mainland (County)') {
       this.selectedState = 'USA 2018 Mainland';
       this.getData()
-  
+
     } else if (this.zoomScale <= 9 && this.selectedState === 'USA 2018 Mainland') {
       this.selectedState = 'USA 2000 Mainland (County)';
       this.getData();

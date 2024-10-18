@@ -22,6 +22,7 @@ export class CountyMapComponent implements AfterViewInit {
   private data3: GroceryData[] = [];
   private state: any;
   private stateTile = []
+  private allStateTile = []
 
   constructor() { }
 
@@ -50,7 +51,7 @@ export class CountyMapComponent implements AfterViewInit {
   selectedCol3: string = '--';
   selectedState = 'USA 2000 Mainland (County)'
   // selectedState = 'USA 2018 Mainland'
-  // selectedState = 'single tile'
+  // selectedState = 'Massachusetts'
   columnVal1 = new FormControl(this.selectedCol1);
   columnVal2 = new FormControl(this.selectedCol2);
   columnVal3 = new FormControl(this.selectedCol3);
@@ -73,7 +74,7 @@ export class CountyMapComponent implements AfterViewInit {
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
-    "single tile": "tile_id_15_5.json",
+    "single tile": "tiles/tile_id_15_5.json",
     "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
@@ -198,7 +199,23 @@ export class CountyMapComponent implements AfterViewInit {
 
   zoomScale = 1;
 
-  tileArr = ['tile_id_15_7', 'tile_id_16_7', 'tile_id_17_7', 'tile_id_15_8', 'tile_id_16_8', 'tile_id_17_8']
+  // tileArr = ['tile_id_15_7', 'tile_id_16_7', 'tile_id_17_7', 'tile_id_15_8', 'tile_id_16_8', 'tile_id_17_8']
+  AllTilesArr = [
+    'tile_id_11_5', 'tile_id_11_6', 'tile_id_11_7',
+    'tile_id_12_5', 'tile_id_12_6', 'tile_id_12_7', 'tile_id_12_8',
+    'tile_id_13_5', 'tile_id_13_6', 'tile_id_13_7', 'tile_id_13_8',
+    'tile_id_14_5', 'tile_id_14_6', 'tile_id_14_7', 'tile_id_14_8',
+    'tile_id_15_5', 'tile_id_15_6', 'tile_id_15_7', 'tile_id_15_8',
+    'tile_id_16_5', 'tile_id_16_6', 'tile_id_16_7', 'tile_id_16_8', 'tile_id_16_9',
+    'tile_id_17_5', 'tile_id_17_6', 'tile_id_17_7', 'tile_id_17_8', 'tile_id_17_9',
+    'tile_id_18_5', 'tile_id_18_6', 'tile_id_18_7', 'tile_id_18_8', 'tile_id_18_9',
+    'tile_id_19_5', 'tile_id_19_6', 'tile_id_19_7', 'tile_id_19_8', 'tile_id_19_9',
+    'tile_id_20_6', 'tile_id_20_7', 'tile_id_20_8', 'tile_id_20_9',
+    'tile_id_21_5', 'tile_id_21_6', 'tile_id_21_7', 'tile_id_21_8',
+    'tile_id_22_5', 'tile_id_22_6',
+    'tile_id_23_5', 'tile_id_23_6',
+  ]
+  tileArr = []
 
   async getData() {
     this.isLoading = true;
@@ -311,7 +328,7 @@ export class CountyMapComponent implements AfterViewInit {
 
     for (let i in this.tileArr) {
       let fileName = this.tileArr[i]
-      this.stateTile[i] = await d3.json(`./assets/maps/${fileName}.json`)
+      this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
 
       let row = Number(fileName.substring(11))
       let col = Number(fileName.substring(8, 10))
@@ -319,6 +336,25 @@ export class CountyMapComponent implements AfterViewInit {
       this.minCol = Math.min(this.minCol, col)
     }
 
+    //create dictionary to match county with tile_id
+    for (let i in this.AllTilesArr) {
+      let fileName = this.AllTilesArr[i]
+      this.allStateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
+    }
+
+    for (let tileObj of this.allStateTile) {
+      let tile_id = Object.keys(tileObj['objects'])[0]
+      for (let tile_geometry of tileObj.objects[tile_id]['geometries']) {
+        let county_id = tile_geometry['properties']['STCNTY']
+        if (!this.countyidToTileid[county_id]) {
+          this.countyidToTileid[county_id] = []
+        }
+        if (!this.countyidToTileid[county_id].includes(tile_id)) {
+          this.countyidToTileid[county_id].push(tile_id)
+        }
+
+      }
+    }
 
     if (this.useBivariate) {
       this.createBivariateChart()
@@ -327,7 +363,7 @@ export class CountyMapComponent implements AfterViewInit {
     }
   }
 
-
+  countyidToTileid = {}
 
 
   private createChart(): void {
@@ -710,7 +746,6 @@ export class CountyMapComponent implements AfterViewInit {
     this.zoomScale = 1;
   }
 
-  // visibleTiles = []
   createBivariateChart() {
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
@@ -718,8 +753,9 @@ export class CountyMapComponent implements AfterViewInit {
     let useCensusCountry = selectedState === 'USA 2018 Mainland' || selectedState === 'single tile' ? true : false
 
     const tractName = this.topoJsonObjectsKey
-    const width = 975;
-    const height = 610;
+    const width = this.zoomScale >= 3 ? 600 : 975;
+    const height = this.zoomScale >= 3 ? 600 : 610;
+
 
     const tileWidth = 300;
     const tileHeight = 300;
@@ -739,6 +775,9 @@ export class CountyMapComponent implements AfterViewInit {
     let yRange2 = (this.max2 - this.min2) / 3 + this.min2
     let yRange3 = 2 * ((this.max2 - this.min2) / 3) + this.min2
     let yRange4 = this.max2
+
+    let currZoomScale = this.zoomScale
+    const countyidToTileid = this.countyidToTileid
 
     const fipsToState = this.fipsToState
     const fipsToCounty = this.fipsToCounty
@@ -769,7 +808,7 @@ export class CountyMapComponent implements AfterViewInit {
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
       // .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; translate(${this.newX}px, ${this.newY}px); transform-origin: 0 0;`) //scale is how you control the zoom
-      .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`)
+      .attr("style", `width: auto; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`)
 
     if (this.zoomScale >= 3) {
       this.tileArr.forEach((d, i) => {
@@ -782,11 +821,9 @@ export class CountyMapComponent implements AfterViewInit {
 
         svg.append("style").text(`.tract:hover {fill: orange }`);
 
-        const [longitude, latitude] = this.stateCentroids['single tile'];
-
         //d3.geoEquirectangular keeps its in a rectangular shape for tiling
         const projection = d3.geoEquirectangular()
-          .rotate([-longitude, 0]) // You can remove this if you don't want any rotation
+          .rotate([0, 0]) // You can remove this if you don't want any rotation
           .fitExtent([[0, 0], [tileWidth, tileHeight]], land);
 
         const path = d3.geoPath().projection(projection);
@@ -842,7 +879,7 @@ export class CountyMapComponent implements AfterViewInit {
             const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
             const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
             tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-              .style("left", (event.pageX + 10) + "px") 
+              .style("left", (event.pageX + 10) + "px")
               .style("top", (event.pageY - 10) + "px");
 
           })
@@ -851,7 +888,21 @@ export class CountyMapComponent implements AfterViewInit {
             tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
           })
           .attr('stroke', 'rgba(119, 119, 119, .7)')
-          .attr('stroke-width', .2);
+          .attr('stroke-width', .2)
+          .on("click", (event, d) => {
+            let countyId = d['properties']['STCNTY']
+            let currTile = this.countyidToTileid[countyId]
+            const [mouseX, mouseY] = d3.pointer(event);
+            this.zoomScale += 1
+            zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+
+            if (this.zoomScale === 3) {
+              this.tileArr = currTile
+              this.loadTiles()
+            } else if(this.zoomScale > 3) {
+              this.createBivariateChart()
+            }
+          })
 
       })
     } else {
@@ -949,55 +1000,21 @@ export class CountyMapComponent implements AfterViewInit {
           tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
         })
         .attr('stroke', 'rgba(119, 119, 119, .7)')
-        .attr('stroke-width', .2);
+        .attr('stroke-width', .2)
+        .on("click", (event, d) => {
+          let countyId = d['properties']['STCOFIPS']
+          let currTile = this.countyidToTileid[countyId]
+          const [mouseX, mouseY] = d3.pointer(event);
+          this.zoomScale += 1
+          zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
 
-      // Set up zoom behavior
-      // const zoom = d3.zoom()
-      //   .scaleExtent([1, 100])
-      //   .on('zoom', (event) => {
-      //     svg.attr('transform', event.transform);
-      //   });
-
-      // Function to zoom into a specific point (x, y)
-      // const zoomTo = (x, y, scale) => {
-      //   svg.transition()
-      //     .duration(200)
-      //     .call(zoom.transform, d3.zoomIdentity.translate(width / 2 - scale * x, height / 2 - scale * y).scale(scale));
-      // };
-
-
-
-      // const largeStates = ['California', 'Florida', 'Georgia', 'Illinois', 'New York', 'North Carolina', 'Pennsylvania', 'Texas']
-
+          if (this.zoomScale === 3) {
+            this.tileArr = currTile
+            this.loadTiles()
+          } 
+        })
     }
 
-
-
-    // Function to get the visible tiles based on zoom transform
-    // const getVisibleTiles = (transform) => {
-    //   const visibleTiles = [];
-    //   const { k, x, y } = transform;
-
-    //   // Calculate the visible tile indices based on the current zoom and translate values
-    //   const minTileX = Math.floor((x / k) / tileSize);
-    //   const maxTileX = Math.ceil(((x + width) / k) / tileSize);
-    //   const minTileY = Math.floor((y / k) / tileSize);
-    //   const maxTileY = Math.ceil(((y + height) / k) / tileSize);
-
-    //   // Populate the visible tiles array
-    //   for (let i = minTileX; i < maxTileX; i++) {
-    //     for (let j = minTileY; j < maxTileY; j++) {
-    //       visibleTiles.push([i, j]);
-    //     }
-    //   }
-    //   return visibleTiles;
-    // };
-
-    // **D3 Tile Generation**
-    // const tileGenerator = d3Tile()
-    //   .size([width, height])
-    //   .scale(projection.scale() * 2 * Math.PI)
-    //   .translate(projection([longitude, latitude]))
 
     // Set up zoom behavior
     const zoom = d3.zoom()
@@ -1027,6 +1044,9 @@ export class CountyMapComponent implements AfterViewInit {
 
     // Function to zoom into a specific point (x, y) with a defined scale
     const zoomTo = (x, y, scale) => {
+      this.mouseX = x
+      this.mouseY = y
+      this.zoomScale = scale
       svg.transition()
         .duration(100)
         .call(zoom.transform, d3.zoomIdentity
@@ -1043,13 +1063,13 @@ export class CountyMapComponent implements AfterViewInit {
       .on("mousedown.zoom", null) // Disable zooming by dragging
       .on("dblclick.zoom", null); // Disable zooming by double-clicking
 
-    svg.on('click', (event) => {
-      const [mouseX, mouseY] = d3.pointer(event);
-      this.mouseX = mouseX
-      this.mouseY = mouseY
-      this.zoomScale += 1
-      zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
-    });
+    // svg.on('click', (event) => {
+    //   const [mouseX, mouseY] = d3.pointer(event);
+    //   this.mouseX = mouseX
+    //   this.mouseY = mouseY
+    //   this.zoomScale += 1
+    //   zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+    // });
 
     // Create the grid for the legend
     const k = 24; // size of each cell in the grid 
@@ -1115,11 +1135,13 @@ export class CountyMapComponent implements AfterViewInit {
   }
 
   applyZoom(direction) {
-    if (direction === '+' && this.zoomScale < 10) {
+    if (direction === '+' && this.zoomScale < 30) {
       this.zoomScale += 1
     } else if (direction === '-' && this.zoomScale > 1) {
       this.zoomScale -= 1
     }
+
+    // this.zoomScale += 1
 
     if (this.useBivariate) {
       this.createBivariateChart()
@@ -1137,5 +1159,69 @@ export class CountyMapComponent implements AfterViewInit {
       event.preventDefault();
     }
   }
+
+  async loadTiles() {
+    console.log("loadtiles: ", this.tileArr)
+    // if(this.zoomScale === 3){
+    this.addAdjacentTiles()
+    // }
+
+    for (let i in this.tileArr) {
+      let fileName = this.tileArr[i]
+      this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
+
+      let row = Number(fileName.substring(11))
+      let col = Number(fileName.substring(8, 10))
+      this.minRow = Math.min(this.minRow, row)
+      this.minCol = Math.min(this.minCol, col)
+    }
+
+    if (this.useBivariate) {
+      this.createBivariateChart()
+    } else {
+      this.createChart();
+    }
+
+  }
+
+  //currently this show 2 tiles. commented out code includs 4 adjacent tiles
+  addAdjacentTiles() {
+    this.tileArr.forEach(tile => {
+      const [_, col, row] = tile.match(/tile_id_(\d+)_(\d+)/).map(Number);
+      const tileRight = `tile_id_${col+1}_${row}`;
+      const tileLeft = `tile_id_${col-1}_${row}`;
+      // const tileBelow = `tile_id_${col}_${row+1}`;
+      // const tileAbove = `tile_id_${col}_${row-1}`;
+      // const tileBelowRight = `tile_id_${col + 1}_${row + 1}`;
+      // const tileBelowLeft = `tile_id_${col - 1}_${row + 1}`;
+      // const tileAboveRight = `tile_id_${col + 1}_${row - 1}`;
+      // const tileAboveLeft = `tile_id_${col - 1}_${row - 1}`;
+
+      if (this.AllTilesArr.includes(tileRight)) {
+        if (!this.tileArr.includes(tileRight)) this.tileArr.push(tileRight);
+      } else if (this.AllTilesArr.includes(tileLeft)) {
+        if (!this.tileArr.includes(tileLeft)) this.tileArr.push(tileLeft);
+      }
+
+      // if (this.AllTilesArr.includes(tileBelow)) {
+      //   if (!this.tileArr.includes(tileBelow)) this.tileArr.push(tileBelow);
+
+      //   if (this.AllTilesArr.includes(tileRight) && !this.tileArr.includes(tileBelowRight)) {
+      //     this.tileArr.push(tileBelowRight);
+      //   } else if (this.AllTilesArr.includes(tileLeft) && !this.tileArr.includes(tileBelowLeft)) {
+      //     this.tileArr.push(tileBelowLeft);
+      //   }
+      // } else if (this.AllTilesArr.includes(tileAbove)) {
+      //   if (!this.tileArr.includes(tileAbove)) this.tileArr.push(tileAbove);
+
+      //   if (this.AllTilesArr.includes(tileRight) && !this.tileArr.includes(tileAboveRight)) {
+      //     this.tileArr.push(tileAboveRight);
+      //   } else if (this.AllTilesArr.includes(tileLeft) && !this.tileArr.includes(tileAboveLeft)) {
+      //     this.tileArr.push(tileAboveLeft);
+      //   }
+      // }
+    });
+  }
+
 
 }
