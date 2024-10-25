@@ -312,10 +312,14 @@ export class TileTestOnlyComponent implements AfterViewInit {
 
     for (let i in this.tileArr) {
       let fileName = this.tileArr[i]
-      this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
+      this.stateTile[i] = await d3.json(`./assets/maps/tiles2/${fileName}.json`)
 
-      let row = Number(fileName.substring(11))
-      let col = Number(fileName.substring(8, 10))
+      const parts = this.tileArr[i].split('_');
+      let row = Number(parts[3])
+      let col = Number(parts[2])
+
+      // let row = Number(fileName.substring(11))
+      // let col = Number(fileName.substring(8, 10))
       this.minRow = Math.min(this.minRow, row)
       this.minCol = Math.min(this.minCol, col)
     }
@@ -324,13 +328,16 @@ export class TileTestOnlyComponent implements AfterViewInit {
     let miny = 10000000
     let maxx = 0
     let maxy = 0
-    for (let i in this.stateTile[1]['arcs']) {
-      const [x, y] = this.stateTile[1]['arcs'][i][0]
+
+    for (let i in this.stateTile[0]['arcs']) {
+
+      const [x, y] = this.stateTile[0]['arcs'][i][0]
       minx = Math.min(x, minx)
       miny = Math.min(y, miny)
       maxx = Math.max(x, maxx)
       maxy = Math.max(y, maxy)
     }
+    console.log("minx/miny: ", minx, miny, maxx, maxy)
 
     if (this.useBivariate) {
       this.createTilesChart()
@@ -350,26 +357,43 @@ export class TileTestOnlyComponent implements AfterViewInit {
 
       }
     }
-    console.log("dict: ", this.countyidToTileid)
   }
 
   countyidToTileid = {}
 
+  // tileArr = [
+  //   'tile_id_11_5', 'tile_id_11_6', 'tile_id_11_7',
+  //   'tile_id_12_5', 'tile_id_12_6', 'tile_id_12_7', 'tile_id_12_8',
+  //   'tile_id_13_5', 'tile_id_13_6', 'tile_id_13_7', 'tile_id_13_8',
+  //   'tile_id_14_5', 'tile_id_14_6', 'tile_id_14_7', 'tile_id_14_8',
+  //   'tile_id_15_5', 'tile_id_15_6', 'tile_id_15_7', 'tile_id_15_8',
+  //   'tile_id_16_5', 'tile_id_16_6', 'tile_id_16_7', 'tile_id_16_8', 'tile_id_16_9',
+  //   'tile_id_17_5', 'tile_id_17_6', 'tile_id_17_7', 'tile_id_17_8', 'tile_id_17_9',
+  //   'tile_id_18_5', 'tile_id_18_6', 'tile_id_18_7', 'tile_id_18_8', 'tile_id_18_9',
+  //   'tile_id_19_5', 'tile_id_19_6', 'tile_id_19_7', 'tile_id_19_8', 'tile_id_19_9',
+  //   'tile_id_20_6', 'tile_id_20_7', 'tile_id_20_8', 'tile_id_20_9',
+  //   'tile_id_21_5', 'tile_id_21_6', 'tile_id_21_7', 'tile_id_21_8',
+  //   'tile_id_22_5', 'tile_id_22_6',
+  //   'tile_id_23_5', 'tile_id_23_6',
+  // ]
+
   tileArr = [
-    'tile_id_11_5', 'tile_id_11_6', 'tile_id_11_7',
-    'tile_id_12_5','tile_id_12_6','tile_id_12_7','tile_id_12_8',
-    'tile_id_13_5','tile_id_13_6','tile_id_13_7','tile_id_13_8',
-    'tile_id_14_5','tile_id_14_6','tile_id_14_7','tile_id_14_8',
-    'tile_id_15_5','tile_id_15_6','tile_id_15_7','tile_id_15_8',
-    'tile_id_16_5','tile_id_16_6','tile_id_16_7','tile_id_16_8','tile_id_16_9',
-    'tile_id_17_5','tile_id_17_6','tile_id_17_7','tile_id_17_8','tile_id_17_9',
-    'tile_id_18_5','tile_id_18_6','tile_id_18_7','tile_id_18_8','tile_id_18_9',
-    'tile_id_19_5','tile_id_19_6','tile_id_19_7','tile_id_19_8','tile_id_19_9',
-    'tile_id_20_6','tile_id_20_7','tile_id_20_8','tile_id_20_9',
-    'tile_id_21_5','tile_id_21_6','tile_id_21_7','tile_id_21_8',
-    'tile_id_22_5','tile_id_22_6',
-    'tile_id_23_5','tile_id_23_6',
+    'tile_id_0_0', 'tile_id_0_1', 'tile_id_0_2', 'tile_id_0_3',
+    'tile_id_1_0', 'tile_id_1_1', 'tile_id_1_2', 'tile_id_1_3',
+    'tile_id_2_0', 'tile_id_2_1', 'tile_id_2_2', 'tile_id_2_3',
+    'tile_id_3_0', 'tile_id_3_1', 'tile_id_3_2', 'tile_id_3_3',
+    'tile_id_4_0', 'tile_id_4_1', 'tile_id_4_2', 'tile_id_4_3', 'tile_id_4_4',
+    'tile_id_5_0', 'tile_id_5_1', 'tile_id_5_2', 'tile_id_5_3', 'tile_id_5_4',
+    'tile_id_6_0', 'tile_id_6_1', 'tile_id_6_2', 'tile_id_6_3', 'tile_id_6_4',
+    'tile_id_7_0', 'tile_id_7_1', 'tile_id_7_2', 'tile_id_7_3', 'tile_id_7_4',
+    'tile_id_8_0', 'tile_id_8_1', 'tile_id_8_2', 'tile_id_8_3', 'tile_id_8_4', 'tile_id_8_5',
+    'tile_id_9_0', 'tile_id_9_1', 'tile_id_9_2', 'tile_id_9_3', 'tile_id_9_4',
+    'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
+    'tile_id_11_0', 'tile_id_11_1',
   ]
+
+  fixHeightArr = []
+  fixWidthArr = ['tile_id_0_0', 'tile_id_1_0', 'tile_id_2_0', 'tile_id_3_0', 'tile_id_4_0', 'tile_id_5_0', 'tile_id_6_0', 'tile_id_7_0', 'tile_id_8_0', 'tile_id_9_0', 'tile_id_10_0', 'tile_id_11_0']
 
   visibleTiles = []
   minCol = 1000
@@ -438,21 +462,80 @@ export class TileTestOnlyComponent implements AfterViewInit {
         geometries: this.stateTile[i].objects[tileName].geometries
       });
 
-      svg.append("style").text(`.tract:hover {fill: orange }`);
+      svg.append("style").text(`.tract:hover {fill: orange }`)
 
-      const [longitude, latitude] = this.stateCentroids['single tile'];
+      // const [longitude, latitude] = this.stateCentroids['single tile'];
+
+      let projection = d3.geoEquirectangular()
 
       //d3.geoEquirectangular keeps its in a rectangular shape for tiling
-      const projection = d3.geoEquirectangular()
-        .rotate([-longitude, 0]) // You can remove this if you don't want any rotation
-        .fitExtent([[0, 0], [tileWidth, tileHeight]], land);
+      const projectionHeight = d3.geoEquirectangular()
+        // .rotate([-longitude, 0]) // You can remove this if you don't want any rotation
+        // .fitExtent([[0, 0], [tileWidth, tileHeight]], land);
+        // .fitSize([tileWidth, tileHeight], land)
+        .fitHeight(tileHeight, land)
+
+      const projectionWidth = d3.geoEquirectangular()
+        .fitWidth(tileWidth, land)
+
+      let xAdj = 1
+      let yAdj = 1
+      let xTrans = 0
+      let yTrans = 0
+
+      //To get these values, load tile into www.mapshaper.org. Select 4 corners of the map with selection tool and check it boundaries. The max boundary is 5 degrees
+      let tileAdj = {
+        'tile_id_0_0': [4.5 / 5, 4.4 / 5, 7.5, 10],
+        'tile_id_0_1': [4.4 / 5, 1, 10],
+        'tile_id_0_2': [3.6 / 5, 1, 21],
+        'tile_id_0_3': [0.4 / 5, 0.6 / 5, 70],
+        'tile_id_1_0': [1, 4.4 / 5, 0, 10],
+        'tile_id_1_3': [1, 2.1 / 5],
+        'tile_id_2_0': [1, 4.4 / 5, 0, 10],
+        'tile_id_2_3': [1, 3.3 / 5],
+        'tile_id_3_0': [1, 4.4 / 5, 0, 10],
+        'tile_id_3_3': [1, 3.8 / 5],
+        'tile_id_4_0': [1, 4.4 / 5, 0, 10],
+        'tile_id_4_4': [4.3 / 5, 1.4 / 5, 11, 0],
+        'tile_id_5_0': [1, 4.4 / 5, 0, 10],
+        'tile_id_5_4': [1, 3.8 / 5],
+        'tile_id_6_0': [1, 4.8 / 5, 0, 3.5],
+        'tile_id_6_4': [1, 0.6 / 5],
+        'tile_id_7_0': [1, 3.6 / 5, -0.5, 21],
+        'tile_id_7_4': [1.2 / 5, 0.7 / 5, 0, -0.5],
+        'tile_id_8_0': [3 / 5, 2.2 / 5, -7.5, 42],
+        'tile_id_8_4': [1, 1, 1, 0],
+        'tile_id_8_5': [0.7 / 5, 0.1 / 5],
+        'tile_id_9_0': [0.4 / 5, 0.3 / 5, 70, 71],
+        'tile_id_9_3': [3 / 5, 2.1 / 5, 0, -3],
+        'tile_id_9_4': [0.2 / 5, 2.1 / 5, 0, 33],
+        'tile_id_10_0': [1, 1.7 / 5, 0, 50],
+        'tile_id_10_2': [1 / 5, 1.6 / 5],
+        'tile_id_11_0': [3.3 / 5, 2.9 / 5, 0, 33],
+        'tile_id_11_1': [2.9 / 5, 3.4 / 5],
+      }
+      xAdj = tileAdj[tileName] ? tileAdj[tileName][0] : 1
+      yAdj = tileAdj[tileName] ? tileAdj[tileName][1] : 1
+      xTrans = tileAdj[tileName] && tileAdj[tileName][2] ? tileAdj[tileName][2] : 0
+      yTrans = tileAdj[tileName] && tileAdj[tileName][3] ? tileAdj[tileName][3] : 0
+
+
+      const projectionFitExtent = d3.geoEquirectangular()
+        .fitExtent([[0, 0], [tileWidth * xAdj, tileHeight * yAdj]], land)
+
+
+      projection = projectionFitExtent
+
 
       const path = d3.geoPath().projection(projection);
 
-      let row = Number(this.tileArr[i].substring(11))
-      let col = Number(this.tileArr[i].substring(8, 10))
+      const parts = this.tileArr[i].split('_');
+      let row = Number(parts[3])
+      let col = Number(parts[2])
+
       svg.append('g')
-        .attr('transform', `translate(${(col - this.minCol) * tileWidth}, ${(row - this.minRow) * tileHeight})`)
+        .attr("class", `tile_${col}_${row}`)
+        .attr('transform', `translate(${(col - this.minCol) * tileWidth + xTrans} , ${(row - this.minRow) * tileHeight + yTrans})`)
         .selectAll('path')
         .data(land['features'])
         .enter().append('path')
@@ -489,7 +572,9 @@ export class TileTestOnlyComponent implements AfterViewInit {
           }
         })
         .on("mouseover", function (event, d) {
+
           const prop = d['properties'];
+          console.log("prop: ", prop.tile_id)
           d3.select(this).style("cursor", "pointer");
           tooltip.transition().duration(100).style("opacity", 1);
           const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
@@ -523,6 +608,12 @@ export class TileTestOnlyComponent implements AfterViewInit {
         })
         .attr('stroke', 'rgba(119, 119, 119, .7)')
         .attr('stroke-width', .2);
+
+      // const parentGroup = svg.select(`g.tile_${col}_${row}`).node() as SVGGraphicsElement;
+      // const bbox = parentGroup.getBBox();
+
+      // console.log(`Width: ${bbox.width}, Height: ${bbox.height}`, tileName);
+
 
     })
   }

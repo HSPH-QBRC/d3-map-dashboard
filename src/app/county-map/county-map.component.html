@@ -46,7 +46,7 @@
     
 <div class="mapContainer"(wheel)="preventHistoryNavigation($event)">
     <div class="zoomButtonContainer" [style.left.px]="20">
-        <button class="zoomButton" matTooltip="Zoom In" (click)="applyZoom('+')" [disabled]="zoomScale >= 30">
+        <button class="zoomButton" matTooltip="Zoom In" (click)="applyZoom('+')" [disabled]="zoomScale >= maxZoom">
             <mat-icon>add</mat-icon>
         </button>
         <button class="zoomButton" matTooltip="Zoom Out" (click)="applyZoom('-')" [disabled]="zoomScale === 1">

@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, EventEmitter, Output } from '@angular/core';
+import { Component, AfterViewInit } from '@angular/core';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
@@ -16,7 +16,6 @@ interface GroceryData {
   styleUrls: ['./county-map.component.scss']
 })
 export class CountyMapComponent implements AfterViewInit {
-  // @Output() zoomLevelEmitter: EventEmitter<string> = new EventEmitter<string>();
   private data1: GroceryData[] = [];
   private data2: GroceryData[] = [];
   private data3: GroceryData[] = [];
@@ -41,10 +40,10 @@ export class CountyMapComponent implements AfterViewInit {
   yearCols = []
   columns = []
 
-  statesArr = ['single tile', 'USA 2000 Mainland (County)', 'USA 2000 Mainland', 'USA 2018 Mainland', 'USA 2020 Mainland', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  statesArr = ['USA 2000 Mainland (County)', 'USA 2000 Mainland', 'USA 2018 Mainland', 'USA 2020 Mainland', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
     'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana',
     'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
-  fullCountryArr = ['single tile', 'USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
+  fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
   selectedCol1: string = 'population';
   // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
@@ -66,6 +65,8 @@ export class CountyMapComponent implements AfterViewInit {
   minCol = 1000
   minRow = 100
 
+  maxZoom = 20
+
   ngAfterViewInit() {
     this.getData()
   }
@@ -74,7 +75,6 @@ export class CountyMapComponent implements AfterViewInit {
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
-    "single tile": "tiles/tile_id_15_5.json",
     "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
@@ -197,23 +197,37 @@ export class CountyMapComponent implements AfterViewInit {
   avgData1 = {};
   avgData2 = {};
 
-  zoomScale = 1;
+  zoomScale = 5;
 
   // tileArr = ['tile_id_15_7', 'tile_id_16_7', 'tile_id_17_7', 'tile_id_15_8', 'tile_id_16_8', 'tile_id_17_8']
+  // AllTilesArr = [
+  //   'tile_id_11_5', 'tile_id_11_6', 'tile_id_11_7',
+  //   'tile_id_12_5', 'tile_id_12_6', 'tile_id_12_7', 'tile_id_12_8',
+  //   'tile_id_13_5', 'tile_id_13_6', 'tile_id_13_7', 'tile_id_13_8',
+  //   'tile_id_14_5', 'tile_id_14_6', 'tile_id_14_7', 'tile_id_14_8',
+  //   'tile_id_15_5', 'tile_id_15_6', 'tile_id_15_7', 'tile_id_15_8',
+  //   'tile_id_16_5', 'tile_id_16_6', 'tile_id_16_7', 'tile_id_16_8', 'tile_id_16_9',
+  //   'tile_id_17_5', 'tile_id_17_6', 'tile_id_17_7', 'tile_id_17_8', 'tile_id_17_9',
+  //   'tile_id_18_5', 'tile_id_18_6', 'tile_id_18_7', 'tile_id_18_8', 'tile_id_18_9',
+  //   'tile_id_19_5', 'tile_id_19_6', 'tile_id_19_7', 'tile_id_19_8', 'tile_id_19_9',
+  //   'tile_id_20_6', 'tile_id_20_7', 'tile_id_20_8', 'tile_id_20_9',
+  //   'tile_id_21_5', 'tile_id_21_6', 'tile_id_21_7', 'tile_id_21_8',
+  //   'tile_id_22_5', 'tile_id_22_6',
+  //   'tile_id_23_5', 'tile_id_23_6',
+  // ]
   AllTilesArr = [
-    'tile_id_11_5', 'tile_id_11_6', 'tile_id_11_7',
-    'tile_id_12_5', 'tile_id_12_6', 'tile_id_12_7', 'tile_id_12_8',
-    'tile_id_13_5', 'tile_id_13_6', 'tile_id_13_7', 'tile_id_13_8',
-    'tile_id_14_5', 'tile_id_14_6', 'tile_id_14_7', 'tile_id_14_8',
-    'tile_id_15_5', 'tile_id_15_6', 'tile_id_15_7', 'tile_id_15_8',
-    'tile_id_16_5', 'tile_id_16_6', 'tile_id_16_7', 'tile_id_16_8', 'tile_id_16_9',
-    'tile_id_17_5', 'tile_id_17_6', 'tile_id_17_7', 'tile_id_17_8', 'tile_id_17_9',
-    'tile_id_18_5', 'tile_id_18_6', 'tile_id_18_7', 'tile_id_18_8', 'tile_id_18_9',
-    'tile_id_19_5', 'tile_id_19_6', 'tile_id_19_7', 'tile_id_19_8', 'tile_id_19_9',
-    'tile_id_20_6', 'tile_id_20_7', 'tile_id_20_8', 'tile_id_20_9',
-    'tile_id_21_5', 'tile_id_21_6', 'tile_id_21_7', 'tile_id_21_8',
-    'tile_id_22_5', 'tile_id_22_6',
-    'tile_id_23_5', 'tile_id_23_6',
+    'tile_id_0_0', 'tile_id_0_1', 'tile_id_0_2', 'tile_id_0_3',
+    'tile_id_1_0', 'tile_id_1_1', 'tile_id_1_2', 'tile_id_1_3',
+    'tile_id_2_0', 'tile_id_2_1', 'tile_id_2_2', 'tile_id_2_3',
+    'tile_id_3_0', 'tile_id_3_1', 'tile_id_3_2', 'tile_id_3_3',
+    'tile_id_4_0', 'tile_id_4_1', 'tile_id_4_2', 'tile_id_4_3', 'tile_id_4_4',
+    'tile_id_5_0', 'tile_id_5_1', 'tile_id_5_2', 'tile_id_5_3', 'tile_id_5_4',
+    'tile_id_6_0', 'tile_id_6_1', 'tile_id_6_2', 'tile_id_6_3', 'tile_id_6_4',
+    'tile_id_7_0', 'tile_id_7_1', 'tile_id_7_2', 'tile_id_7_3', 'tile_id_7_4',
+    'tile_id_8_0', 'tile_id_8_1', 'tile_id_8_2', 'tile_id_8_3', 'tile_id_8_4', 'tile_id_8_5',
+    'tile_id_9_0', 'tile_id_9_1', 'tile_id_9_2', 'tile_id_9_3', 'tile_id_9_4',
+    'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
+    'tile_id_11_0', 'tile_id_11_1',
   ]
   tileArr = []
 
@@ -326,20 +340,20 @@ export class CountyMapComponent implements AfterViewInit {
     this.topoJsonObjectsKey = Object.keys(this.state.objects)[0]
 
 
-    for (let i in this.tileArr) {
-      let fileName = this.tileArr[i]
-      this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
+    // for (let i in this.tileArr) {
+    //   let fileName = this.tileArr[i]
+    //   this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
 
-      let row = Number(fileName.substring(11))
-      let col = Number(fileName.substring(8, 10))
-      this.minRow = Math.min(this.minRow, row)
-      this.minCol = Math.min(this.minCol, col)
-    }
+    //   let row = Number(fileName.substring(11))
+    //   let col = Number(fileName.substring(8, 10))
+    //   this.minRow = Math.min(this.minRow, row)
+    //   this.minCol = Math.min(this.minCol, col)
+    // }
 
     //create dictionary to match county with tile_id
     for (let i in this.AllTilesArr) {
       let fileName = this.AllTilesArr[i]
-      this.allStateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
+      this.allStateTile[i] = await d3.json(`./assets/maps/tiles2/${fileName}.json`)
     }
 
     for (let tileObj of this.allStateTile) {
@@ -752,13 +766,12 @@ export class CountyMapComponent implements AfterViewInit {
     let useCountry = fullCountryArr.includes(selectedState) ? true : false;
     let useCensusCountry = selectedState === 'USA 2018 Mainland' || selectedState === 'single tile' ? true : false
 
-    const tractName = this.topoJsonObjectsKey
-    const width = this.zoomScale >= 3 ? 600 : 975;
-    const height = this.zoomScale >= 3 ? 600 : 610;
-
-
     const tileWidth = 300;
     const tileHeight = 300;
+
+    const tractName = this.topoJsonObjectsKey
+    const width = this.zoomScale >= 6 ? tileWidth * 2 : 975;
+    const height = this.zoomScale >= 6 ? tileHeight : 610;
 
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
@@ -808,9 +821,43 @@ export class CountyMapComponent implements AfterViewInit {
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
       // .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; translate(${this.newX}px, ${this.newY}px); transform-origin: 0 0;`) //scale is how you control the zoom
-      .attr("style", `width: auto; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`)
+      // .attr("style", `width: auto; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`)
+      .attr("style", `width: auto; height: auto; transform-origin: 0 0;`)
 
-    if (this.zoomScale >= 3) {
+    // Set up zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([1, 20])  // Limit zoom extent
+      .on('zoom', (event) => {
+        const transform = event.transform;
+
+        // Apply the transform to the SVG
+        svg.attr('transform', transform.toString());
+      });
+
+    // Function to zoom into a specific point (x, y) with a defined scale
+    const zoomTo = (x, y, scale) => {
+      this.mouseX = x
+      this.mouseY = y
+      this.zoomScale = scale
+      svg.transition()
+        .duration(50)
+        .call(zoom.transform, d3.zoomIdentity
+          .translate(width / 2 - (scale * x) * 1.8, height / 2 - (scale * y) * 1.2)  // Adjust translation
+          .scale(scale));  // Set zoom scale
+
+    };
+
+    //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
+    //think of a better way to handle this later.
+    //also add in mouseX and mouseY to center on the zoom spot
+    if (this.zoomScale === 6) {
+      svg.transition()
+        .duration(200)
+        .call(zoom.transform, d3.zoomIdentity
+          .scale(this.zoomScale));
+    }
+
+    if (this.zoomScale >= 6) {
       this.tileArr.forEach((d, i) => {
         let tileName = d;
 
@@ -823,13 +870,14 @@ export class CountyMapComponent implements AfterViewInit {
 
         //d3.geoEquirectangular keeps its in a rectangular shape for tiling
         const projection = d3.geoEquirectangular()
-          .rotate([0, 0]) // You can remove this if you don't want any rotation
-          .fitExtent([[0, 0], [tileWidth, tileHeight]], land);
+          // .rotate([0, 0]) // You can remove this if you don't want any rotation
+          .fitExtent([[0, 0], [tileWidth, tileHeight]], land)
 
         const path = d3.geoPath().projection(projection);
 
-        let row = Number(this.tileArr[i].substring(11))
-        let col = Number(this.tileArr[i].substring(8, 10))
+        const parts = this.tileArr[i].split('_');
+        let row = Number(parts[3])
+        let col = Number(parts[2])
         svg.append('g')
           .attr('transform', `translate(${(col - this.minCol) * tileWidth}, ${(row - this.minRow) * tileHeight})`)
           .selectAll('path')
@@ -881,27 +929,27 @@ export class CountyMapComponent implements AfterViewInit {
             tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
               .style("left", (event.pageX + 10) + "px")
               .style("top", (event.pageY - 10) + "px");
-
           })
           .on("mouseout", function (event, d) {
             d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
             tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
           })
           .attr('stroke', 'rgba(119, 119, 119, .7)')
-          .attr('stroke-width', .2)
+          .attr('stroke-width', .05)
           .on("click", (event, d) => {
             let countyId = d['properties']['STCNTY']
             let currTile = this.countyidToTileid[countyId]
             const [mouseX, mouseY] = d3.pointer(event);
-            this.zoomScale += 1
-            zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
 
-            if (this.zoomScale === 3) {
-              this.tileArr = currTile
-              this.loadTiles()
-            } else if(this.zoomScale > 3) {
-              this.createBivariateChart()
+            if (this.zoomScale <= this.maxZoom) {
+              this.zoomScale += 1
+              console.log("zoom is called: ", this.zoomScale, mouseX, mouseY)
+              zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+
+              // this.createBivariateChart()
+
             }
+
           })
 
       })
@@ -1002,74 +1050,37 @@ export class CountyMapComponent implements AfterViewInit {
         .attr('stroke', 'rgba(119, 119, 119, .7)')
         .attr('stroke-width', .2)
         .on("click", (event, d) => {
+          console.log("clicked here: ", this.zoomScale)
           let countyId = d['properties']['STCOFIPS']
           let currTile = this.countyidToTileid[countyId]
           const [mouseX, mouseY] = d3.pointer(event);
-          this.zoomScale += 1
-          zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
 
-          if (this.zoomScale === 3) {
-            this.tileArr = currTile
-            this.loadTiles()
-          } 
+          if (this.zoomScale <= this.maxZoom) {
+            this.zoomScale += 1
+
+
+            if (this.zoomScale === 6) {
+              this.tileArr = currTile
+              this.loadTiles()
+
+            } else {
+              zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+            }
+          }
         })
     }
 
 
-    // Set up zoom behavior
-    const zoom = d3.zoom()
-      .scaleExtent([1, 100])  // Limit zoom extent
-      .on('zoom', (event) => {
-        const transform = event.transform;
 
-        // svg.select('.tiles').remove();
 
-        // const tileGroup = svg.append('g').attr('class', 'tiles');
 
-        // Get the currently visible tiles
-        // this.visibleTiles = getVisibleTiles(transform);
 
-        // // Render only visible tiles
-        // this.visibleTiles.forEach(([tileX, tileY]) => {
-        //   const tileId = `tile-${tileX}-${tileY}`;
-        //   tileGroup.append('g')
-        //     .attr('class', 'tile')
-        //     .attr('data-tile-id', tileId)  // Add unique identifier
-        //     .attr('transform', `translate(${tileX * tileSize}, ${tileY * tileSize})`)
-        // });
 
-        // Apply the transform to the SVG
-        svg.attr('transform', transform.toString());
-      });
-
-    // Function to zoom into a specific point (x, y) with a defined scale
-    const zoomTo = (x, y, scale) => {
-      this.mouseX = x
-      this.mouseY = y
-      this.zoomScale = scale
-      svg.transition()
-        .duration(100)
-        .call(zoom.transform, d3.zoomIdentity
-          .translate(width / 2 - (scale * x) * 1.8, height / 2 - (scale * y) * 1.2)  // Adjust translation
-          .scale(scale));  // Set zoom scale
-
-      if (this.zoomScale === 3) {
-        this.createBivariateChart()
-      }
-    };
 
     svg.call(zoom)
       .on("wheel.zoom", null)     // Disable zooming with the mouse wheel
       .on("mousedown.zoom", null) // Disable zooming by dragging
       .on("dblclick.zoom", null); // Disable zooming by double-clicking
-
-    // svg.on('click', (event) => {
-    //   const [mouseX, mouseY] = d3.pointer(event);
-    //   this.mouseX = mouseX
-    //   this.mouseY = mouseY
-    //   this.zoomScale += 1
-    //   zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
-    // });
 
     // Create the grid for the legend
     const k = 24; // size of each cell in the grid 
@@ -1135,13 +1146,12 @@ export class CountyMapComponent implements AfterViewInit {
   }
 
   applyZoom(direction) {
-    if (direction === '+' && this.zoomScale < 30) {
+    if (direction === '+' && this.zoomScale < this.maxZoom) {
       this.zoomScale += 1
     } else if (direction === '-' && this.zoomScale > 1) {
       this.zoomScale -= 1
     }
 
-    // this.zoomScale += 1
 
     if (this.useBivariate) {
       this.createBivariateChart()
@@ -1161,17 +1171,18 @@ export class CountyMapComponent implements AfterViewInit {
   }
 
   async loadTiles() {
-    console.log("loadtiles: ", this.tileArr)
-    // if(this.zoomScale === 3){
-    this.addAdjacentTiles()
-    // }
+
+    if (this.tileArr.length < 2) {
+      this.addAdjacentTiles()
+    }
 
     for (let i in this.tileArr) {
       let fileName = this.tileArr[i]
-      this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
+      this.stateTile[i] = await d3.json(`./assets/maps/tiles2/${fileName}.json`)
 
-      let row = Number(fileName.substring(11))
-      let col = Number(fileName.substring(8, 10))
+      const parts = fileName.split('_');
+      let row = Number(parts[3])
+      let col = Number(parts[2])
       this.minRow = Math.min(this.minRow, row)
       this.minCol = Math.min(this.minCol, col)
     }
@@ -1188,8 +1199,8 @@ export class CountyMapComponent implements AfterViewInit {
   addAdjacentTiles() {
     this.tileArr.forEach(tile => {
       const [_, col, row] = tile.match(/tile_id_(\d+)_(\d+)/).map(Number);
-      const tileRight = `tile_id_${col+1}_${row}`;
-      const tileLeft = `tile_id_${col-1}_${row}`;
+      const tileRight = `tile_id_${col + 1}_${row}`;
+      const tileLeft = `tile_id_${col - 1}_${row}`;
       // const tileBelow = `tile_id_${col}_${row+1}`;
       // const tileAbove = `tile_id_${col}_${row-1}`;
       // const tileBelowRight = `tile_id_${col + 1}_${row + 1}`;
