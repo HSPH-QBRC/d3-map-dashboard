@@ -62,8 +62,8 @@ export class CountyMapComponent implements AfterViewInit {
 
   useBivariate: boolean = true
 
-  minCol = 1000
-  minRow = 100
+  minCol = Infinity
+  minRow = Infinity
 
   maxZoom = 20
 
@@ -75,10 +75,12 @@ export class CountyMapComponent implements AfterViewInit {
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
+    // "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
     "USA 2000 Mainland (County)": "SVI_2000_US_County.json",
+    // "USA 2000 Mainland (County)": "SVI_2000_US_County_new2.json",
     "Alabama": "cb_2017_01_tract_500k.json",
     "Alaska": "cb_2017_02_tract_500k.json",
     "Arizona": "cb_2017_04_tract_500k.json",
@@ -133,7 +135,6 @@ export class CountyMapComponent implements AfterViewInit {
   }
 
   stateCentroids = {
-    "single tile": [0, 0],
     "Alabama": [-86.9023, 32.8067],
     "Alaska": [-152.4044, 61.3707],
     "Arizona": [-111.4312, 34.0489],
@@ -196,25 +197,10 @@ export class CountyMapComponent implements AfterViewInit {
 
   avgData1 = {};
   avgData2 = {};
+  avgData3 = {};
 
-  zoomScale = 5;
+  zoomScale = 1;
 
-  // tileArr = ['tile_id_15_7', 'tile_id_16_7', 'tile_id_17_7', 'tile_id_15_8', 'tile_id_16_8', 'tile_id_17_8']
-  // AllTilesArr = [
-  //   'tile_id_11_5', 'tile_id_11_6', 'tile_id_11_7',
-  //   'tile_id_12_5', 'tile_id_12_6', 'tile_id_12_7', 'tile_id_12_8',
-  //   'tile_id_13_5', 'tile_id_13_6', 'tile_id_13_7', 'tile_id_13_8',
-  //   'tile_id_14_5', 'tile_id_14_6', 'tile_id_14_7', 'tile_id_14_8',
-  //   'tile_id_15_5', 'tile_id_15_6', 'tile_id_15_7', 'tile_id_15_8',
-  //   'tile_id_16_5', 'tile_id_16_6', 'tile_id_16_7', 'tile_id_16_8', 'tile_id_16_9',
-  //   'tile_id_17_5', 'tile_id_17_6', 'tile_id_17_7', 'tile_id_17_8', 'tile_id_17_9',
-  //   'tile_id_18_5', 'tile_id_18_6', 'tile_id_18_7', 'tile_id_18_8', 'tile_id_18_9',
-  //   'tile_id_19_5', 'tile_id_19_6', 'tile_id_19_7', 'tile_id_19_8', 'tile_id_19_9',
-  //   'tile_id_20_6', 'tile_id_20_7', 'tile_id_20_8', 'tile_id_20_9',
-  //   'tile_id_21_5', 'tile_id_21_6', 'tile_id_21_7', 'tile_id_21_8',
-  //   'tile_id_22_5', 'tile_id_22_6',
-  //   'tile_id_23_5', 'tile_id_23_6',
-  // ]
   AllTilesArr = [
     'tile_id_0_0', 'tile_id_0_1', 'tile_id_0_2', 'tile_id_0_3',
     'tile_id_1_0', 'tile_id_1_1', 'tile_id_1_2', 'tile_id_1_3',
@@ -229,7 +215,56 @@ export class CountyMapComponent implements AfterViewInit {
     'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
     'tile_id_11_0', 'tile_id_11_1',
   ]
-  tileArr = []
+
+  tileArr = [
+    'tile_id_0_0', 'tile_id_0_1', 'tile_id_0_2', 'tile_id_0_3',
+    'tile_id_1_0', 'tile_id_1_1', 'tile_id_1_2', 'tile_id_1_3',
+    'tile_id_2_0', 'tile_id_2_1', 'tile_id_2_2', 'tile_id_2_3',
+    'tile_id_3_0', 'tile_id_3_1', 'tile_id_3_2', 'tile_id_3_3',
+    'tile_id_4_0', 'tile_id_4_1', 'tile_id_4_2', 'tile_id_4_3', 'tile_id_4_4',
+    'tile_id_5_0', 'tile_id_5_1', 'tile_id_5_2', 'tile_id_5_3', 'tile_id_5_4',
+    'tile_id_6_0', 'tile_id_6_1', 'tile_id_6_2', 'tile_id_6_3', 'tile_id_6_4',
+    'tile_id_7_0', 'tile_id_7_1', 'tile_id_7_2', 'tile_id_7_3', 'tile_id_7_4',
+    'tile_id_8_0', 'tile_id_8_1', 'tile_id_8_2', 'tile_id_8_3', 'tile_id_8_4', 'tile_id_8_5',
+    'tile_id_9_0', 'tile_id_9_1', 'tile_id_9_2', 'tile_id_9_3', 'tile_id_9_4',
+    'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
+    'tile_id_11_0', 'tile_id_11_1',
+  ]
+
+  tileAdj = {
+    'tile_id_0_0': [4.5 / 5, 4.4 / 5, 7.5, 10],
+    'tile_id_0_1': [4.4 / 5, 1, 10],
+    'tile_id_0_2': [3.6 / 5, 1, 21],
+    'tile_id_0_3': [0.4 / 5, 0.6 / 5, 70],
+    'tile_id_1_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_1_3': [1, 2.1 / 5],
+    'tile_id_2_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_2_3': [1, 3.3 / 5],
+    'tile_id_3_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_3_3': [1, 3.8 / 5],
+    'tile_id_4_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_4_4': [4.3 / 5, 1.4 / 5, 11],
+    // 'tile_id_4_4': [4.3 / 5, 1.4 / 5, 11, 0],
+    'tile_id_5_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_5_4': [1, 3.8 / 5],
+    'tile_id_6_0': [1, 4.8 / 5, 0, 3.5],
+    'tile_id_6_4': [1, 0.6 / 5],
+    'tile_id_7_0': [1, 3.6 / 5, -0.5, 21],
+    // 'tile_id_7_4': [1.2 / 5, 0.7 / 5, 0, -0.5],
+    'tile_id_7_4': [1.2 / 5, 0.7 / 5, 0, 0],
+    // 'tile_id_8_0': [3 / 5, 2.2 / 5, -7.5, 42],
+    'tile_id_8_0': [3 / 5, 2.2 / 5, 0, 42],
+    'tile_id_8_4': [1, 1, 1, 0],
+    'tile_id_8_5': [0.7 / 5, 0.1 / 5],
+    'tile_id_9_0': [0.4 / 5, 0.3 / 5, 70, 71],
+    // 'tile_id_9_3': [3 / 5, 2.1 / 5, 0, -3],
+    'tile_id_9_3': [3 / 5, 2.1 / 5],
+    'tile_id_9_4': [0.2 / 5, 2.1 / 5, 0, 33],
+    'tile_id_10_0': [1, 1.7 / 5, 0, 50],
+    'tile_id_10_2': [1 / 5, 1.6 / 5],
+    'tile_id_11_0': [3.3 / 5, 2.9 / 5, 0, 33],
+    'tile_id_11_1': [2.9 / 5, 3.4 / 5],
+  }
 
   async getData() {
     this.isLoading = true;
@@ -329,26 +364,36 @@ export class CountyMapComponent implements AfterViewInit {
       }
 
     }
+
+    for (let i of this.data3) {
+      let id = i['id'].substring(0, 5);
+      let rate = i['rate']
+
+      if (!this.avgData3[id]) {
+        this.avgData3[id] = {
+          rateArr: []
+        }
+      }
+      this.avgData3[id].rateArr.push(rate)
+    }
+
+    for (let i in this.avgData3) {
+      if (this.avgData3[i]['rateArr'].length !== 0) {
+        this.avgData3[i]['avg'] = this.avgData3[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData3[i]['rateArr'].length
+      } else {
+        this.avgData3[i]['avg'] = 0
+      }
+    }
+
     this.isLoading = false;
 
     this.columns = csvData.columns
     this.columns.push('--')
     this.columns.sort()
 
-    // this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
     this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
+
     this.topoJsonObjectsKey = Object.keys(this.state.objects)[0]
-
-
-    // for (let i in this.tileArr) {
-    //   let fileName = this.tileArr[i]
-    //   this.stateTile[i] = await d3.json(`./assets/maps/tiles/${fileName}.json`)
-
-    //   let row = Number(fileName.substring(11))
-    //   let col = Number(fileName.substring(8, 10))
-    //   this.minRow = Math.min(this.minRow, row)
-    //   this.minCol = Math.min(this.minCol, col)
-    // }
 
     //create dictionary to match county with tile_id
     for (let i in this.AllTilesArr) {
@@ -370,352 +415,73 @@ export class CountyMapComponent implements AfterViewInit {
       }
     }
 
-    if (this.useBivariate) {
-      this.createBivariateChart()
-    } else {
-      this.createChart();
+    for (let i in this.tileArr) {
+      let fileName = this.tileArr[i]
+      this.stateTile[i] = await d3.json(`./assets/maps/tiles2/${fileName}.json`)
+
+      const parts = this.tileArr[i].split('_');
+      let row = Number(parts[3])
+      let col = Number(parts[2])
+
+      this.minRow = Math.min(this.minRow, row)
+      this.minCol = Math.min(this.minCol, col)
     }
+
+    for (let tile of this.stateTile) {
+      let tileName = Object.keys(tile.objects)[0]
+      const geojson = topojson.feature(tile, {
+        type: "GeometryCollection",
+        geometries: tile.objects[tileName].geometries
+      });
+
+      const bounds = {
+        minLon: Infinity,
+        maxLon: -Infinity,
+        minLat: Infinity,
+        maxLat: -Infinity
+      };
+
+      for (const feature of geojson.features) {
+        if (feature.geometry && feature.geometry['coordinates']) {
+          const flatCoordinates = feature.geometry['coordinates'].flat(Infinity);
+          for (let index = 0; index < flatCoordinates.length; index++) {
+            const coord = flatCoordinates[index];
+            if (index % 2 === 0) { // Longitude
+              bounds.minLon = Math.min(bounds.minLon, coord);
+              bounds.maxLon = Math.max(bounds.maxLon, coord);
+            } else { // Latitude
+              bounds.minLat = Math.min(bounds.minLat, coord);
+              bounds.maxLat = Math.max(bounds.maxLat, coord);
+            }
+          }
+        }
+      }
+
+      // let gridSize = 5
+      // let tileWidth = 75
+      // let tileHeight = 75
+      // let xDiff = (bounds.maxLon - bounds.minLon) / gridSize
+      // let yDiff = (bounds.maxLat - bounds.minLat) / gridSize
+      // let xAdj = (1 - xDiff) * tileWidth
+      // let yAdj = (1 - yDiff) * tileHeight
+
+      // let temp = [xDiff, yDiff, xAdj, yAdj]
+      let gridSize = 5
+      let tileWidth = 75
+      let tileHeight = 75
+      let xDiff = (bounds.maxLon - bounds.minLon) / gridSize //boundaries in x direction
+      let yDiff = (bounds.maxLat - bounds.minLat) / gridSize //boundaries in y direction
+      let xAdj = (this.tileAdj[tileName] && this.tileAdj[tileName][2] !== undefined && this.tileAdj[tileName][2] !== 0) ? (1 - xDiff) * tileWidth : 0
+      let yAdj = (this.tileAdj[tileName] && this.tileAdj[tileName][3] !== undefined && this.tileAdj[tileName][3] !== 0) ? (1 - yDiff) * tileHeight : 0
+
+      let temp = [xDiff, yDiff, xAdj, yAdj]
+      this.tileAdj[tileName] = temp
+    }
+    console.log("data1: ", this.data1, this.avgData1)
+    this.createBivariateChart()
   }
 
   countyidToTileid = {}
-
-
-  private createChart(): void {
-    const fullCountryArr = this.fullCountryArr
-    const selectedState = this.selectedState
-    let useCountry = fullCountryArr.includes(selectedState) ? true : false;
-
-    const tractName = this.topoJsonObjectsKey
-    const width = 975;
-    const height = 610;
-
-    const color1 = d3.scaleSequential(d3.interpolateBlues).domain([this.min1, this.max1]);
-    const path = d3.geoPath();
-
-    const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
-    const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
-    const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
-
-    const avgData1 = this.avgData1
-    const avgData2 = this.avgData2
-
-    d3.select(this.scatterplotContainerId)
-      .selectAll('svg')
-      .remove();
-
-    const svg = d3.select(this.scatterplotContainerId)
-      .append("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", [0, 0, width, height])
-      .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
-
-    const g = svg.append("g");
-    const defs = svg.append("defs");
-
-    defs.append("pattern")
-      .attr("id", "diagonal-stripe")
-      .attr("width", 4)
-      .attr("height", 4)
-      .attr("patternUnits", "userSpaceOnUse")
-      .append("path")
-      .attr("d", "M0,4 L4,0") // Diagonal stripe
-      .attr("stroke", "red")  // Pattern color
-      .attr("stroke-width", 1)
-      .attr("opacity", 1)  // Set the opacity of the pattern
-
-    defs.append("pattern")
-      .attr("id", "crosshatch")
-      .attr("width", 6)
-      .attr("height", 6)
-      .attr("patternUnits", "userSpaceOnUse")
-      .append("path")
-      .attr("d", "M0,0 L6,6 M6,0 L0,6")  // Diagonal lines
-      .attr("stroke", "yellow")
-      .attr("stroke-width", 1);
-
-    d3.selectAll(".tooltip").transition().duration(200).style("opacity", 0)
-
-    const tooltip = d3.select("body")
-      .append("div")
-      .attr("class", "tooltip")
-      .style("position", "absolute")
-      .style("padding", "6px")
-      .style("background", "#fff")
-      .style("border", "1px solid #ccc")
-      .style("border-radius", "4px")
-      .style("box-shadow", "0px 0px 10px rgba(0,0,0,0.2)")
-      .style("pointer-events", "none")
-      .style("opacity", 0); // Initially hidden
-
-    // Set up zoom behavior
-    const zoom = d3.zoom()
-      .scaleExtent([1, 100])
-      .on('zoom', (event) => {
-        svg.attr('transform', event.transform);
-      });
-
-    // Function to zoom into a specific point (x, y)
-    const zoomTo = (x, y, scale) => {
-      svg.transition()
-        .duration(100)
-        .call(zoom.transform, d3.zoomIdentity.translate(width / 2 - scale * x, height / 2 - scale * y).scale(scale));
-    };
-
-    svg.call(zoom)
-      .on("wheel.zoom", null)     // Disable zooming with the mouse wheel
-      .on("mousedown.zoom", null) // Disable zooming by dragging
-      .on("dblclick.zoom", null); // Disable zooming by double-clicking
-
-    // Call zoomTo() immediately after creating the SVG
-    zoomTo(this.mouseX, this.mouseY, this.zoomScale);
-
-    // svg.on('click', (event) => {
-    //   const [mouseX, mouseY] = d3.pointer(event);
-    //   this.mouseX = mouseX
-    //   this.mouseY = mouseY
-
-    //   zoomTo(mouseX, mouseY, this.zoomScale);
-    // });
-
-    // Draw the counties with the color fill
-
-    if (this.selectedCol1 !== '--') {
-      const land = topojson.feature(this.state, {
-        type: "GeometryCollection",
-        geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
-      });
-
-      const [longitude, latitude] = this.stateCentroids[this.selectedState];
-      const path = d3.geoPath()
-        .projection(d3.geoTransverseMercator()
-          .rotate([-longitude, -latitude])
-          .fitExtent([[20, 20], [width - 20, height - 20]], land));
-
-
-      svg.selectAll("path")
-        .data(land.features)
-        .enter().append("path")
-        .attr("class", "tract")
-        .attr("d", path)
-
-      svg.append("path")
-        .datum(topojson.mesh(this.state, this.state.objects[tractName], function (a, b) { return a !== b; }))
-        .attr("class", "tract-border")
-        .attr("d", path)
-
-      svg.append("style").text(`
-          .tract:hover {fill: orange }
-          .tract-border {
-            fill: none;
-            stroke: rgba(119, 119, 119, .7);
-            stroke-width: 1px;
-            pointer-events: pointer;
-          }
-        `);
-      const fipsToState = this.fipsToState
-      const fipsToCounty = this.fipsToCounty
-      const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
-      const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
-      const col3Name = this.selectedCol3.charAt(0).toUpperCase() + this.selectedCol3.slice(1).toLowerCase();
-      svg.selectAll(".tract")
-        .attr("class", "tract")
-        .attr("fill", d => {
-          const prop = d['properties'];
-          // const id = useCountry ? prop['FIPS'] : prop['GEOID']
-          const id = useCountry ? prop['STCOFIPS'] : prop['GEOID']
-          // const val1 = valuemap1.get(id)
-          const val1 = useCountry ? avgData1[id]['avg'] : valuemap1.get(id)
-          return color1(val1)
-        })
-        // .on("mouseover", function (event, d) {
-        //   const prop = d['properties'];
-        //   // const id = useCountry ? prop.FIPS : prop.GEOID;
-        //   const id = useCountry ? prop['STCOFIPS'] : prop['GEOID']
-        //   const val1String = useCountry ? avgData1[id]['avg']: (valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A');
-        //   d3.select(this).style("cursor", "pointer");
-        //   tooltip.transition().duration(100).style("opacity", 1);
-        //   const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
-        //   const stateId = useCountry ? prop.ST : prop.STATEFP
-        //   const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
-        //   const fipscode = useCountry ? prop.STCNTY : prop.STATEFP + prop.COUNTYFP;
-        //   const countyName = useCountry ? prop.COUNTY : `${fipsToCounty[fipscode]['County']}`;
-        //   tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}`)
-        //     .style("left", (event.pageX + 10) + "px")
-        //     .style("top", (event.pageY - 10) + "px");
-        // })
-        // .on("mouseout", function (event, d) {
-        //   d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-        //   tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
-        // })
-        .on("click", function (event, d) {
-          tooltip.transition().duration(100).style("opacity", 0);
-        })
-        .attr("d", path)
-
-      // Draw the pattern layer on top of the colored counties
-      if (this.selectedCol2 !== '--') {
-        svg.append("g")
-          .selectAll("path")
-          .data(topojson.feature(this.state, this.state.objects[tractName])['features'])
-          .join("path")
-          .attr("fill", "url(#diagonal-stripe)")  // Second layer: pattern fill with opacity
-          // .on("mouseover", function (event, d) {
-          //   const prop = d['properties'];
-          //   const id = useCountry ? prop.FIPS : prop.GEOID;
-          //   const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
-          //   const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
-          //   d3.select(this).style("cursor", "pointer");
-          //   tooltip.transition().duration(100).style("opacity", 1);
-          //   const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
-          //   const stateId = useCountry ? prop.ST : prop.STATEFP
-          //   const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
-          //   const fipscode = useCountry ? prop.STCNTY : prop.STATEFP + prop.COUNTYFP;
-          //   const countyName = useCountry ? prop.COUNTY : `${fipsToCounty[fipscode]['County']}`;
-          //   tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-          //     .style("left", (event.pageX + 10) + "px")
-          //     .style("top", (event.pageY - 10) + "px");
-          // })
-          // .on("mouseout", function (event, d) {
-          //   d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-          //   tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
-          // })
-          .on("click", function (event, d) {
-
-            tooltip.transition().duration(100).style("opacity", 0);
-          })
-          .attr("d", path)
-          .attr("opacity", d => {
-            const prop = d['properties']
-            const id = useCountry ? prop['FIPS'] : prop['GEOID']
-            const rate = this.data2Obj[id]['rate']
-            if (id !== undefined && rate !== 0) {
-              return rate / this.max2 + 0.2
-            }
-            return 0
-          })
-      }
-
-      if (this.selectedCol3 !== '--') {
-        svg.append("g")
-          .selectAll("path")
-          .data(topojson.feature(this.state, this.state.objects[tractName])['features'])
-          .join("path")
-          .attr("fill", "url(#crosshatch)")  // Second layer: polka dot pattern
-          .on("mouseover", function (event, d) {
-            const prop = d['properties'];
-            const id = useCountry ? prop.FIPS : prop.GEOID;
-            const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
-            const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
-            const val3String = valuemap3.get(id) !== undefined ? valuemap3.get(id).toFixed(5) : 'N/A';
-            d3.select(this).style("cursor", "pointer");
-            tooltip.transition().duration(100).style("opacity", 1);
-            const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
-            const stateId = useCountry ? prop.ST : prop.STATEFP
-            const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
-            const fipscode = useCountry ? prop.STCNTY : prop.STATEFP + prop.COUNTYFP;
-            const countyName = useCountry ? prop.COUNTY : `${fipsToCounty[fipscode]['County']}`;
-            tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}<br>${col3Name}: ${val3String}`)
-              .style("left", (event.pageX + 10) + "px")
-              .style("top", (event.pageY - 10) + "px");
-          })
-          .on("mouseout", function (event, d) {
-            d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-            tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
-          })
-          .on("click", function (event, d) {
-            tooltip.transition().duration(100).style("opacity", 0);
-          })
-          .attr("d", path)
-          .attr("opacity", d => {
-            // const id = d['properties']['GEOID']
-            const prop = d['properties']
-            const id = useCountry ? prop['FIPS'] : prop['GEOID']
-            const rate = this.data3Obj[id]['rate']
-            if (id !== undefined && rate !== 0) {
-              return rate / this.max3 + 0.2
-            }
-            return 0
-          })
-
-
-
-        // .append("title")
-        // .text(d => `${d['properties'].name}, ${statemap.get(d['id'].slice(0, 2))['properties'].name}\n${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}: ${valuemap1.get(d['id'])?.toFixed(5)}\n${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}: ${valuemap2.get(d['id'])?.toFixed(5)}`);
-
-        // Create the grid for the legend
-        const k = 24; // size of each cell in the grid
-        const n = 3 // Grid size for the legend
-        const legendGroup = g.append('g')
-          .attr('font-family', 'sans-serif')
-          .attr('font-size', 10)
-          .attr('transform', `translate(${width - 100}, ${height - 175}) rotate(-45 ${k * n / 2},${k * n / 2})`);
-
-        // Add the squares to the legend
-        d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
-          legendGroup.append('rect')
-            .attr('width', k)
-            .attr('height', k)
-            .attr('x', i * k)
-            .attr('y', (n - 1 - j) * k)
-            .attr('fill', this.colors[j * n + i])
-        });
-
-        // Add diagonal lines with arrows
-        svg.append('defs')
-          .append('marker')
-          .attr('id', 'arrowMarker')
-          .attr('viewBox', '0 0 10 10')
-          .attr('refX', 5)
-          .attr('refY', 5)
-          .attr('markerWidth', 7)
-          .attr('markerHeight', 7)
-          .attr('orient', 'auto')
-          .append('path')
-          .attr('d', 'M0,0 L10,5 L0,10 Z')  // Triangle path for the arrow
-          .attr('fill', 'black');
-
-        legendGroup.append('line')
-          .attr('marker-end', `url(#arrowMarker)`)
-          .attr('x1', 0)
-          .attr('x2', n * k)
-          .attr('y1', n * k)
-          .attr('y2', n * k)
-          .attr('stroke', 'black')
-          .attr('stroke-width', 1.75);
-
-        legendGroup.append('line')
-          .attr('marker-end', `url(#arrowMarker)`)
-          .attr('y2', 0)
-          .attr('y1', n * k)
-          .attr('stroke', 'black')
-          .attr('stroke-width', 1.75);
-
-        // Add labels to the axes
-        legendGroup.append('text')
-          .attr('font-weight', 'bold')
-          .attr('dy', '0.71em')
-          .attr('transform', `rotate(90) translate(${n / 2 * k}, 6)`)
-          .attr('text-anchor', 'middle')
-          .text(`${this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}`);
-
-        legendGroup.append('text')
-          .attr('font-weight', 'bold')
-          .attr('dy', '0.71em')
-          .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
-          .attr('text-anchor', 'middle')
-          .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
-      }
-    }
-
-
-    svg.append("path")
-      .datum(topojson.mesh(this.state, this.state.objects[this.topoJsonObjectsKey], (a, b) => a !== b))
-      .attr("fill", "none")
-      .attr("stroke", "white")
-      .attr("stroke-linejoin", "round")
-      .attr("d", path);
-  }
 
   colors = [
     "#e8e8e8", "#ace4e4", "#5ac8c8",
@@ -750,12 +516,12 @@ export class CountyMapComponent implements AfterViewInit {
   }
 
   resetVariables() {
-    this.min1 = 10000000000;
-    this.max1 = 0;
-    this.min2 = 10000000000;
-    this.max2 = 0;
-    this.min3 = 10000000000;
-    this.max3 = 0;
+    this.min1 = Infinity;
+    this.max1 = -Infinity;
+    this.min2 = Infinity;
+    this.max2 = -Infinity;
+    this.min3 = Infinity;
+    this.max3 = -Infinity;
 
     this.zoomScale = 1;
   }
@@ -763,8 +529,8 @@ export class CountyMapComponent implements AfterViewInit {
   createBivariateChart() {
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
-    let useCountry = fullCountryArr.includes(selectedState) ? true : false;
-    let useCensusCountry = selectedState === 'USA 2018 Mainland' || selectedState === 'single tile' ? true : false
+    let useCountry = fullCountryArr.includes(selectedState) || this.zoomScale < 6 ? true : false;
+    let useCensusCountry = selectedState === 'USA 2018 Mainland' ? true : false
 
     const tileWidth = 300;
     const tileHeight = 300;
@@ -778,6 +544,7 @@ export class CountyMapComponent implements AfterViewInit {
 
     const avgData1 = this.avgData1
     const avgData2 = this.avgData2
+    const avgData3 = this.avgData3
 
     let xRange1 = this.min1;
     let xRange2 = (this.max1 - this.min1) / 3 + this.min1
@@ -788,6 +555,9 @@ export class CountyMapComponent implements AfterViewInit {
     let yRange2 = (this.max2 - this.min2) / 3 + this.min2
     let yRange3 = 2 * ((this.max2 - this.min2) / 3) + this.min2
     let yRange4 = this.max2
+
+    let max2 = this.max2
+    let max3 = this.max3
 
     let currZoomScale = this.zoomScale
     const countyidToTileid = this.countyidToTileid
@@ -820,9 +590,8 @@ export class CountyMapComponent implements AfterViewInit {
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      // .attr("style", `max-width: 100%; height: auto; scale: ${this.zoomScale}; translate(${this.newX}px, ${this.newY}px); transform-origin: 0 0;`) //scale is how you control the zoom
-      // .attr("style", `width: auto; height: auto; scale: ${this.zoomScale}; transform-origin: 0 0;`)
-      .attr("style", `width: auto; height: auto; transform-origin: 0 0;`)
+      .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
+
 
     // Set up zoom behavior
     const zoom = d3.zoom()
@@ -844,75 +613,210 @@ export class CountyMapComponent implements AfterViewInit {
         .call(zoom.transform, d3.zoomIdentity
           .translate(width / 2 - (scale * x) * 1.8, height / 2 - (scale * y) * 1.2)  // Adjust translation
           .scale(scale));  // Set zoom scale
-
     };
 
-    //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
-    //think of a better way to handle this later.
-    //also add in mouseX and mouseY to center on the zoom spot
-    if (this.zoomScale === 6) {
-      svg.transition()
-        .duration(200)
-        .call(zoom.transform, d3.zoomIdentity
-          .scale(this.zoomScale));
-    }
+    svg.call(zoom)
+      .on("wheel.zoom", null)     // Disable zooming with the mouse wheel
+      .on("mousedown.zoom", null) // Disable zooming by dragging
+      .on("dblclick.zoom", null); // Disable zooming by double-clicking
 
-    if (this.zoomScale >= 6) {
-      this.tileArr.forEach((d, i) => {
-        let tileName = d;
+    if (this.useBivariate === false) {
+      const fipsToState = this.fipsToState
+      const fipsToCounty = this.fipsToCounty
+      const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
+      const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
+      const col3Name = this.selectedCol3.charAt(0).toUpperCase() + this.selectedCol3.slice(1).toLowerCase();
 
-        const land = topojson.feature(this.stateTile[i], {
+      const color1 = d3.scaleSequential(d3.interpolateBlues).domain([this.min1, this.max1]);
+      const path = d3.geoPath();
+
+      const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
+      const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
+      const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
+
+      const avgData1 = this.avgData1
+
+      const defs = svg.append("defs");
+
+      defs.append("pattern")
+        .attr("id", "diagonal-stripe")
+        .attr("width", 4)
+        .attr("height", 4)
+        .attr("patternUnits", "userSpaceOnUse")
+        .append("path")
+        .attr("d", "M0,4 L4,0") // Diagonal stripe
+        .attr("stroke", "red")  // Pattern color
+        .attr("stroke-width", .25)
+        .attr("opacity", 1)  // Set the opacity of the pattern
+
+      defs.append("pattern")
+        .attr("id", "crosshatch")
+        .attr("width", 6)
+        .attr("height", 6)
+        .attr("patternUnits", "userSpaceOnUse")
+        .append("path")
+        .attr("d", "M0,0 L6,6 M6,0 L0,6")  // Diagonal lines
+        .attr("stroke", "yellow")
+        .attr("stroke-width", 1);
+
+
+      //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
+      //think of a better way to handle this later.
+      //also add in mouseX and mouseY to center on the zoom spot
+      if (this.zoomScale === 6 || this.zoomScale === 7) {
+        svg.transition()
+          .duration(200)
+          .call(zoom.transform, d3.zoomIdentity
+            .scale(this.zoomScale));
+      }
+
+      if (this.zoomScale >= 6) {
+        this.minRow = Infinity
+        this.minCol = Infinity
+
+        for (let tile of this.tileArr) {
+          const parts = tile.split('_');
+          let row = Number(parts[3])
+          let col = Number(parts[2])
+
+          this.minCol = Math.min(col, this.minCol)
+          this.minRow = Math.min(row, this.minRow)
+        }
+
+        this.tileArr.forEach((d, i) => {
+          let tileName = d;
+
+          const land = topojson.feature(this.stateTile[i], {
+            type: "GeometryCollection",
+            geometries: this.stateTile[i].objects[tileName].geometries
+          });
+
+          svg.append("style").text(`.tract:hover {fill: orange }`);
+
+          const xAdj = this.tileAdj[tileName] ? this.tileAdj[tileName][0] : 1
+          const yAdj = this.tileAdj[tileName] ? this.tileAdj[tileName][1] : 1
+          const xTrans = this.tileAdj[tileName] && this.tileAdj[tileName][2] ? this.tileAdj[tileName][2] : 0
+          const yTrans = this.tileAdj[tileName] && this.tileAdj[tileName][3] ? this.tileAdj[tileName][3] : 0
+
+          //d3.geoEquirectangular keeps its in a rectangular shape for tiling
+          const projection = d3.geoEquirectangular()
+            .fitExtent([[0, 0], [tileWidth * xAdj, tileHeight * yAdj]], land)
+
+          const path = d3.geoPath().projection(projection);
+
+          const parts = this.tileArr[i].split('_');
+          let row = Number(parts[3])
+          let col = Number(parts[2])
+
+          const tileGroup = svg.append('g')
+            .attr("class", `tile_${col}_${row}`)
+            .attr('transform', `translate(${(col - this.minCol) * tileWidth + xTrans}, ${(row - this.minRow) * tileHeight + yTrans})`);
+
+          const featuresGroup = tileGroup.selectAll('g')
+            .data(land['features'])
+            .enter()
+            .append('g')  // Create a group for each feature
+            .attr("class", "tract-group")
+            .on("mouseover", function (event, d) {
+              const prop = d['properties'];
+              d3.select(this).style("cursor", "pointer");
+              tooltip.transition().duration(100).style("opacity", 1);
+              const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
+              const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
+
+              const id = useCountry ? prop['FIPS'] : prop['GEOID']
+              const stateId = useCountry ? prop.ST : prop.STATEFP
+              const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+              const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1] : prop.NAME
+              const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+              const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
+              tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+            })
+            .on("mouseout", function (event, d) {
+              d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+              tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
+            })
+            .attr('stroke', 'rgba(119, 119, 119, .7)')
+            .attr('stroke-width', .05)
+            .on("click", (event, d) => {
+              let countyId = d['properties']['STCNTY']
+              let currTile = this.countyidToTileid[countyId]
+
+              const [mouseX, mouseY] = d3.pointer(event);
+
+              if (this.zoomScale <= this.maxZoom) {
+                this.zoomScale += 2
+                zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+              }
+            })
+
+          if (this.selectedCol1 !== '--') {
+            featuresGroup.append('path')
+              .attr('d', path)
+              .attr("class", "tract")
+              .attr("fill", (d) => {
+                const prop = d['properties'];
+                const id = prop['FIPS'];
+                return color1(valuemap1.get(id));
+              })
+              .attr('stroke', 'rgba(119, 119, 119, .7)')
+              .attr('stroke-width', 0.05);
+          }
+
+          if (this.selectedCol2 !== '--') {
+            featuresGroup.append('path')
+              .attr('d', path)
+              .attr("class", "tract-pattern")
+              .attr("fill", "url(#diagonal-stripe)")
+              .attr("opacity", (d) => {
+                const prop = d['properties'];
+                const id = prop['FIPS'];
+                const rate = valuemap2.get(id);
+                return rate ? (rate / max2 + 0.2) : 0;
+              });
+          }
+
+          if (this.selectedCol3 !== '--') {
+            featuresGroup.append('path')
+              .attr('d', path)
+              .attr("class", "tract-pattern")
+              .attr("fill", "url(#crosshatch)")
+              .attr("opacity", (d) => {
+                const prop = d['properties'];
+                const id = prop['FIPS'];
+                const rate = valuemap3.get(id);
+                return rate ? (rate / max3 + 0.2) : 0;
+              });
+          }
+        })
+      }
+      else {
+        const land = topojson.feature(this.state, {
           type: "GeometryCollection",
-          geometries: this.stateTile[i].objects[tileName].geometries
+          geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
         });
 
         svg.append("style").text(`.tract:hover {fill: orange }`);
 
-        //d3.geoEquirectangular keeps its in a rectangular shape for tiling
-        const projection = d3.geoEquirectangular()
-          // .rotate([0, 0]) // You can remove this if you don't want any rotation
-          .fitExtent([[0, 0], [tileWidth, tileHeight]], land)
+        const [longitude, latitude] = this.stateCentroids[this.selectedState];
+        const path = d3.geoPath()
+          .projection(d3.geoTransverseMercator()
+            .rotate([-longitude, -latitude])
+            .fitExtent([[20, 20], [width - 20, height - 20]], land));
 
-        const path = d3.geoPath().projection(projection);
+        // svg.selectAll("path")
+        //   .data(land.features)
+        //   .enter().append("path")
+        //   .attr("class", "tract")
+        //   .attr("d", path)
 
-        const parts = this.tileArr[i].split('_');
-        let row = Number(parts[3])
-        let col = Number(parts[2])
-        svg.append('g')
-          .attr('transform', `translate(${(col - this.minCol) * tileWidth}, ${(row - this.minRow) * tileHeight})`)
-          .selectAll('path')
+        const featuresGroup = svg.append('g').selectAll('g')
           .data(land['features'])
-          .enter().append('path')
-          .attr('d', path)
-          .attr("class", "tract")
-          .attr("fill", d => {
-            const fips = 'FIPS'
-            const id = this.fullCountryArr.includes(this.selectedState) ? d['properties'][fips] : d['properties']['GEOID'];
-            const val1 = valuemap1.get(id);
-            const val2 = valuemap2.get(id);
-
-            if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
-              return this.colors[0];
-            } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
-              return this.colors[1];
-            } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
-              return this.colors[2];
-            } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
-              return this.colors[3];
-            } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
-              return this.colors[4];
-            } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
-              return this.colors[5];
-            } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
-              return this.colors[6];
-            } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
-              return this.colors[7];
-            } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
-              return this.colors[8];
-            } else {
-              return "yellow";
-            }
-          })
+          .enter()
+          .append('g')  // Create a group for each feature
+          .attr("class", "tract-group")
           .on("mouseover", function (event, d) {
             const prop = d['properties'];
             d3.select(this).style("cursor", "pointer");
@@ -939,225 +843,373 @@ export class CountyMapComponent implements AfterViewInit {
           .on("click", (event, d) => {
             let countyId = d['properties']['STCNTY']
             let currTile = this.countyidToTileid[countyId]
+
             const [mouseX, mouseY] = d3.pointer(event);
 
             if (this.zoomScale <= this.maxZoom) {
-              this.zoomScale += 1
-              console.log("zoom is called: ", this.zoomScale, mouseX, mouseY)
+              this.zoomScale += 2
               zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+            }
+          })
 
-              // this.createBivariateChart()
+        if (this.selectedCol1 !== '--') {
+          featuresGroup.append('path')
+            .attr('d', path)
+            .attr("class", "tract")
+            .attr("fill", (d) => {
+              const prop = d['properties'];
+              const id = useCountry ? prop['STCOFIPS'] : prop['GEOID']
+              const val1 = useCountry ? (avgData1[id] ? avgData1[id]['avg'] : 0) : valuemap1.get(id)
+              return color1(val1);
+            })
+            .attr('stroke', 'rgba(119, 119, 119, .7)')
+            .attr('stroke-width', 0.05);
+        }
 
+        if (this.selectedCol2 !== '--') {
+          featuresGroup.append('path')
+            .attr('d', path)
+            .attr("class", "tract-pattern")
+            .attr("fill", "url(#diagonal-stripe)")
+            .attr("opacity", (d) => {
+              const prop = d['properties'];
+              const id = prop['STCOFIPS'];
+              const rate = useCountry ? (avgData2[id] ? avgData2[id]['avg'] : 0) : valuemap2.get(id)
+              console.log("rate: ", rate, id, prop, rate / max2 + 0.2)
+              return rate ? (rate / max2 + 0.2) : 0;
+            });
+        }
+
+        if (this.selectedCol3 !== '--') {
+          featuresGroup.append('path')
+            .attr('d', path)
+            .attr("class", "tract-pattern")
+            .attr("fill", "url(#crosshatch)")
+            .attr("opacity", (d) => {
+              const prop = d['properties'];
+              const id = prop['STCOFIPS'];
+              const rate = useCountry ? (avgData3[id] ? avgData3[id]['avg'] : 0) : valuemap3.get(id)
+              return rate ? (rate / max3 + 0.2) : 0;
+            });
+        }
+      }
+
+      // svg.append("path")
+      //   .datum(topojson.mesh(this.state, this.state.objects[this.topoJsonObjectsKey], (a, b) => a !== b))
+      //   .attr("fill", "none")
+      //   .attr("stroke", "white")
+      //   .attr("stroke-linejoin", "round")
+      //   .attr("d", path);
+    } else {
+
+      //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
+      //think of a better way to handle this later.
+      //also add in mouseX and mouseY to center on the zoom spot
+      if (this.zoomScale === 6 || this.zoomScale === 7) {
+        svg.transition()
+          .duration(200)
+          .call(zoom.transform, d3.zoomIdentity
+            .scale(this.zoomScale));
+      }
+
+      if (this.zoomScale >= 6) {
+        this.minRow = Infinity
+        this.minCol = Infinity
+
+        for (let tile of this.tileArr) {
+          const parts = tile.split('_');
+          let row = Number(parts[3])
+          let col = Number(parts[2])
+
+          this.minCol = Math.min(col, this.minCol)
+          this.minRow = Math.min(row, this.minRow)
+        }
+
+        this.tileArr.forEach((d, i) => {
+          let tileName = d;
+
+          const land = topojson.feature(this.stateTile[i], {
+            type: "GeometryCollection",
+            geometries: this.stateTile[i].objects[tileName].geometries
+          });
+
+          svg.append("style").text(`.tract:hover {fill: orange }`);
+
+          const xAdj = this.tileAdj[tileName] ? this.tileAdj[tileName][0] : 1
+          const yAdj = this.tileAdj[tileName] ? this.tileAdj[tileName][1] : 1
+          const xTrans = this.tileAdj[tileName] && this.tileAdj[tileName][2] ? this.tileAdj[tileName][2] : 0
+          const yTrans = this.tileAdj[tileName] && this.tileAdj[tileName][3] ? this.tileAdj[tileName][3] : 0
+
+          //d3.geoEquirectangular keeps its in a rectangular shape for tiling
+          const projection = d3.geoEquirectangular()
+            .fitExtent([[0, 0], [tileWidth * xAdj, tileHeight * yAdj]], land)
+
+          const path = d3.geoPath().projection(projection);
+
+          const parts = this.tileArr[i].split('_');
+          let row = Number(parts[3])
+          let col = Number(parts[2])
+
+          svg.append('g')
+            // .attr('transform', `translate(${(col - this.minCol) * tileWidth}, ${(row - this.minRow) * tileHeight})`)
+            .attr("class", `tile_${col}_${row}`)
+            .attr('transform', `translate(${(col - this.minCol) * tileWidth + xTrans} , ${(row - this.minRow) * tileHeight + yTrans})`)
+            .selectAll('path')
+            .data(land['features'])
+            .enter().append('path')
+            .attr('d', path)
+            .attr("class", "tract")
+            .attr("fill", d => {
+              const fips = 'FIPS'
+              const id = this.fullCountryArr.includes(this.selectedState) ? d['properties'][fips] : d['properties']['GEOID'];
+              const val1 = valuemap1.get(id);
+              const val2 = valuemap2.get(id);
+
+              if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
+                return this.colors[0];
+              } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
+                return this.colors[1];
+              } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
+                return this.colors[2];
+              } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
+                return this.colors[3];
+              } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
+                return this.colors[4];
+              } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
+                return this.colors[5];
+              } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
+                return this.colors[6];
+              } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
+                return this.colors[7];
+              } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
+                return this.colors[8];
+              } else {
+                // return "yellow";
+                return "white";
+              }
+            })
+            .on("mouseover", function (event, d) {
+              const prop = d['properties'];
+              d3.select(this).style("cursor", "pointer");
+              tooltip.transition().duration(100).style("opacity", 1);
+              const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
+              const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
+
+              const id = useCountry ? prop['FIPS'] : prop['GEOID']
+              const stateId = useCountry ? prop.ST : prop.STATEFP
+              const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+              const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1] : prop.NAME
+              const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+              const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
+              tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+            })
+            .on("mouseout", function (event, d) {
+              d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+              tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
+            })
+            .attr('stroke', 'rgba(119, 119, 119, .7)')
+            .attr('stroke-width', .05)
+            .on("click", (event, d) => {
+              let countyId = d['properties']['STCNTY']
+              let currTile = this.countyidToTileid[countyId]
+
+              const [mouseX, mouseY] = d3.pointer(event);
+
+              if (this.zoomScale <= this.maxZoom) {
+                this.zoomScale += 2
+                zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+              }
+            })
+        })
+      } else {
+        const land = topojson.feature(this.state, {
+          type: "GeometryCollection",
+          // geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
+          geometries: this.state.objects[tractName].geometries
+        });
+
+        svg.append("style").text(`
+        .tract:hover {fill: orange }
+      `);
+        const fipsToState = this.fipsToState
+        const fipsToCounty = this.fipsToCounty
+        const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
+        const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
+
+        const [longitude, latitude] = this.stateCentroids[this.selectedState];
+        const projection = d3.geoTransverseMercator()
+          .rotate([-longitude, -latitude])
+          .fitExtent([[0, 0], [width, height]], land);
+
+        // Create a new path generator for each tile using the tile-specific projection
+        const path = d3.geoPath().projection(projection);
+
+        // Add the part of the map corresponding to this tile
+        svg.append('g')
+          .selectAll('path')
+          .data(land['features'])
+          // .data(filteredArr)
+          .enter().append('path')
+          .attr('d', path)
+          .attr("class", "tract")
+          .attr("fill", d => {
+            const fips = selectedState === 'USA 2000 Mainland (County)' ? 'STCOFIPS' : 'FIPS'
+            const id = this.fullCountryArr.includes(this.selectedState) ? d['properties'][fips] : d['properties']['GEOID'];
+            const val1 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData1[id] ? this.avgData1[id]['avg'] : -1) : valuemap1.get(id);
+            const val2 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData2[id] ? this.avgData2[id]['avg'] : -1) : valuemap2.get(id);
+
+            if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
+              return this.colors[0];
+            } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
+              return this.colors[1];
+            } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
+              return this.colors[2];
+            } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
+              return this.colors[3];
+            } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
+              return this.colors[4];
+            } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
+              return this.colors[5];
+            } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
+              return this.colors[6];
+            } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
+              return this.colors[7];
+            } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
+              return this.colors[8];
+            } else {
+              // return "yellow";
+              return "white"
+            }
+          })
+          .on("mouseover", function (event, d) {
+            const prop = d['properties'];
+            d3.select(this).style("cursor", "pointer");
+            tooltip.transition().duration(100).style("opacity", 1);
+            const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
+            const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
+            if (useCountry && !useCensusCountry) {
+              const id = prop.STCOFIPS
+              const state = prop.STATE_NAME
+              const stateId = prop.STATE_FIPS
+              const val1String = avgData1[id] !== undefined ? avgData1[id].avg.toFixed(5) : 'N/A'
+              const val2String = avgData2[id] !== undefined ? avgData2[id].avg.toFixed(5) : 'N/A'
+              tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+            }
+            else {
+              const id = useCountry ? prop['FIPS'] : prop['GEOID']
+              const stateId = useCountry ? prop.ST : prop.STATEFP
+              const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+              const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
+              const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+              const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
+              tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+                .style("left", (event.pageX + 10) + "px")  // Position tooltip
+                .style("top", (event.pageY - 10) + "px");
             }
 
           })
+          .on("mouseout", function (event, d) {
+            d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+            tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
+          })
+          .attr('stroke', 'rgba(119, 119, 119, .7)')
+          .attr('stroke-width', .2)
+          .on("click", (event, d) => {
+            let countyId = d['properties']['STCOFIPS']
+            let currTile = this.countyidToTileid[countyId]
+            const [mouseX, mouseY] = d3.pointer(event);
 
-      })
-    } else {
-      const land = topojson.feature(this.state, {
-        type: "GeometryCollection",
-        // geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
-        geometries: this.state.objects[tractName].geometries
+            if (this.zoomScale <= this.maxZoom) {
+              this.zoomScale += 2
+
+              if (this.zoomScale === 6 || this.zoomScale === 7) {
+                this.tileArr = currTile
+                this.loadTiles()
+
+              } else {
+                zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+              }
+            }
+          })
+      }
+      // Create the grid for the legend
+      const k = 24; // size of each cell in the grid 
+      const n = 3 // Grid size for the legend
+      const legendGroup = svg.append('g')
+        .attr('font-family', 'sans-serif')
+        .attr('font-size', 10)
+        .attr('transform', `translate(${width - 100}, ${height - 175}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${1 / this.zoomScale})`);
+      // .attr('transform', `translate(${width - 100}, ${height - 175}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${1})`);
+
+
+      // Add the squares to the legend
+      d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
+        legendGroup.append('rect')
+          .attr('width', k)
+          .attr('height', k)
+          .attr('x', i * k)
+          .attr('y', (n - 1 - j) * k)
+          .attr('fill', this.colors[j * n + i])
       });
 
-      svg.append("style").text(`
-        .tract:hover {fill: orange }
-      `);
-      const fipsToState = this.fipsToState
-      const fipsToCounty = this.fipsToCounty
-      const col1Name = this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1).toLowerCase();
-      const col2Name = this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1).toLowerCase();
+      // Add diagonal lines with arrows
+      svg.append('defs')
+        .append('marker')
+        .attr('id', 'arrowMarker')
+        .attr('viewBox', '0 0 10 10')
+        .attr('refX', 5)
+        .attr('refY', 5)
+        .attr('markerWidth', 7)
+        .attr('markerHeight', 7)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,0 L10,5 L0,10 Z')  // Triangle path for the arrow
+        .attr('fill', 'black');
 
-      const [longitude, latitude] = this.stateCentroids[this.selectedState];
-      const projection = d3.geoTransverseMercator()
-        .rotate([-longitude, -latitude])
-        .fitExtent([[0, 0], [width, height]], land);
+      legendGroup.append('line')
+        .attr('marker-end', `url(#arrowMarker)`)
+        .attr('x1', 0)
+        .attr('x2', n * k)
+        .attr('y1', n * k)
+        .attr('y2', n * k)
+        .attr('stroke', 'black')
+        .attr('stroke-width', 1.75);
 
-      // Create a new path generator for each tile using the tile-specific projection
-      const path = d3.geoPath().projection(projection);
+      legendGroup.append('line')
+        .attr('marker-end', `url(#arrowMarker)`)
+        .attr('y2', 0)
+        .attr('y1', n * k)
+        .attr('stroke', 'black')
+        .attr('stroke-width', 1.75);
 
-      // Add the part of the map corresponding to this tile
-      svg.append('g')
-        .selectAll('path')
-        .data(land['features'])
-        // .data(filteredArr)
-        .enter().append('path')
-        .attr('d', path)
-        .attr("class", "tract")
-        .attr("fill", d => {
-          const fips = selectedState === 'USA 2000 Mainland (County)' ? 'STCOFIPS' : 'FIPS'
+      legendGroup.append('text')
+        .attr('font-weight', 'bold')
+        .attr('dy', '0.71em')
+        .attr('transform', `rotate(90) translate(${n / 2 * k}, 6)`)
+        .attr('text-anchor', 'middle')
+        .text(`${this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}`);
 
-          const id = this.fullCountryArr.includes(this.selectedState) ? d['properties'][fips] : d['properties']['GEOID'];
-          // const id = this.fullCountryArr.includes(this.selectedState) ? d['id'] : d['properties']['GEOID'];
-          const val1 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData1[id] ? this.avgData1[id]['avg'] : -1) : valuemap1.get(id);
-          const val2 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData2[id] ? this.avgData2[id]['avg'] : -1) : valuemap2.get(id);
-
-          if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
-            return this.colors[0];
-          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
-            return this.colors[1];
-          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
-            return this.colors[2];
-          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
-            return this.colors[3];
-          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
-            return this.colors[4];
-          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
-            return this.colors[5];
-          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
-            return this.colors[6];
-          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
-            return this.colors[7];
-          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
-            return this.colors[8];
-          } else {
-            return "yellow";
-          }
-        })
-        .on("mouseover", function (event, d) {
-          const prop = d['properties'];
-          d3.select(this).style("cursor", "pointer");
-          tooltip.transition().duration(100).style("opacity", 1);
-          const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
-          const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
-          if (useCountry && !useCensusCountry) {
-            const id = prop.STCOFIPS
-            const state = prop.STATE_NAME
-            const stateId = prop.STATE_FIPS
-            const val1String = avgData1[id] !== undefined ? avgData1[id].avg.toFixed(5) : 'N/A'
-            const val2String = avgData2[id] !== undefined ? avgData2[id].avg.toFixed(5) : 'N/A'
-            tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-              .style("left", (event.pageX + 10) + "px")
-              .style("top", (event.pageY - 10) + "px");
-          }
-          else {
-            const id = useCountry ? prop['FIPS'] : prop['GEOID']
-            const stateId = useCountry ? prop.ST : prop.STATEFP
-            const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
-            const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+),/)[1] : prop.NAME
-            const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
-            const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
-            tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-              .style("left", (event.pageX + 10) + "px")  // Position tooltip
-              .style("top", (event.pageY - 10) + "px");
-          }
-
-        })
-        .on("mouseout", function (event, d) {
-          d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
-          tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
-        })
-        .attr('stroke', 'rgba(119, 119, 119, .7)')
-        .attr('stroke-width', .2)
-        .on("click", (event, d) => {
-          console.log("clicked here: ", this.zoomScale)
-          let countyId = d['properties']['STCOFIPS']
-          let currTile = this.countyidToTileid[countyId]
-          const [mouseX, mouseY] = d3.pointer(event);
-
-          if (this.zoomScale <= this.maxZoom) {
-            this.zoomScale += 1
-
-
-            if (this.zoomScale === 6) {
-              this.tileArr = currTile
-              this.loadTiles()
-
-            } else {
-              zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
-            }
-          }
-        })
+      legendGroup.append('text')
+        .attr('font-weight', 'bold')
+        .attr('dy', '0.71em')
+        .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
+        .attr('text-anchor', 'middle')
+        .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
     }
-
-
-
-
-
-
-
-
-    svg.call(zoom)
-      .on("wheel.zoom", null)     // Disable zooming with the mouse wheel
-      .on("mousedown.zoom", null) // Disable zooming by dragging
-      .on("dblclick.zoom", null); // Disable zooming by double-clicking
-
-    // Create the grid for the legend
-    const k = 24; // size of each cell in the grid 
-    const n = 3 // Grid size for the legend
-    const legendGroup = svg.append('g')
-      .attr('font-family', 'sans-serif')
-      .attr('font-size', 10)
-      .attr('transform', `translate(${width - 100}, ${height - 175}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${1 / this.zoomScale})`);
-
-    // Add the squares to the legend
-    d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
-      legendGroup.append('rect')
-        .attr('width', k)
-        .attr('height', k)
-        .attr('x', i * k)
-        .attr('y', (n - 1 - j) * k)
-        .attr('fill', this.colors[j * n + i])
-    });
-
-    // Add diagonal lines with arrows
-    svg.append('defs')
-      .append('marker')
-      .attr('id', 'arrowMarker')
-      .attr('viewBox', '0 0 10 10')
-      .attr('refX', 5)
-      .attr('refY', 5)
-      .attr('markerWidth', 7)
-      .attr('markerHeight', 7)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('d', 'M0,0 L10,5 L0,10 Z')  // Triangle path for the arrow
-      .attr('fill', 'black');
-
-    legendGroup.append('line')
-      .attr('marker-end', `url(#arrowMarker)`)
-      .attr('x1', 0)
-      .attr('x2', n * k)
-      .attr('y1', n * k)
-      .attr('y2', n * k)
-      .attr('stroke', 'black')
-      .attr('stroke-width', 1.75);
-
-    legendGroup.append('line')
-      .attr('marker-end', `url(#arrowMarker)`)
-      .attr('y2', 0)
-      .attr('y1', n * k)
-      .attr('stroke', 'black')
-      .attr('stroke-width', 1.75);
-
-    legendGroup.append('text')
-      .attr('font-weight', 'bold')
-      .attr('dy', '0.71em')
-      .attr('transform', `rotate(90) translate(${n / 2 * k}, 6)`)
-      .attr('text-anchor', 'middle')
-      .text(`${this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}`);
-
-    legendGroup.append('text')
-      .attr('font-weight', 'bold')
-      .attr('dy', '0.71em')
-      .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
-      .attr('text-anchor', 'middle')
-      .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
   }
 
   applyZoom(direction) {
     if (direction === '+' && this.zoomScale < this.maxZoom) {
-      this.zoomScale += 1
-    } else if (direction === '-' && this.zoomScale > 1) {
-      this.zoomScale -= 1
+      this.zoomScale += 2
+    } else if (direction === '-' && this.zoomScale > 2) {
+      this.zoomScale -= 2
     }
 
-
-    if (this.useBivariate) {
-      this.createBivariateChart()
-    } else {
-      this.createChart()
-    }
+    this.createBivariateChart()
   }
 
   preventHistoryNavigation(event: WheelEvent): void {
@@ -1186,12 +1238,8 @@ export class CountyMapComponent implements AfterViewInit {
       this.minRow = Math.min(this.minRow, row)
       this.minCol = Math.min(this.minCol, col)
     }
-
-    if (this.useBivariate) {
-      this.createBivariateChart()
-    } else {
-      this.createChart();
-    }
+    console.log("load tiels: ", this.stateTile, this.tileArr)
+    this.createBivariateChart()
 
   }
 
@@ -1201,36 +1249,12 @@ export class CountyMapComponent implements AfterViewInit {
       const [_, col, row] = tile.match(/tile_id_(\d+)_(\d+)/).map(Number);
       const tileRight = `tile_id_${col + 1}_${row}`;
       const tileLeft = `tile_id_${col - 1}_${row}`;
-      // const tileBelow = `tile_id_${col}_${row+1}`;
-      // const tileAbove = `tile_id_${col}_${row-1}`;
-      // const tileBelowRight = `tile_id_${col + 1}_${row + 1}`;
-      // const tileBelowLeft = `tile_id_${col - 1}_${row + 1}`;
-      // const tileAboveRight = `tile_id_${col + 1}_${row - 1}`;
-      // const tileAboveLeft = `tile_id_${col - 1}_${row - 1}`;
 
       if (this.AllTilesArr.includes(tileRight)) {
         if (!this.tileArr.includes(tileRight)) this.tileArr.push(tileRight);
       } else if (this.AllTilesArr.includes(tileLeft)) {
         if (!this.tileArr.includes(tileLeft)) this.tileArr.push(tileLeft);
       }
-
-      // if (this.AllTilesArr.includes(tileBelow)) {
-      //   if (!this.tileArr.includes(tileBelow)) this.tileArr.push(tileBelow);
-
-      //   if (this.AllTilesArr.includes(tileRight) && !this.tileArr.includes(tileBelowRight)) {
-      //     this.tileArr.push(tileBelowRight);
-      //   } else if (this.AllTilesArr.includes(tileLeft) && !this.tileArr.includes(tileBelowLeft)) {
-      //     this.tileArr.push(tileBelowLeft);
-      //   }
-      // } else if (this.AllTilesArr.includes(tileAbove)) {
-      //   if (!this.tileArr.includes(tileAbove)) this.tileArr.push(tileAbove);
-
-      //   if (this.AllTilesArr.includes(tileRight) && !this.tileArr.includes(tileAboveRight)) {
-      //     this.tileArr.push(tileAboveRight);
-      //   } else if (this.AllTilesArr.includes(tileLeft) && !this.tileArr.includes(tileAboveLeft)) {
-      //     this.tileArr.push(tileAboveLeft);
-      //   }
-      // }
     });
   }
 

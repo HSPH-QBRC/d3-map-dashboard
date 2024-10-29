@@ -184,6 +184,42 @@ export class TileTestOnlyComponent implements AfterViewInit {
     "USA 2020 Mainland": [-98.5795, 39.8283],
     "USA 2000 Mainland": [-98.5795, 39.8283]
   };
+
+  //To get these values, load tile into www.mapshaper.org. Select 4 corners of the map with selection tool and check it boundaries. The max boundary is 5 degrees
+  tileAdj = {
+    'tile_id_0_0': [4.5 / 5, 4.4 / 5, 7.5, 10],
+    'tile_id_0_1': [4.4 / 5, 1, 10],
+    'tile_id_0_2': [3.6 / 5, 1, 21],
+    'tile_id_0_3': [0.4 / 5, 0.6 / 5, 70],
+    'tile_id_1_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_1_3': [1, 2.1 / 5],
+    'tile_id_2_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_2_3': [1, 3.3 / 5],
+    'tile_id_3_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_3_3': [1, 3.8 / 5],
+    'tile_id_4_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_4_4': [4.3 / 5, 1.4 / 5, 11],
+    // 'tile_id_4_4': [4.3 / 5, 1.4 / 5, 11, 0],
+    'tile_id_5_0': [1, 4.4 / 5, 0, 10],
+    'tile_id_5_4': [1, 3.8 / 5],
+    'tile_id_6_0': [1, 4.8 / 5, 0, 3.5],
+    'tile_id_6_4': [1, 0.6 / 5],
+    'tile_id_7_0': [1, 3.6 / 5, -0.5, 21],
+    // 'tile_id_7_4': [1.2 / 5, 0.7 / 5, 0, -0.5],
+    'tile_id_7_4': [1.2 / 5, 0.7 / 5, 0, 0],
+    // 'tile_id_8_0': [3 / 5, 2.2 / 5, -7.5, 42],
+    'tile_id_8_0': [3 / 5, 2.2 / 5, 0, 42],
+    'tile_id_8_4': [1, 1, 1, 0],
+    'tile_id_8_5': [0.7 / 5, 0.1 / 5],
+    'tile_id_9_0': [0.4 / 5, 0.3 / 5, 70, 71],
+    // 'tile_id_9_3': [3 / 5, 2.1 / 5, 0, -3],
+    'tile_id_9_3': [3 / 5, 2.1 / 5],
+    'tile_id_9_4': [0.2 / 5, 2.1 / 5, 0, 33],
+    'tile_id_10_0': [1, 1.7 / 5, 0, 50],
+    'tile_id_10_2': [1 / 5, 1.6 / 5],
+    'tile_id_11_0': [3.3 / 5, 2.9 / 5, 0, 33],
+    'tile_id_11_1': [2.9 / 5, 3.4 / 5],
+  }
   transformOriginX = 0;
   transformOriginY = 0;
   mouseX = 975 / 2;
@@ -196,7 +232,6 @@ export class TileTestOnlyComponent implements AfterViewInit {
 
   scatterplotContainerId = '#map'
   // topoJsonObjectsKey = []
-
 
   colors = [
     "#e8e8e8", "#ace4e4", "#5ac8c8",
@@ -308,7 +343,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
     this.columns.push('--')
     this.columns.sort()
 
-    this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
+    // this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
 
     for (let i in this.tileArr) {
       let fileName = this.tileArr[i]
@@ -318,26 +353,55 @@ export class TileTestOnlyComponent implements AfterViewInit {
       let row = Number(parts[3])
       let col = Number(parts[2])
 
-      // let row = Number(fileName.substring(11))
-      // let col = Number(fileName.substring(8, 10))
       this.minRow = Math.min(this.minRow, row)
       this.minCol = Math.min(this.minCol, col)
     }
 
-    let minx = 10000000
-    let miny = 10000000
-    let maxx = 0
-    let maxy = 0
+    for (let tile of this.stateTile) {
+      let tileName = Object.keys(tile.objects)[0]
+      const geojson = topojson.feature(tile, {
+        type: "GeometryCollection",
+        geometries: tile.objects[tileName].geometries
+      });
 
-    for (let i in this.stateTile[0]['arcs']) {
+      const bounds = {
+        minLon: Infinity,
+        maxLon: -Infinity,
+        minLat: Infinity,
+        maxLat: -Infinity
+      };
 
-      const [x, y] = this.stateTile[0]['arcs'][i][0]
-      minx = Math.min(x, minx)
-      miny = Math.min(y, miny)
-      maxx = Math.max(x, maxx)
-      maxy = Math.max(y, maxy)
+      for (const feature of geojson.features) {
+        if (feature.geometry && feature.geometry['coordinates']) {
+          const flatCoordinates = feature.geometry['coordinates'].flat(Infinity);
+          for (let index = 0; index < flatCoordinates.length; index++) {
+            const coord = flatCoordinates[index];
+            if (index % 2 === 0) { // Longitude
+              bounds.minLon = Math.min(bounds.minLon, coord);
+              bounds.maxLon = Math.max(bounds.maxLon, coord);
+            } else { // Latitude
+              bounds.minLat = Math.min(bounds.minLat, coord);
+              bounds.maxLat = Math.max(bounds.maxLat, coord);
+            }
+          }
+        }
+      }
+
+      let gridSize = 5
+      let tileWidth = 75
+      let tileHeight = 75
+      let xDiff = (bounds.maxLon - bounds.minLon) / gridSize //boundaries in x direction
+      let yDiff = (bounds.maxLat - bounds.minLat) / gridSize //boundaries in y direction
+      let xAdj = (this.tileAdj[tileName] && this.tileAdj[tileName][2] !== undefined && this.tileAdj[tileName][2] !== 0) ? (1 - xDiff) * tileWidth : 0
+      let yAdj = (this.tileAdj[tileName] && this.tileAdj[tileName][3] !== undefined && this.tileAdj[tileName][3] !== 0) ? (1 - yDiff) * tileHeight : 0
+      // console.log("bounds: ", tileName, xDiff, yDiff, xAdj)
+
+      let temp = [xDiff, yDiff, xAdj, yAdj]
+      console.log("adj: ", this.tileAdj[tileName], temp, tileName)
+      this.tileAdj[tileName] = temp
+
+
     }
-    console.log("minx/miny: ", minx, miny, maxx, maxy)
 
     if (this.useBivariate) {
       this.createTilesChart()
@@ -391,9 +455,6 @@ export class TileTestOnlyComponent implements AfterViewInit {
     'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
     'tile_id_11_0', 'tile_id_11_1',
   ]
-
-  fixHeightArr = []
-  fixWidthArr = ['tile_id_0_0', 'tile_id_1_0', 'tile_id_2_0', 'tile_id_3_0', 'tile_id_4_0', 'tile_id_5_0', 'tile_id_6_0', 'tile_id_7_0', 'tile_id_8_0', 'tile_id_9_0', 'tile_id_10_0', 'tile_id_11_0']
 
   visibleTiles = []
   minCol = 1000
@@ -464,70 +525,15 @@ export class TileTestOnlyComponent implements AfterViewInit {
 
       svg.append("style").text(`.tract:hover {fill: orange }`)
 
-      // const [longitude, latitude] = this.stateCentroids['single tile'];
-
-      let projection = d3.geoEquirectangular()
-
-      //d3.geoEquirectangular keeps its in a rectangular shape for tiling
-      const projectionHeight = d3.geoEquirectangular()
-        // .rotate([-longitude, 0]) // You can remove this if you don't want any rotation
-        // .fitExtent([[0, 0], [tileWidth, tileHeight]], land);
-        // .fitSize([tileWidth, tileHeight], land)
-        .fitHeight(tileHeight, land)
-
-      const projectionWidth = d3.geoEquirectangular()
-        .fitWidth(tileWidth, land)
-
-      let xAdj = 1
-      let yAdj = 1
-      let xTrans = 0
-      let yTrans = 0
-
-      //To get these values, load tile into www.mapshaper.org. Select 4 corners of the map with selection tool and check it boundaries. The max boundary is 5 degrees
-      let tileAdj = {
-        'tile_id_0_0': [4.5 / 5, 4.4 / 5, 7.5, 10],
-        'tile_id_0_1': [4.4 / 5, 1, 10],
-        'tile_id_0_2': [3.6 / 5, 1, 21],
-        'tile_id_0_3': [0.4 / 5, 0.6 / 5, 70],
-        'tile_id_1_0': [1, 4.4 / 5, 0, 10],
-        'tile_id_1_3': [1, 2.1 / 5],
-        'tile_id_2_0': [1, 4.4 / 5, 0, 10],
-        'tile_id_2_3': [1, 3.3 / 5],
-        'tile_id_3_0': [1, 4.4 / 5, 0, 10],
-        'tile_id_3_3': [1, 3.8 / 5],
-        'tile_id_4_0': [1, 4.4 / 5, 0, 10],
-        'tile_id_4_4': [4.3 / 5, 1.4 / 5, 11, 0],
-        'tile_id_5_0': [1, 4.4 / 5, 0, 10],
-        'tile_id_5_4': [1, 3.8 / 5],
-        'tile_id_6_0': [1, 4.8 / 5, 0, 3.5],
-        'tile_id_6_4': [1, 0.6 / 5],
-        'tile_id_7_0': [1, 3.6 / 5, -0.5, 21],
-        'tile_id_7_4': [1.2 / 5, 0.7 / 5, 0, -0.5],
-        'tile_id_8_0': [3 / 5, 2.2 / 5, -7.5, 42],
-        'tile_id_8_4': [1, 1, 1, 0],
-        'tile_id_8_5': [0.7 / 5, 0.1 / 5],
-        'tile_id_9_0': [0.4 / 5, 0.3 / 5, 70, 71],
-        'tile_id_9_3': [3 / 5, 2.1 / 5, 0, -3],
-        'tile_id_9_4': [0.2 / 5, 2.1 / 5, 0, 33],
-        'tile_id_10_0': [1, 1.7 / 5, 0, 50],
-        'tile_id_10_2': [1 / 5, 1.6 / 5],
-        'tile_id_11_0': [3.3 / 5, 2.9 / 5, 0, 33],
-        'tile_id_11_1': [2.9 / 5, 3.4 / 5],
-      }
-      xAdj = tileAdj[tileName] ? tileAdj[tileName][0] : 1
-      yAdj = tileAdj[tileName] ? tileAdj[tileName][1] : 1
-      xTrans = tileAdj[tileName] && tileAdj[tileName][2] ? tileAdj[tileName][2] : 0
-      yTrans = tileAdj[tileName] && tileAdj[tileName][3] ? tileAdj[tileName][3] : 0
-
+      const xAdj = this.tileAdj[tileName] ? this.tileAdj[tileName][0] : 1
+      const yAdj = this.tileAdj[tileName] ? this.tileAdj[tileName][1] : 1
+      const xTrans = this.tileAdj[tileName] && this.tileAdj[tileName][2] ? this.tileAdj[tileName][2] : 0
+      const yTrans = this.tileAdj[tileName] && this.tileAdj[tileName][3] ? this.tileAdj[tileName][3] : 0
 
       const projectionFitExtent = d3.geoEquirectangular()
         .fitExtent([[0, 0], [tileWidth * xAdj, tileHeight * yAdj]], land)
 
-
-      projection = projectionFitExtent
-
-
-      const path = d3.geoPath().projection(projection);
+      const path = d3.geoPath().projection(projectionFitExtent);
 
       const parts = this.tileArr[i].split('_');
       let row = Number(parts[3])
@@ -682,12 +688,12 @@ export class TileTestOnlyComponent implements AfterViewInit {
   }
 
   resetVariables() {
-    this.min1 = 10000000000;
-    this.max1 = 0;
-    this.min2 = 10000000000;
-    this.max2 = 0;
-    this.min3 = 10000000000;
-    this.max3 = 0;
+    this.min1 = Infinity;
+    this.max1 = -Infinity;
+    this.min2 = Infinity;
+    this.max2 = -Infinity;
+    this.min3 = Infinity;
+    this.max3 = -Infinity;
 
     this.zoomScale = 1;
   }
