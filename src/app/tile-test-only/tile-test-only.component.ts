@@ -241,7 +241,7 @@ export class TileTestOnlyComponent implements AfterViewInit {
 
   async getData() {
     this.isLoading = true;
-    const csvData = await d3.csv('assets/nanda_grocery_tract_2003-2017_01P.csv');
+    const csvData = await d3.csv('assets/data/nanda_grocery_tract_2003-2017_01P.csv');
 
     if (this.yearCols.length === 0) {
       for (const d of csvData) {
@@ -442,18 +442,20 @@ export class TileTestOnlyComponent implements AfterViewInit {
   // ]
 
   tileArr = [
-    'tile_id_0_0', 'tile_id_0_1', 'tile_id_0_2', 'tile_id_0_3',
-    'tile_id_1_0', 'tile_id_1_1', 'tile_id_1_2', 'tile_id_1_3',
-    'tile_id_2_0', 'tile_id_2_1', 'tile_id_2_2', 'tile_id_2_3',
-    'tile_id_3_0', 'tile_id_3_1', 'tile_id_3_2', 'tile_id_3_3',
-    'tile_id_4_0', 'tile_id_4_1', 'tile_id_4_2', 'tile_id_4_3', 'tile_id_4_4',
-    'tile_id_5_0', 'tile_id_5_1', 'tile_id_5_2', 'tile_id_5_3', 'tile_id_5_4',
-    'tile_id_6_0', 'tile_id_6_1', 'tile_id_6_2', 'tile_id_6_3', 'tile_id_6_4',
-    'tile_id_7_0', 'tile_id_7_1', 'tile_id_7_2', 'tile_id_7_3', 'tile_id_7_4',
-    'tile_id_8_0', 'tile_id_8_1', 'tile_id_8_2', 'tile_id_8_3', 'tile_id_8_4', 'tile_id_8_5',
-    'tile_id_9_0', 'tile_id_9_1', 'tile_id_9_2', 'tile_id_9_3', 'tile_id_9_4',
-    'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
-    'tile_id_11_0', 'tile_id_11_1',
+    // 'tile_id_0_0', 'tile_id_0_1', 'tile_id_0_2', 'tile_id_0_3',
+    // 'tile_id_1_0', 'tile_id_1_1', 'tile_id_1_2', 'tile_id_1_3',
+    // 'tile_id_2_0', 'tile_id_2_1', 'tile_id_2_2', 'tile_id_2_3',
+    // 'tile_id_3_0', 'tile_id_3_1', 'tile_id_3_2', 'tile_id_3_3',
+    // 'tile_id_4_0', 'tile_id_4_1', 'tile_id_4_2', 'tile_id_4_3', 'tile_id_4_4',
+    // 'tile_id_5_0', 'tile_id_5_1', 'tile_id_5_2', 'tile_id_5_3', 'tile_id_5_4',
+    // 'tile_id_6_0', 'tile_id_6_1', 'tile_id_6_2', 'tile_id_6_3', 'tile_id_6_4',
+    // 'tile_id_7_0', 'tile_id_7_1', 'tile_id_7_2', 'tile_id_7_3', 'tile_id_7_4',
+    // 'tile_id_8_0', 'tile_id_8_1', 'tile_id_8_2', 'tile_id_8_3', 'tile_id_8_4', 'tile_id_8_5',
+    // 'tile_id_9_0', 'tile_id_9_1', 
+    'tile_id_8_2', 'tile_id_8_3','tile_id_8_4',
+    'tile_id_9_2', 'tile_id_9_3', 'tile_id_9_4',
+    // 'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
+    // 'tile_id_11_0', 'tile_id_11_1',
   ]
 
   visibleTiles = []

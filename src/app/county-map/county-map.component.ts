@@ -1,4 +1,4 @@
-import { Component, AfterViewInit } from '@angular/core';
+import { Component, ElementRef, Renderer2, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
@@ -10,20 +10,29 @@ interface GroceryData {
   rate: number;
 }
 
+interface CarmenData {
+  id: string;
+  rate: string;
+}
+
 @Component({
   selector: 'app-county-map',
   templateUrl: './county-map.component.html',
   styleUrls: ['./county-map.component.scss']
 })
-export class CountyMapComponent implements AfterViewInit {
+export class CountyMapComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('container', { static: true }) containerRef!: ElementRef;
+  private scrollListener!: () => void;
+
   private data1: GroceryData[] = [];
   private data2: GroceryData[] = [];
   private data3: GroceryData[] = [];
+  private dataCarmen: CarmenData[] = [];
   private state: any;
   private stateTile = []
   private allStateTile = []
 
-  constructor() { }
+  constructor(private renderer: Renderer2) { }
 
   scatterplotContainerId = '#map'
   topoJsonObjectsKey = ''
@@ -45,6 +54,7 @@ export class CountyMapComponent implements AfterViewInit {
     'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
   selectedCol1: string = 'population';
+  // selectedCol1: string = 'nsdoh_profiles'
   // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
   selectedCol3: string = '--';
@@ -68,14 +78,67 @@ export class CountyMapComponent implements AfterViewInit {
   maxZoom = 20
 
   ngAfterViewInit() {
+    this.scrollListener = this.renderer.listen(this.containerRef.nativeElement, 'scroll', this.onScroll.bind(this));
     this.getData()
+  }
+
+  ngOnDestroy(): void {
+    if (this.scrollListener) this.scrollListener();
+    // if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
+  }
+
+  lastScrollTop: number = 0;
+  lastScrollLeft: number = 0;
+
+  onScroll(): void {
+    if (this.zoomScale >= 6) {
+      const container = this.containerRef.nativeElement;
+      const { scrollTop, scrollLeft, scrollWidth, scrollHeight, clientWidth, clientHeight } = container;
+
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      const atTop = scrollTop <= 0;
+      const atLeft = scrollLeft <= 0;
+      const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
+
+
+      const scrollingDown = scrollTop > this.lastScrollTop;
+      const scrollingUp = scrollTop < this.lastScrollTop;
+      const scrollingRight = scrollLeft > this.lastScrollLeft;
+      const scrollingLeft = scrollLeft < this.lastScrollLeft;
+
+      // Call functions based on scrolling direction and edge reached
+      if (atBottom && scrollingDown) {
+        console.log("bottom ", atBottom, scrollingDown, scrollTop, this.lastScrollTop)
+        this.navigateTiles('down')
+        this.lastScrollTop = 0;
+        this.lastScrollLeft = scrollLeft;
+      } else if (atTop && scrollingUp) {
+        console.log("top ", atTop, scrollingUp, scrollTop, this.lastScrollTop)
+        this.navigateTiles('up')
+        this.lastScrollTop = 0;
+        this.lastScrollLeft = scrollLeft;
+      } else if (atLeft && scrollingLeft) {
+        console.log("left")
+        this.navigateTiles('left')
+        this.lastScrollTop = scrollTop;
+        this.lastScrollLeft = 0;
+      } else if (atRight && scrollingRight) {
+        console.log("right")
+        this.navigateTiles('right')
+        this.lastScrollTop = scrollTop;
+        this.lastScrollLeft = 0;
+      } else {
+        this.lastScrollTop = scrollTop;
+        this.lastScrollLeft = scrollLeft;
+      }
+
+    }
   }
 
   fipsToState = fipsToStateJson
   fipsToCounty = fipsToCountyJson
 
   statesFileDict = {
-    // "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
@@ -198,6 +261,7 @@ export class CountyMapComponent implements AfterViewInit {
   avgData1 = {};
   avgData2 = {};
   avgData3 = {};
+  avgDataCat1 = {}
 
   zoomScale = 1;
 
@@ -259,16 +323,40 @@ export class CountyMapComponent implements AfterViewInit {
     'tile_id_9_0': [0.4 / 5, 0.3 / 5, 70, 71],
     // 'tile_id_9_3': [3 / 5, 2.1 / 5, 0, -3],
     'tile_id_9_3': [3 / 5, 2.1 / 5],
-    'tile_id_9_4': [0.2 / 5, 2.1 / 5, 0, 33],
+    'tile_id_9_4': [0.2 / 5, 2.1 / 5, -7, 33],
     'tile_id_10_0': [1, 1.7 / 5, 0, 50],
     'tile_id_10_2': [1 / 5, 1.6 / 5],
     'tile_id_11_0': [3.3 / 5, 2.9 / 5, 0, 33],
     'tile_id_11_1': [2.9 / 5, 3.4 / 5],
   }
 
+  //These edge tilles are tiles that are too small to display on their own and should be connected to one of their adjacent tiles
+  edgeTiles = {
+    "tile_id_0_2": "tile_id_1_2",
+    "tile_id_0_3": "tile_id_1_3",
+    "tile_id_4_4": "tile_id_4_3",
+    "tile_id_6_4": "tile_id_6_3",
+    "tile_id_7_4": "tile_id_7_3",
+    "tile_id_8_0": "tile_id_7_0",
+    "tile_id_8_5": "tile_id_8_4",
+    "tile_id_9_0": "tile_id_9_1",
+    "tile_id_9_3": "tile_id_8_3",
+    "tile_id_9_4": "tile_id_8_4",
+    "tile_id_10_0": "tile_id_10_1",
+    "tile_id_10_2": "tile_id_9_2",
+    "tile_id_11_0": "tile_id_11_1",
+    "tile_id_11_1": "tile_id_11_0"
+  }
+
+  useCarmenData = true
+  dataCarmentObj = {}
+
+
   async getData() {
     this.isLoading = true;
-    const csvData = await d3.csv('assets/nanda_grocery_tract_2003-2017_01P.csv');
+    const csvData_carmen = await d3.csv('assets/data/nsdoh_data.csv');
+
+    const csvData = await d3.csv('assets/data/nanda_grocery_tract_2003-2017_01P.csv');
 
     if (this.yearCols.length === 0) {
       for (const d of csvData) {
@@ -279,7 +367,21 @@ export class CountyMapComponent implements AfterViewInit {
       this.yearCols.sort((a, b) => a - b);
     }
 
+    for (const d of csvData_carmen) {
+      const id = d['GEOID']
+      const rate = d['nsdoh_profiles']
+      this.dataCarmen.push({
+        id: id,
+        rate: rate
+      })
+
+      this.dataCarmentObj[id] = {
+        rate: rate
+      }
+    }
+
     for (const d of csvData) {
+
       if (d['year'] === this.selectedYear) {
         let rate1 = Math.log(Number(d[this.selectedCol1]) + 1);
         let rate2 = Math.log(Number(d[this.selectedCol2]) + 1);
@@ -323,65 +425,90 @@ export class CountyMapComponent implements AfterViewInit {
         }
       }
     }
+    if (this.selectedCol1 !== '--') {
+      for (let i of this.data1) {
+        let id = i['id'].substring(0, 5);
+        let rate = i['rate']
 
-    for (let i of this.data1) {
-      let id = i['id'].substring(0, 5);
-      let rate = i['rate']
+        if (!this.avgData1[id]) {
+          this.avgData1[id] = {
+            rateArr: []
+          }
+        }
+        this.avgData1[id].rateArr.push(rate)
+      }
 
-      if (!this.avgData1[id]) {
-        this.avgData1[id] = {
-          rateArr: []
+      for (let i in this.avgData1) {
+        if (this.avgData1[i]['rateArr'].length !== 0) {
+          this.avgData1[i]['avg'] = this.avgData1[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData1[i]['rateArr'].length
+        } else {
+          this.avgData1[i]['avg'] = 0
         }
       }
-      this.avgData1[id].rateArr.push(rate)
-    }
 
-    for (let i in this.avgData1) {
-      if (this.avgData1[i]['rateArr'].length !== 0) {
-        this.avgData1[i]['avg'] = this.avgData1[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData1[i]['rateArr'].length
-      } else {
-        this.avgData1[i]['avg'] = 0
-      }
-    }
+      //collects info to find which profile appears the most in a County
+      if (this.selectedCol1 === 'nsdoh_profiles') {
+        for (let i of this.dataCarmen) {
+          let id = i['id'].substring(0, 5);
+          let rate = i['rate']
 
-    for (let i of this.data2) {
-      let id = i['id'].substring(0, 5);
-      let rate = i['rate']
+          if (!this.avgDataCat1[id]) {
+            this.avgDataCat1[id] = {
+              rateArr: []
+            }
+          }
+          this.avgDataCat1[id].rateArr.push(rate)
+        }
 
-      if (!this.avgData2[id]) {
-        this.avgData2[id] = {
-          rateArr: []
+        for (let i in this.avgDataCat1) {
+          let arr = this.avgDataCat1[i]['rateArr']
+          let topProfile = this.findMostFrequent(arr)
+          this.avgDataCat1[i]['mostFreq'] = topProfile
         }
       }
-      this.avgData2[id].rateArr.push(rate)
     }
 
-    for (let i in this.avgData2) {
-      if (this.avgData2[i]['rateArr'].length !== 0) {
-        this.avgData2[i]['avg'] = this.avgData2[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData2[i]['rateArr'].length
-      } else {
-        this.avgData2[i]['avg'] = 0
+    if (this.selectedCol2 !== '--') {
+      for (let i of this.data2) {
+        let id = i['id'].substring(0, 5);
+        let rate = i['rate']
+
+        if (!this.avgData2[id]) {
+          this.avgData2[id] = {
+            rateArr: []
+          }
+        }
+        this.avgData2[id].rateArr.push(rate)
       }
 
-    }
-
-    for (let i of this.data3) {
-      let id = i['id'].substring(0, 5);
-      let rate = i['rate']
-
-      if (!this.avgData3[id]) {
-        this.avgData3[id] = {
-          rateArr: []
+      for (let i in this.avgData2) {
+        if (this.avgData2[i]['rateArr'].length !== 0) {
+          this.avgData2[i]['avg'] = this.avgData2[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData2[i]['rateArr'].length
+        } else {
+          this.avgData2[i]['avg'] = 0
         }
       }
-      this.avgData3[id].rateArr.push(rate)
     }
 
-    for (let i in this.avgData3) {
-      if (this.avgData3[i]['rateArr'].length !== 0) {
-        this.avgData3[i]['avg'] = this.avgData3[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData3[i]['rateArr'].length
-      } else {
-        this.avgData3[i]['avg'] = 0
+    if (this.selectedCol3 !== '--') {
+      for (let i of this.data3) {
+        let id = i['id'].substring(0, 5);
+        let rate = i['rate']
+
+        if (!this.avgData3[id]) {
+          this.avgData3[id] = {
+            rateArr: []
+          }
+        }
+        this.avgData3[id].rateArr.push(rate)
+      }
+
+      for (let i in this.avgData3) {
+        if (this.avgData3[i]['rateArr'].length !== 0) {
+          this.avgData3[i]['avg'] = this.avgData3[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData3[i]['rateArr'].length
+        } else {
+          this.avgData3[i]['avg'] = 0
+        }
       }
     }
 
@@ -389,6 +516,7 @@ export class CountyMapComponent implements AfterViewInit {
 
     this.columns = csvData.columns
     this.columns.push('--')
+    this.columns.push('nsdoh_profiles')
     this.columns.sort()
 
     this.state = await d3.json(`./assets/maps/${this.statesFileDict[this.selectedState]}`)
@@ -414,6 +542,18 @@ export class CountyMapComponent implements AfterViewInit {
 
       }
     }
+
+    this.getData2()
+  }
+
+  async getData2() {
+    //Add compliment tiles for edge tiles
+    for (let tile of this.tileArr) {
+      if (this.edgeTiles[tile] && !this.tileArr.includes(this.edgeTiles[tile])) {
+        this.tileArr.push(this.edgeTiles[tile])
+      }
+    }
+
 
     for (let i in this.tileArr) {
       let fileName = this.tileArr[i]
@@ -457,18 +597,9 @@ export class CountyMapComponent implements AfterViewInit {
         }
       }
 
-      // let gridSize = 5
-      // let tileWidth = 75
-      // let tileHeight = 75
-      // let xDiff = (bounds.maxLon - bounds.minLon) / gridSize
-      // let yDiff = (bounds.maxLat - bounds.minLat) / gridSize
-      // let xAdj = (1 - xDiff) * tileWidth
-      // let yAdj = (1 - yDiff) * tileHeight
-
-      // let temp = [xDiff, yDiff, xAdj, yAdj]
       let gridSize = 5
-      let tileWidth = 75
-      let tileHeight = 75
+      let tileWidth = 300
+      let tileHeight = 300
       let xDiff = (bounds.maxLon - bounds.minLon) / gridSize //boundaries in x direction
       let yDiff = (bounds.maxLat - bounds.minLat) / gridSize //boundaries in y direction
       let xAdj = (this.tileAdj[tileName] && this.tileAdj[tileName][2] !== undefined && this.tileAdj[tileName][2] !== 0) ? (1 - xDiff) * tileWidth : 0
@@ -477,8 +608,7 @@ export class CountyMapComponent implements AfterViewInit {
       let temp = [xDiff, yDiff, xAdj, yAdj]
       this.tileAdj[tileName] = temp
     }
-    console.log("data1: ", this.data1, this.avgData1)
-    this.createBivariateChart()
+    this.createMap()
   }
 
   countyidToTileid = {}
@@ -504,8 +634,6 @@ export class CountyMapComponent implements AfterViewInit {
 
     this.resetVariables()
     this.getData()
-
-
   }
 
   onChangeBivariate(event) {
@@ -526,7 +654,9 @@ export class CountyMapComponent implements AfterViewInit {
     this.zoomScale = 1;
   }
 
-  createBivariateChart() {
+  zoomChange = false
+
+  createMap() {
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
     let useCountry = fullCountryArr.includes(selectedState) || this.zoomScale < 6 ? true : false;
@@ -536,8 +666,8 @@ export class CountyMapComponent implements AfterViewInit {
     const tileHeight = 300;
 
     const tractName = this.topoJsonObjectsKey
-    const width = this.zoomScale >= 6 ? tileWidth * 2 : 975;
-    const height = this.zoomScale >= 6 ? tileHeight : 610;
+    const width = this.zoomScale >= 6 ? (this.tilesHorizontal ? tileWidth * 2 : tileWidth) : 975;
+    const height = this.zoomScale >= 6 ? (this.tilesHorizontal ? tileHeight : tileHeight * 2) : 610;
 
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
@@ -558,9 +688,6 @@ export class CountyMapComponent implements AfterViewInit {
 
     let max2 = this.max2
     let max3 = this.max3
-
-    let currZoomScale = this.zoomScale
-    const countyidToTileid = this.countyidToTileid
 
     const fipsToState = this.fipsToState
     const fipsToCounty = this.fipsToCounty
@@ -591,7 +718,6 @@ export class CountyMapComponent implements AfterViewInit {
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
       .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
-
 
     // Set up zoom behavior
     const zoom = d3.zoom()
@@ -628,13 +754,26 @@ export class CountyMapComponent implements AfterViewInit {
       const col3Name = this.selectedCol3.charAt(0).toUpperCase() + this.selectedCol3.slice(1).toLowerCase();
 
       const color1 = d3.scaleSequential(d3.interpolateBlues).domain([this.min1, this.max1]);
-      const path = d3.geoPath();
+
+      const colorCategories = ['Profile 1', 'Profile 2', 'Profile 3', 'Profile 4', 'Profile 5', 'Profile 6', 'Profile 7', 'Profile 8',];
+      const color2 = d3.scaleOrdinal()
+        .domain(colorCategories)
+        .range(d3.schemeSet3);
+
 
       const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
       const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
       const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
+      const valuemapCarmen = new Map(this.dataCarmen.map(d => [d.id, d.rate]));
 
       const avgData1 = this.avgData1
+      const avgData2 = this.avgData2
+      const avgData3 = this.avgData3
+      const avgDataCat1 = this.avgDataCat1
+
+      const selectedCol1 = this.selectedCol1
+      const selectedCol2 = this.selectedCol2
+      const selectedCol3 = this.selectedCol3
 
       const defs = svg.append("defs");
 
@@ -657,7 +796,29 @@ export class CountyMapComponent implements AfterViewInit {
         .append("path")
         .attr("d", "M0,0 L6,6 M6,0 L0,6")  // Diagonal lines
         .attr("stroke", "yellow")
-        .attr("stroke-width", 1);
+        .attr("stroke-width", .5);
+
+      defs.append("pattern")
+        .attr("id", "diagonal-stripe-zoom")
+        .attr("width", 4)
+        .attr("height", 4)
+        .attr("patternUnits", "userSpaceOnUse")
+        .append("path")
+        .attr("d", "M0,4 L4,0") // Diagonal stripe
+        .attr("stroke", "red")  // Pattern color
+        .attr("stroke-width", .1)
+        .attr("opacity", 1)  // Set the opacity of the pattern
+
+      defs.append("pattern")
+        .attr("id", "crosshatch_zoom")
+        .attr("width", .5)
+        .attr("height", .5)
+        .attr("patternUnits", "userSpaceOnUse")
+        .append("path")
+        .attr("d", "M0,0 L6,6 M6,0 L0,6")  // Diagonal lines
+        .attr("stroke", "yellow")
+        .attr("stroke-width", .1)
+        .attr("opacity", 1)
 
 
       //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
@@ -718,32 +879,50 @@ export class CountyMapComponent implements AfterViewInit {
             .append('g')  // Create a group for each feature
             .attr("class", "tract-group")
             .on("mouseover", function (event, d) {
-              const prop = d['properties'];
               d3.select(this).style("cursor", "pointer");
-              tooltip.transition().duration(100).style("opacity", 1);
-              const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
-              const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
+              d3.select(this).selectAll('path')
+                .attr("stroke", "orange")
+                .attr("stroke-width", 1);
 
-              const id = useCountry ? prop['FIPS'] : prop['GEOID']
-              const stateId = useCountry ? prop.ST : prop.STATEFP
-              const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
-              const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1] : prop.NAME
-              const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
-              const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
-              tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 10) + "px");
+              const prop = d['properties'];
+              tooltip.transition().duration(100).style("opacity", 1);
+
+              if (selectedCol1 === 'nsdoh_profiles') {
+                const state = prop['STATE']
+                const stateId = prop['ST']
+                const countyName = prop['COUNTY']
+                const fipscode = prop['STCNTY']
+                const censusTractId = prop['FIPS']
+                const val1String = valuemapCarmen.get(censusTractId)
+
+                tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}`)
+                  .style("left", (event.pageX + 10) + "px")
+                  .style("top", (event.pageY - 10) + "px");
+              } else {
+                const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
+                const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
+                const id = useCountry ? prop['FIPS'] : prop['GEOID']
+                const stateId = useCountry ? prop.ST : prop.STATEFP
+                const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
+                const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1] : prop.NAME
+                const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
+                const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
+                tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+                  .style("left", (event.pageX + 10) + "px")
+                  .style("top", (event.pageY - 10) + "px");
+              }
+
             })
             .on("mouseout", function (event, d) {
               d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+              d3.select(this).selectAll('path')
+                .attr("stroke", 'rgba(119, 119, 119, .7)')
+                .attr("stroke-width", 0.05);
               tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
             })
             .attr('stroke', 'rgba(119, 119, 119, .7)')
             .attr('stroke-width', .05)
             .on("click", (event, d) => {
-              let countyId = d['properties']['STCNTY']
-              let currTile = this.countyidToTileid[countyId]
-
               const [mouseX, mouseY] = d3.pointer(event);
 
               if (this.zoomScale <= this.maxZoom) {
@@ -757,9 +936,18 @@ export class CountyMapComponent implements AfterViewInit {
               .attr('d', path)
               .attr("class", "tract")
               .attr("fill", (d) => {
-                const prop = d['properties'];
-                const id = prop['FIPS'];
-                return color1(valuemap1.get(id));
+                if (this.selectedCol1 === 'nsdoh_profiles') {
+                  const prop = d['properties'];
+                  const id = prop['FIPS']
+                  const test = valuemapCarmen.get(id);
+                  return color2(test) as string;
+
+                } else {
+                  const prop = d['properties'];
+                  const id = prop['FIPS'];
+                  return color1(valuemap1.get(id));
+                }
+
               })
               .attr('stroke', 'rgba(119, 119, 119, .7)')
               .attr('stroke-width', 0.05);
@@ -769,7 +957,7 @@ export class CountyMapComponent implements AfterViewInit {
             featuresGroup.append('path')
               .attr('d', path)
               .attr("class", "tract-pattern")
-              .attr("fill", "url(#diagonal-stripe)")
+              .attr("fill", "url(#crosshatch_zoom)")
               .attr("opacity", (d) => {
                 const prop = d['properties'];
                 const id = prop['FIPS'];
@@ -782,7 +970,7 @@ export class CountyMapComponent implements AfterViewInit {
             featuresGroup.append('path')
               .attr('d', path)
               .attr("class", "tract-pattern")
-              .attr("fill", "url(#crosshatch)")
+              .attr("fill", "url(#diagonal-stripe-zoom)")
               .attr("opacity", (d) => {
                 const prop = d['properties'];
                 const id = prop['FIPS'];
@@ -791,14 +979,13 @@ export class CountyMapComponent implements AfterViewInit {
               });
           }
         })
-      }
-      else {
+      } else {
         const land = topojson.feature(this.state, {
           type: "GeometryCollection",
           geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
         });
 
-        svg.append("style").text(`.tract:hover {fill: orange }`);
+        // svg.append("style").text(`.tract:hover {fill: orange }`);
 
         const [longitude, latitude] = this.stateCentroids[this.selectedState];
         const path = d3.geoPath()
@@ -806,49 +993,87 @@ export class CountyMapComponent implements AfterViewInit {
             .rotate([-longitude, -latitude])
             .fitExtent([[20, 20], [width - 20, height - 20]], land));
 
-        // svg.selectAll("path")
-        //   .data(land.features)
-        //   .enter().append("path")
-        //   .attr("class", "tract")
-        //   .attr("d", path)
-
         const featuresGroup = svg.append('g').selectAll('g')
           .data(land['features'])
           .enter()
           .append('g')  // Create a group for each feature
           .attr("class", "tract-group")
           .on("mouseover", function (event, d) {
-            const prop = d['properties'];
             d3.select(this).style("cursor", "pointer");
+            d3.select(this).selectAll('path')
+              .attr("stroke", "orange")
+              .attr("stroke-width", 1);
+            const prop = d['properties'];
             tooltip.transition().duration(100).style("opacity", 1);
-            const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
+
+            // if (selectedCol1 === 'nsdoh_profiles') {
+            //   console.log("prop: ",prop)
+            //   const state = prop['STATE_NAME']
+            //   const stateId = prop['STATE_FIPS']
+            //   const countyName = prop['COUNTY']
+            //   const 
+            //   let toolTipString = `State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>`
+            // } else {
+            const fipscode = useCountry ? prop['STCOFIPS'] : prop.STATEFP + prop.COUNTYFP;
             const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
 
-            const id = useCountry ? prop['FIPS'] : prop['GEOID']
-            const stateId = useCountry ? prop.ST : prop.STATEFP
-            const state = useCountry ? prop.STATE : fipsToState[prop.STATEFP]
-            const censusTractId = useCountry ? prop.LOCATION.match(/Census Tract (\d+(\.\d+)?),/)[1] : prop.NAME
-            const val1String = valuemap1.get(id) !== undefined ? valuemap1.get(id).toFixed(5) : 'N/A';
-            const val2String = valuemap2.get(id) !== undefined ? valuemap2.get(id).toFixed(5) : 'N/A';
-            tooltip.html(`State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>Census Tract: ${censusTractId}<br>${col1Name}: ${val1String}<br>${col2Name}: ${val2String}`)
+            const id = useCountry ? prop['STCOFIPS'] : prop['GEOID']
+            const stateId = useCountry ? prop['STATE_ABBR'] : prop['STATEFP']
+            const state = useCountry ? prop['STATE_NAME'] : fipsToState[prop.STATEFP]
+
+            let val1 = ' '
+            if (selectedCol1 === 'nsdoh_profiles') {
+              val1 = avgDataCat1[id]['mostFreq']
+            } else {
+              val1 = useCountry ? (avgData1[id] ? avgData1[id]['avg'].toFixed(5) : 'N/A') : valuemap1.get(id)
+            }
+
+            const val2 = useCountry ? (avgData2[id] ? avgData2[id]['avg'].toFixed(5) : 'N/A') : valuemap2.get(id)
+            const val3 = useCountry ? (avgData3[id] ? avgData3[id]['avg'].toFixed(5) : 'N/A') : valuemap2.get(id)
+
+            let toolTipString = `State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>`
+            if (selectedCol1 !== '--') {
+              toolTipString += `${col1Name}: ${val1}<br>`
+            }
+            if (selectedCol2 !== '--') {
+              toolTipString += `${col2Name}: ${val2}<br>`
+            }
+            if (selectedCol3 !== '--') {
+              toolTipString += `${col3Name}: ${val3}<br>`
+            }
+
+            tooltip.html(toolTipString)
               .style("left", (event.pageX + 10) + "px")
               .style("top", (event.pageY - 10) + "px");
+            // }
+
+
+
           })
           .on("mouseout", function (event, d) {
             d3.select(this).style("cursor", "default");  // Change cursor back to default when not hovering
+            d3.select(this).selectAll('path')
+              .attr("stroke", 'rgba(119, 119, 119, .7)')
+              .attr("stroke-width", 0.05);
             tooltip.transition().duration(100).style("opacity", 0);  // Hide tooltip
           })
           .attr('stroke', 'rgba(119, 119, 119, .7)')
           .attr('stroke-width', .05)
           .on("click", (event, d) => {
-            let countyId = d['properties']['STCNTY']
+            let countyId = d['properties']['STCOFIPS']
             let currTile = this.countyidToTileid[countyId]
-
             const [mouseX, mouseY] = d3.pointer(event);
 
             if (this.zoomScale <= this.maxZoom) {
               this.zoomScale += 2
-              zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+
+              if (this.zoomScale === 6 || this.zoomScale === 7) {
+                this.tileArr = currTile
+                this.loadTiles()
+
+              } else {
+                zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
+              }
             }
           })
 
@@ -857,10 +1082,18 @@ export class CountyMapComponent implements AfterViewInit {
             .attr('d', path)
             .attr("class", "tract")
             .attr("fill", (d) => {
-              const prop = d['properties'];
-              const id = useCountry ? prop['STCOFIPS'] : prop['GEOID']
-              const val1 = useCountry ? (avgData1[id] ? avgData1[id]['avg'] : 0) : valuemap1.get(id)
-              return color1(val1);
+              if (selectedCol1 === 'nsdoh_profiles') {
+                const prop = d['properties'];
+                const id = prop['STCOFIPS']
+                const profile = this.avgDataCat1[id] !== undefined ? this.avgDataCat1[id]['mostFreq'] : "Profile 9"
+                return color2(profile) as string
+              } else {
+                const prop = d['properties'];
+                const id = useCountry ? prop['STCOFIPS'] : prop['GEOID']
+                const val1 = useCountry ? (avgData1[id] ? avgData1[id]['avg'] : 0) : valuemap1.get(id)
+                return color1(val1);
+              }
+
             })
             .attr('stroke', 'rgba(119, 119, 119, .7)')
             .attr('stroke-width', 0.05);
@@ -870,12 +1103,11 @@ export class CountyMapComponent implements AfterViewInit {
           featuresGroup.append('path')
             .attr('d', path)
             .attr("class", "tract-pattern")
-            .attr("fill", "url(#diagonal-stripe)")
+            .attr("fill", "url(#crosshatch)")
             .attr("opacity", (d) => {
               const prop = d['properties'];
               const id = prop['STCOFIPS'];
               const rate = useCountry ? (avgData2[id] ? avgData2[id]['avg'] : 0) : valuemap2.get(id)
-              console.log("rate: ", rate, id, prop, rate / max2 + 0.2)
               return rate ? (rate / max2 + 0.2) : 0;
             });
         }
@@ -884,7 +1116,7 @@ export class CountyMapComponent implements AfterViewInit {
           featuresGroup.append('path')
             .attr('d', path)
             .attr("class", "tract-pattern")
-            .attr("fill", "url(#crosshatch)")
+            .attr("fill", "url(#diagonal-stripe)")
             .attr("opacity", (d) => {
               const prop = d['properties'];
               const id = prop['STCOFIPS'];
@@ -900,7 +1132,7 @@ export class CountyMapComponent implements AfterViewInit {
       //   .attr("stroke", "white")
       //   .attr("stroke-linejoin", "round")
       //   .attr("d", path);
-    } else {
+    } else if (this.useBivariate === true) {
 
       //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
       //think of a better way to handle this later.
@@ -923,6 +1155,13 @@ export class CountyMapComponent implements AfterViewInit {
 
           this.minCol = Math.min(col, this.minCol)
           this.minRow = Math.min(row, this.minRow)
+        }
+
+        //Add compliment tiles for edge tiles
+        for (let tile of this.tileArr) {
+          if (this.edgeTiles[tile] && !this.tileArr.includes(this.edgeTiles[tile])) {
+            this.tileArr.push(this.edgeTiles[tile])
+          }
         }
 
         this.tileArr.forEach((d, i) => {
@@ -1136,6 +1375,13 @@ export class CountyMapComponent implements AfterViewInit {
             }
           })
       }
+
+      if(this.zoomChange && this.zoomScale < 6){
+        //this zoom to be to the center of the map instead of the top left corner. There is also an error when zoomning out that seems to not apply this part of the code.
+        zoomTo(0,0,this.zoomScale)
+      }
+      this.zoomChange = false;
+
       // Create the grid for the legend
       const k = 24; // size of each cell in the grid 
       const n = 3 // Grid size for the legend
@@ -1208,8 +1454,8 @@ export class CountyMapComponent implements AfterViewInit {
     } else if (direction === '-' && this.zoomScale > 2) {
       this.zoomScale -= 2
     }
-
-    this.createBivariateChart()
+    this.zoomChange = true
+    this.createMap()
   }
 
   preventHistoryNavigation(event: WheelEvent): void {
@@ -1223,7 +1469,6 @@ export class CountyMapComponent implements AfterViewInit {
   }
 
   async loadTiles() {
-
     if (this.tileArr.length < 2) {
       this.addAdjacentTiles()
     }
@@ -1238,8 +1483,7 @@ export class CountyMapComponent implements AfterViewInit {
       this.minRow = Math.min(this.minRow, row)
       this.minCol = Math.min(this.minCol, col)
     }
-    console.log("load tiels: ", this.stateTile, this.tileArr)
-    this.createBivariateChart()
+    this.createMap()
 
   }
 
@@ -1256,6 +1500,119 @@ export class CountyMapComponent implements AfterViewInit {
         if (!this.tileArr.includes(tileLeft)) this.tileArr.push(tileLeft);
       }
     });
+  }
+
+  //tiles are initial displayed horizontal of each other
+  tilesHorizontal = true
+  tilesVertical = false
+
+  navigateTiles(direction: string): void {
+    let firstTile = ''
+    let secondTile = ''
+    if (direction === 'up' || direction === 'left') {
+      firstTile = this.tileArr[0]
+      secondTile = this.tileArr[1]
+    } else if (direction === 'down' || direction === 'right') {
+      let endArr = this.tileArr.slice(-2)
+      firstTile = endArr[0]
+      secondTile = endArr.length === 2 ? endArr[1] : endArr[0]
+    }
+
+    let parts1 = firstTile.split("_");
+    let row1 = Number(parts1[3])
+    let col1 = Number(parts1[2])
+
+    let parts2 = secondTile.split("_");
+    let row2 = Number(parts2[3])
+    let col2 = Number(parts2[2])
+
+    let horizontalTiles = false;
+    let verticalTiles = false;
+
+    if (row1 === row2) {
+      horizontalTiles = true
+    } else if (col1 === col2) {
+      verticalTiles = true
+    }
+
+    let loadNewTiles = false
+    if (direction === 'up') {
+      if (horizontalTiles || verticalTiles) {
+        let newFirstTile = `tile_id_${col1}_${row1 - 1}`
+        if (this.AllTilesArr.includes(newFirstTile)) {
+          this.tileArr = []
+          this.tileArr.push(newFirstTile)
+          this.tileArr.push(firstTile)
+          this.tilesHorizontal = false
+          loadNewTiles = true
+        }
+      }
+    } else if (direction === 'down') {
+      if (horizontalTiles) {
+        let newFirstTile = `tile_id_${col1}_${row1 + 1}`
+        if (this.AllTilesArr.includes(newFirstTile)) {
+          this.tileArr = []
+          this.tileArr.push(firstTile)
+          this.tileArr.push(newFirstTile)
+          this.tilesHorizontal = false
+          loadNewTiles = true
+        }
+      } else if (verticalTiles) {
+        let newSecondTile = `tile_id_${col2}_${row2 + 1}`
+        if (this.AllTilesArr.includes(newSecondTile)) {
+          this.tileArr = []
+          this.tileArr.push(secondTile)
+          this.tileArr.push(newSecondTile)
+          this.tilesHorizontal = false
+          loadNewTiles = true
+        }
+      }
+
+    } else if (direction === 'left') {
+      if (horizontalTiles || verticalTiles) {
+        let newFirstTile = `tile_id_${col1 - 1}_${row1}`
+        if (this.AllTilesArr.includes(newFirstTile)) {
+          this.tileArr = []
+          this.tileArr.push(newFirstTile)
+          this.tileArr.push(firstTile)
+          this.tilesHorizontal = true
+          loadNewTiles = true
+        }
+      }
+    } else if (direction === 'right') {
+      if (horizontalTiles || verticalTiles) {
+        let newSecondTile = `tile_id_${col2 + 1}_${row2}`
+        if (this.AllTilesArr.includes(newSecondTile)) {
+          this.tileArr = []
+          this.tileArr.push(secondTile)
+          this.tileArr.push(newSecondTile)
+          this.tilesHorizontal = true
+          loadNewTiles = true
+        }
+      }
+    }
+    console.log("tiles arr: ", this.tileArr)
+    if (loadNewTiles) {
+      this.getData2()
+    }
+  }
+
+  findMostFrequent(arr) {
+    const counts = new Map();
+    let mostFrequentItem = null;
+    let maxCount = 0;
+
+    for (const item of arr) {
+      const count = (counts.get(item) || 0) + 1;
+      counts.set(item, count);
+
+      if (count > maxCount) {
+        maxCount = count;
+        mostFrequentItem = item;
+      }
+    }
+
+    return mostFrequentItem;
   }
 
 
