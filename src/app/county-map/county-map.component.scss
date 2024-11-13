@@ -15,9 +15,10 @@
     display: flex;
     flex-direction: column;
     transform: scale(0.5);
-    position: absolute;
+    position: fixed;
     bottom: 10px;
-    z-index: 100;
+    left: 20px;
+    z-index: 10;
 }
 
 .zoomButton {
@@ -37,6 +38,7 @@
     width: 100vw;
     height: 100vh;
     overflow: auto;
+    position: relative;
 }
 
 .navButtonContainer {
@@ -55,3 +57,87 @@
     margin: 2px;
 }
 
+.arrow {
+    // position: absolute;
+    position: fixed;
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s, opacity 0.3s;
+    opacity: .1;
+}
+
+.arrow:hover {
+    background-color: rgba(204, 204, 204, 0.8);
+    color: rgba(0, 0, 0, 0.8);
+    opacity: 1;
+}
+
+.arrow-top {
+    left: 50%;
+    // top: 0px;
+    transform: translateX(-50%);
+    border-radius: 0 0 100px 100px;
+    background-color: rgba(204, 204, 204, 0.6);
+    width: 100px;
+    height: 50px; 
+}
+
+.arrow-bottom {
+    bottom: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 100px 100px 0 0; /* Make the top half a full circle */
+    background-color: rgba(204, 204, 204, 0.6);
+    width: 100px; 
+    height: 50px; 
+}
+
+.arrow-left {
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 0 100px 100px 0;
+    background-color: rgba(204, 204, 204, 0.6);
+    width: 50px; 
+    height: 100px; 
+}
+
+.arrow-right {
+    top: 50%;
+    right: 0px;
+    transform: translateY(-50%);
+    border-radius: 100px 0 0 100px;
+    background-color: rgba(204, 204, 204, 0.6);
+    width: 50px;
+    height: 100px; 
+}
+
+.icon-arrow {
+    width: 50px;
+    height: 50px;
+    font-size: 50px;
+}
+
+.icon-arrow-top{
+    margin-left: 25px
+}
+
+.icon-arrow-bottom{
+    margin-left: 25px
+}
+
+.icon-arrow-left{
+    margin-top: 25px
+}
+
+.icon-arrow-right{
+    margin-top: 25px
+}
+
+#legend{
+    position: fixed;
+    right: 20px;
+    bottom: 10px;
+}

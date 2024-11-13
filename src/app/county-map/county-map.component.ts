@@ -4,6 +4,7 @@ import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
 import fipsToStateJson from '../../assets/data/fipsToState.json'
 import fipsToCountyJson from '../../assets/data/fipsToCounty.json';
+import { trigger, transition, style, animate } from '@angular/animations';
 
 interface GroceryData {
   id: string;
@@ -35,6 +36,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   constructor(private renderer: Renderer2) { }
 
   scatterplotContainerId = '#map'
+  legendContainerId = '#legend'
   topoJsonObjectsKey = ''
 
   isLoading: boolean = true
@@ -76,6 +78,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   minRow = Infinity
 
   maxZoom = 20
+  private debounceTimer: any;
 
   ngAfterViewInit() {
     this.scrollListener = this.renderer.listen(this.containerRef.nativeElement, 'scroll', this.onScroll.bind(this));
@@ -84,55 +87,94 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.scrollListener) this.scrollListener();
-    // if (this.debounceTimeout) clearTimeout(this.debounceTimeout);
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
   }
+
+  showTopArrow = false;
+  showBottomArrow = true;
+  showLeftArrow = false;
+  showRightArrow = false;
 
   lastScrollTop: number = 0;
   lastScrollLeft: number = 0;
 
-  onScroll(): void {
-    if (this.zoomScale >= 6) {
-      const container = this.containerRef.nativeElement;
-      const { scrollTop, scrollLeft, scrollWidth, scrollHeight, clientWidth, clientHeight } = container;
+  onScroll(event): void {
+    // if (this.zoomScale >= 6) {
+    //   const container = this.containerRef.nativeElement;
+    //   const { scrollTop, scrollLeft, scrollWidth, scrollHeight, clientWidth, clientHeight } = container;
 
-      const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
-      const atTop = scrollTop <= 0;
-      const atLeft = scrollLeft <= 0;
-      const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
+    //   const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+    //   const atTop = scrollTop <= 0;
+    //   const atLeft = scrollLeft <= 0;
+    //   const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
 
 
-      const scrollingDown = scrollTop > this.lastScrollTop;
-      const scrollingUp = scrollTop < this.lastScrollTop;
-      const scrollingRight = scrollLeft > this.lastScrollLeft;
-      const scrollingLeft = scrollLeft < this.lastScrollLeft;
+    //   const scrollingDown = scrollTop > this.lastScrollTop;
+    //   const scrollingUp = scrollTop < this.lastScrollTop;
+    //   const scrollingRight = scrollLeft > this.lastScrollLeft;
+    //   const scrollingLeft = scrollLeft < this.lastScrollLeft;
 
-      // Call functions based on scrolling direction and edge reached
-      if (atBottom && scrollingDown) {
-        console.log("bottom ", atBottom, scrollingDown, scrollTop, this.lastScrollTop)
-        this.navigateTiles('down')
-        this.lastScrollTop = 0;
-        this.lastScrollLeft = scrollLeft;
-      } else if (atTop && scrollingUp) {
-        console.log("top ", atTop, scrollingUp, scrollTop, this.lastScrollTop)
-        this.navigateTiles('up')
-        this.lastScrollTop = 0;
-        this.lastScrollLeft = scrollLeft;
-      } else if (atLeft && scrollingLeft) {
-        console.log("left")
-        this.navigateTiles('left')
-        this.lastScrollTop = scrollTop;
-        this.lastScrollLeft = 0;
-      } else if (atRight && scrollingRight) {
-        console.log("right")
-        this.navigateTiles('right')
-        this.lastScrollTop = scrollTop;
-        this.lastScrollLeft = 0;
-      } else {
-        this.lastScrollTop = scrollTop;
-        this.lastScrollLeft = scrollLeft;
-      }
+    //   // Call functions based on scrolling direction and edge reached
+    //   if (atBottom && scrollingDown) {
+    //     console.log("bottom ", atBottom, scrollingDown, scrollTop, this.lastScrollTop)
+    //     this.navigateTiles('down')
+    //     this.lastScrollTop = 0;
+    //     this.lastScrollLeft = scrollLeft;
+    //   } else if (atTop && scrollingUp) {
+    //     console.log("top ", atTop, scrollingUp, scrollTop, this.lastScrollTop)
+    //     this.navigateTiles('up')
+    //     this.lastScrollTop = 0;
+    //     this.lastScrollLeft = scrollLeft;
+    //   } else if (atLeft && scrollingLeft) {
+    //     console.log("left")
+    //     this.navigateTiles('left')
+    //     this.lastScrollTop = scrollTop;
+    //     this.lastScrollLeft = 0;
+    //   } else if (atRight && scrollingRight) {
+    //     console.log("right")
+    //     this.navigateTiles('right')
+    //     this.lastScrollTop = scrollTop;
+    //     this.lastScrollLeft = 0;
+    //   } else {
+    //     this.lastScrollTop = scrollTop;
+    //     this.lastScrollLeft = scrollLeft;
+    //   }
 
-    }
+    // }
+    const container = event.target as HTMLElement;
+    const { scrollTop, scrollHeight, clientHeight, scrollLeft, scrollWidth, clientWidth } = container;
+
+    this.showBottomArrow = scrollTop + clientHeight >= scrollHeight;
+    this.showTopArrow = scrollTop === 0;
+    this.showLeftArrow = scrollLeft === 0;
+    this.showRightArrow = scrollLeft + clientWidth >= scrollWidth;
+  }
+
+  checkScrollEdges(scrollTop: number, scrollHeight: number, clientHeight: number, scrollLeft: number, scrollWidth: number, clientWidth: number) {
+    console.log("got to checkscroll edges")
+    // Show the bottom arrow when at the bottom edge
+    this.showBottomArrow = scrollTop + clientHeight >= scrollHeight;
+
+    // Show the top arrow when at the top edge
+    this.showTopArrow = scrollTop === 0;
+
+    // Show the left arrow when at the left edge
+    this.showLeftArrow = scrollLeft === 0;
+
+    // Show the right arrow when at the right edge
+    this.showRightArrow = scrollLeft + clientWidth >= scrollWidth;
+
+    // Hide arrows after 1 second delay
+    setTimeout(() => {
+      this.hideArrows();
+    }, 1000);
+  }
+
+  hideArrows() {
+    this.showTopArrow = false;
+    this.showBottomArrow = false;
+    this.showLeftArrow = false;
+    this.showRightArrow = false;
   }
 
   fipsToState = fipsToStateJson
@@ -712,6 +754,10 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       .selectAll('svg')
       .remove();
 
+    d3.select(this.legendContainerId)
+      .selectAll('svg')
+      .remove();
+
     const svg = d3.select(this.scatterplotContainerId)
       .append("svg")
       .attr("width", width)
@@ -759,7 +805,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       const color2 = d3.scaleOrdinal()
         .domain(colorCategories)
         .range(d3.schemeSet3);
-
 
       const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
       const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
@@ -1124,25 +1169,193 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
               return rate ? (rate / max3 + 0.2) : 0;
             });
         }
+
+
+
+      }
+      let legendWidth = 100
+      let legendHeight = 75
+      let separation = 20
+
+      // Create SVG container for the legend
+      const svgLegend = d3.select(this.legendContainerId)
+        .append("svg")
+        .attr("width", 165)
+        .attr("height", legendHeight + 80)  // Adjust height to fit both gradients
+        .attr("viewBox", [0, 0, 165, legendHeight + 80])
+        .attr('transform', `translate(${0}, ${-100})`)
+        .style("background-color", "rgba(250,250,250, 0.9)") // Set grey background
+        .style("border", "1px solid black")
+        .style("border-radius", "7px")
+
+      // Define the first gradient from white to blue
+      const defsLegend = svgLegend.append("defs");
+
+      if (this.selectedCol1 !== '--') {
+        const blueGradient = defsLegend.append("linearGradient")
+          .attr("id", "legendGradientBlue")
+          .attr("x1", "0%")
+          .attr("y1", "0%")
+          .attr("x2", "100%")
+          .attr("y2", "0%");
+
+        blueGradient.append("stop").attr("offset", "0%").attr("stop-color", "#f7fbff");
+        blueGradient.append("stop").attr("offset", "20%").attr("stop-color", "#c6dbef");
+        blueGradient.append("stop").attr("offset", "40%").attr("stop-color", "#6baed6");
+        blueGradient.append("stop").attr("offset", "60%").attr("stop-color", "#3182bd");
+        blueGradient.append("stop").attr("offset", "80%").attr("stop-color", "#08519c");
+        blueGradient.append("stop").attr("offset", "100%").attr("stop-color", "#08306b");
+
+        // Rectangle for blue gradient
+        svgLegend.append("rect")
+          .attr("x", 20)
+          .attr("y", legendHeight - 50)
+          .attr("width", 100)
+          .attr("height", 10)
+          .style("fill", "url(#legendGradientBlue)");
+
+        svgLegend.append("text")
+          .attr("x", 15)
+          .attr("y", legendHeight - 55)
+          .attr("text-anchor", "start")
+          .attr("font-size", 8)
+          .attr("font-weight", "bold")
+          .text(this.selectedCol1 !== '--' ? `${this.selectedCol1.charAt(0).toUpperCase()}${this.selectedCol1.slice(1)}` : 'Column 1');
+
+        // Text labels for blue gradient
+        svgLegend.append("text")
+          .attr("x", 15)
+          .attr("y", legendHeight - 55 + 25)
+          .attr("text-anchor", "start")
+          .attr("font-size", 8)
+          .text(`${Math.floor(this.min1 * 10) / 10}`);
+
+        svgLegend.append("text")
+          .attr("x", 125)
+          .attr("y", legendHeight - 55 + 25)
+          .attr("text-anchor", "end")
+          .attr("font-size", 8)
+          .text(`${Math.ceil(this.max1 * 10) / 10}`);
       }
 
-      // svg.append("path")
-      //   .datum(topojson.mesh(this.state, this.state.objects[this.topoJsonObjectsKey], (a, b) => a !== b))
-      //   .attr("fill", "none")
-      //   .attr("stroke", "white")
-      //   .attr("stroke-linejoin", "round")
-      //   .attr("d", path);
+
+      if (this.selectedCol2 !== '--') {
+        // Define the second gradient from white to yellow
+        const yellowGradient = defsLegend.append("linearGradient")
+          .attr("id", "legendGradientYellow")
+          .attr("x1", "0%")
+          .attr("y1", "0%")
+          .attr("x2", "100%")
+          .attr("y2", "0%");
+
+        yellowGradient.append("stop")
+          .attr("offset", "0%")
+          .attr("stop-color", "#ffff00")
+          .attr("stop-opacity", 0);  // Transparent yellow
+
+        yellowGradient.append("stop")
+          .attr("offset", "100%")
+          .attr("stop-color", "#ffff00")
+          .attr("stop-opacity", 1);  // Opaque yellow
+
+        // Rectangle for yellow gradient
+        svgLegend.append("rect")
+          .attr("x", 20)
+          .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
+          .attr("width", 100)
+          .attr("height", 10)
+          .style("fill", "url(#legendGradientYellow)");
+
+        // Text labels for yellow gradient
+        svgLegend.append("text")
+          .attr("x", 15)
+          .attr("y", legendHeight - 40 + separation + 10)
+          .attr("text-anchor", "start")
+          .attr("font-size", 8)
+          .attr("font-weight", "bold")
+          // .text("Column 2:");
+          .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
+
+        svgLegend.append("text")
+          .attr("x", 15)
+          .attr("y", legendHeight - 40 + separation + 25 + 10)
+          .attr("text-anchor", "start")
+          .attr("font-size", 8)
+          // .text("Low");
+          .text(`${Math.floor(this.min2 * 10) / 10}`);
+
+        svgLegend.append("text")
+          .attr("x", 125)
+          .attr("y", legendHeight - 40 + separation + 25 + 10)
+          .attr("text-anchor", "end")
+          .attr("font-size", 8)
+          // .text("High");
+          .text(`${Math.ceil(this.max2 * 10) / 10}`);
+      }
+
+      if (this.selectedCol3 !== '--') {
+        // Define the red gradient with transparency
+        const redGradient = defsLegend.append("linearGradient")
+          .attr("id", "legendGradientRed")
+          .attr("x1", "0%")
+          .attr("y1", "0%")
+          .attr("x2", "100%")
+          .attr("y2", "0%");
+
+        redGradient.append("stop")
+          .attr("offset", "0%")
+          .attr("stop-color", "#ff0000")
+          .attr("stop-opacity", 0);
+
+        redGradient.append("stop")
+          .attr("offset", "100%")
+          .attr("stop-color", "#ff0000")
+          .attr("stop-opacity", 1);
+
+        // Rectangle for red gradient with additional vertical separation
+        svgLegend.append("rect")
+          .attr("x", 20)
+          .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
+          .attr("width", legendWidth)
+          .attr("height", 10)
+          .style("fill", "url(#legendGradientRed)");
+
+        // Text labels for red gradient
+        svgLegend.append("text")
+          .attr("x", 15)
+          .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
+          .attr("text-anchor", "start")
+          .attr("font-size", 8)
+          .attr("font-weight", "bold")
+          .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
+
+        svgLegend.append("text")
+          .attr("x", 15)
+          .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+          .attr("text-anchor", "start")
+          .attr("font-size", 8)
+          // .text("Low");
+          .text(`${Math.floor(this.min2 * 10) / 10}`);
+
+        svgLegend.append("text")
+          .attr("x", 125)
+          .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+          .attr("text-anchor", "end")
+          .attr("font-size", 8)
+          // .text("High");
+          .text(`${Math.ceil(this.max2 * 10) / 10}`);
+      }
     } else if (this.useBivariate === true) {
 
       //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
       //think of a better way to handle this later.
       //also add in mouseX and mouseY to center on the zoom spot
-      if (this.zoomScale === 6 || this.zoomScale === 7) {
-        svg.transition()
-          .duration(200)
-          .call(zoom.transform, d3.zoomIdentity
-            .scale(this.zoomScale));
-      }
+      // if (this.zoomScale === 6 || this.zoomScale === 7) {
+      svg.transition()
+        .duration(200)
+        .call(zoom.transform, d3.zoomIdentity
+          .scale(this.zoomScale));
+      // }
 
       if (this.zoomScale >= 6) {
         this.minRow = Infinity
@@ -1252,16 +1465,19 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             .attr('stroke-width', .05)
             .on("click", (event, d) => {
               let countyId = d['properties']['STCNTY']
-              let currTile = this.countyidToTileid[countyId]
+              // let currTile = this.countyidToTileid[countyId]
 
               const [mouseX, mouseY] = d3.pointer(event);
-
+              console.log("mouse click: ", mouseX, mouseY)
               if (this.zoomScale <= this.maxZoom) {
                 this.zoomScale += 2
                 zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
               }
             })
-        })
+        }
+
+
+        )
       } else {
         const land = topojson.feature(this.state, {
           type: "GeometryCollection",
@@ -1376,21 +1592,33 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           })
       }
 
-      if(this.zoomChange && this.zoomScale < 6){
+      if (this.zoomChange && (this.zoomScale > 1 && this.zoomScale < 6)) {
         //this zoom to be to the center of the map instead of the top left corner. There is also an error when zoomning out that seems to not apply this part of the code.
-        zoomTo(0,0,this.zoomScale)
+        zoomTo(width / this.zoomScale, height / this.zoomScale, this.zoomScale)
       }
       this.zoomChange = false;
+
+      let xStart = this.zoomScale < 6 ? 200 : 0
+      let yStart = this.zoomScale < 6 ? 0 : -150
+      let scaleLegend = this.zoomScale < 6 ? 6 : 4
+      let legendWidth = Math.max(width, height)
+      let legendHeight = Math.min(width, height)
+
+      const svgLegend = d3.select(this.legendContainerId)
+        .append("svg")
+        .attr("width", 200)
+        .attr("height", 200)
+        .attr("viewBox", [xStart, yStart, legendWidth + 200, legendHeight])
+      // .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
 
       // Create the grid for the legend
       const k = 24; // size of each cell in the grid 
       const n = 3 // Grid size for the legend
-      const legendGroup = svg.append('g')
+      const legendGroup = svgLegend.append('g')
         .attr('font-family', 'sans-serif')
         .attr('font-size', 10)
-        .attr('transform', `translate(${width - 100}, ${height - 175}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${1 / this.zoomScale})`);
-      // .attr('transform', `translate(${width - 100}, ${height - 175}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${1})`);
-
+        .attr('z-index', 50)
+        .attr('transform', `translate(${legendWidth- 450}, ${legendHeight - 400}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${scaleLegend})`)
 
       // Add the squares to the legend
       d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
