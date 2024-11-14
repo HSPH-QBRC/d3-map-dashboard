@@ -72,7 +72,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   data2Obj = {}
   data3Obj = {}
 
-  useBivariate: boolean = true
+  useBivariate: boolean = false
 
   minCol = Infinity
   minRow = Infinity
@@ -97,6 +97,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
   lastScrollTop: number = 0;
   lastScrollLeft: number = 0;
+
+
 
   onScroll(event): void {
     // if (this.zoomScale >= 6) {
@@ -151,7 +153,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   }
 
   checkScrollEdges(scrollTop: number, scrollHeight: number, clientHeight: number, scrollLeft: number, scrollWidth: number, clientWidth: number) {
-    console.log("got to checkscroll edges")
     // Show the bottom arrow when at the bottom edge
     this.showBottomArrow = scrollTop + clientHeight >= scrollHeight;
 
@@ -390,11 +391,21 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     "tile_id_11_1": "tile_id_11_0"
   }
 
-  useCarmenData = true
-  dataCarmentObj = {}
+  // useCarmenData = true
+  // dataCarmentObj = {}
+  isCategoric = false
+  colorCategories = []
 
+  columnsUsed = 0
 
   async getData() {
+    //change the logic to this later. currently only categoric data is with Carmen's data using nsdoh_profiles
+    if (this.selectedCol1 === 'nsdoh_profiles' && this.selectedCol2 === '--' && this.selectedCol3 === '--') {
+      this.isCategoric = true
+    } else {
+      this.isCategoric = false
+    }
+
     this.isLoading = true;
     const csvData_carmen = await d3.csv('assets/data/nsdoh_data.csv');
 
@@ -417,24 +428,25 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
         rate: rate
       })
 
-      this.dataCarmentObj[id] = {
-        rate: rate
-      }
+      // this.dataCarmentObj[id] = {
+      //   rate: rate
+      // }
     }
 
     for (const d of csvData) {
-
       if (d['year'] === this.selectedYear) {
         let rate1 = Math.log(Number(d[this.selectedCol1]) + 1);
         let rate2 = Math.log(Number(d[this.selectedCol2]) + 1);
         let rate3 = Math.log(Number(d[this.selectedCol3]) + 1);
+        let population = d['population'] !== undefined ? Number(d['population']) : 0
 
         if (!isNaN(rate1) && rate1 !== null && rate1 !== undefined && rate1 !== -1 && rate1 !== -Infinity) {
           this.min1 = Math.min(this.min1, rate1)
           this.max1 = Math.max(this.max1, rate1)
           this.data1.push({
             id: d['tract_fips10'],
-            rate: rate1
+            rate: rate1,
+            population: population
           } as GroceryData);
         }
 
@@ -443,13 +455,14 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.max2 = Math.max(this.max2, rate2)
           this.data2.push({
             id: d['tract_fips10'],
-            rate: rate2
+            rate: rate2,
+            population: population
           } as GroceryData);
 
           let id = d['tract_fips10']
-          this.data2Obj[id] = {
-            rate: rate2
-          }
+          // this.data2Obj[id] = {
+          //   rate: rate2
+          // }
         }
 
         if (!isNaN(rate3) && rate3 !== null && rate3 !== undefined && rate3 !== -1 && rate3 !== -Infinity) {
@@ -457,34 +470,55 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.max3 = Math.max(this.max3, rate3)
           this.data3.push({
             id: d['tract_fips10'],
-            rate: rate3
+            rate: rate3,
+            population: population
           } as GroceryData);
 
           let id = d['tract_fips10']
-          this.data3Obj[id] = {
-            rate: rate3
-          }
+          // this.data3Obj[id] = {
+          //   rate: rate3
+          // }
         }
       }
     }
+    this.columnsUsed = 0
     if (this.selectedCol1 !== '--') {
+      this.columnsUsed += 1;
       for (let i of this.data1) {
         let id = i['id'].substring(0, 5);
         let rate = i['rate']
+        let pop = i['population']
 
         if (!this.avgData1[id]) {
           this.avgData1[id] = {
-            rateArr: []
+            rateArr: [],
+            populationArr: []
           }
         }
         this.avgData1[id].rateArr.push(rate)
+        this.avgData1[id].populationArr.push(pop)
       }
 
       for (let i in this.avgData1) {
         if (this.avgData1[i]['rateArr'].length !== 0) {
-          this.avgData1[i]['avg'] = this.avgData1[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData1[i]['rateArr'].length
+          this.avgData1[i]['sum'] = this.avgData1[i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
         } else {
-          this.avgData1[i]['avg'] = 0
+          this.avgData1[i]['sum'] = 0
+        }
+      }
+
+      for (let i in this.avgData1) {
+        if (this.avgData1[i]['rateArr'].length !== 0) {
+          if (this.avgData1[i]['avg'] === undefined) {
+            this.avgData1[i]['avg'] = 0
+          }
+          for (let index in this.avgData1[i]['rateArr']) {
+            let rate = Number(this.avgData1[i]['rateArr'][index])
+            let pop = Number(this.avgData1[i]['populationArr'][index])
+            let popSum = Number(this.avgData1[i]['sum'])
+            let weightedRate = rate * pop / popSum
+            this.avgData1[i]['avg'] += weightedRate
+          }
         }
       }
 
@@ -500,56 +534,101 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             }
           }
           this.avgDataCat1[id].rateArr.push(rate)
+
+          if (!this.colorCategories.includes(rate)) {
+            this.colorCategories.push(rate)
+          }
         }
+
+        this.colorCategories = this.colorCategories.sort()
 
         for (let i in this.avgDataCat1) {
           let arr = this.avgDataCat1[i]['rateArr']
           let topProfile = this.findMostFrequent(arr)
           this.avgDataCat1[i]['mostFreq'] = topProfile
         }
+
       }
     }
 
     if (this.selectedCol2 !== '--') {
+      this.columnsUsed += 1;
       for (let i of this.data2) {
         let id = i['id'].substring(0, 5);
         let rate = i['rate']
+        let pop = i['population']
 
         if (!this.avgData2[id]) {
           this.avgData2[id] = {
-            rateArr: []
+            rateArr: [],
+            populationArr: []
           }
         }
         this.avgData2[id].rateArr.push(rate)
+        this.avgData2[id].populationArr.push(pop)
       }
 
       for (let i in this.avgData2) {
         if (this.avgData2[i]['rateArr'].length !== 0) {
-          this.avgData2[i]['avg'] = this.avgData2[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData2[i]['rateArr'].length
+          this.avgData2[i]['sum'] = this.avgData2[i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
         } else {
-          this.avgData2[i]['avg'] = 0
+          this.avgData2[i]['sum'] = 0
+        }
+      }
+
+      for (let i in this.avgData2) {
+        if (this.avgData2[i]['rateArr'].length !== 0) {
+          if (this.avgData2[i]['avg'] === undefined) {
+            this.avgData2[i]['avg'] = 0
+          }
+          for (let index in this.avgData2[i]['rateArr']) {
+            let rate = Number(this.avgData2[i]['rateArr'][index])
+            let pop = Number(this.avgData2[i]['populationArr'][index])
+            let popSum = Number(this.avgData2[i]['sum'])
+            let weightedRate = rate * pop / popSum
+            this.avgData2[i]['avg'] += weightedRate
+          }
         }
       }
     }
 
     if (this.selectedCol3 !== '--') {
+      this.columnsUsed += 1;
       for (let i of this.data3) {
         let id = i['id'].substring(0, 5);
         let rate = i['rate']
+        let pop = i['population']
 
         if (!this.avgData3[id]) {
           this.avgData3[id] = {
-            rateArr: []
+            rateArr: [],
+            populationArr: []
           }
         }
         this.avgData3[id].rateArr.push(rate)
+        this.avgData3[id].populationArr.push(pop)
       }
 
       for (let i in this.avgData3) {
         if (this.avgData3[i]['rateArr'].length !== 0) {
-          this.avgData3[i]['avg'] = this.avgData3[i]['rateArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0) / this.avgData3[i]['rateArr'].length
+          this.avgData3[i]['sum'] = this.avgData3[i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
         } else {
-          this.avgData3[i]['avg'] = 0
+          this.avgData3[i]['sum'] = 0
+        }
+      }
+
+      for (let i in this.avgData3) {
+        if (this.avgData3[i]['rateArr'].length !== 0) {
+          if (this.avgData3[i]['avg'] === undefined) {
+            this.avgData3[i]['avg'] = 0
+          }
+          for (let index in this.avgData3[i]['rateArr']) {
+            let rate = Number(this.avgData3[i]['rateArr'][index])
+            let pop = Number(this.avgData3[i]['populationArr'][index])
+            let popSum = Number(this.avgData3[i]['sum'])
+            let weightedRate = rate * pop / popSum
+            this.avgData3[i]['avg'] += weightedRate
+          }
         }
       }
     }
@@ -694,6 +773,18 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     this.max3 = -Infinity;
 
     this.zoomScale = 1;
+
+    this.data1 = [];
+    this.data2 = [];
+    this.data3 = [];
+    this.dataCarmen = [];
+
+    this.avgData1 = {};
+    this.avgData2 = {};
+    this.avgData3 = {};
+    this.avgDataCat1 = {}
+
+
   }
 
   zoomChange = false
@@ -713,6 +804,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
+    const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
 
     const avgData1 = this.avgData1
     const avgData2 = this.avgData2
@@ -801,9 +893,9 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
       const color1 = d3.scaleSequential(d3.interpolateBlues).domain([this.min1, this.max1]);
 
-      const colorCategories = ['Profile 1', 'Profile 2', 'Profile 3', 'Profile 4', 'Profile 5', 'Profile 6', 'Profile 7', 'Profile 8',];
+      // const colorCategories = ['Profile 1', 'Profile 2', 'Profile 3', 'Profile 4', 'Profile 5', 'Profile 6', 'Profile 7', 'Profile 8',];
       const color2 = d3.scaleOrdinal()
-        .domain(colorCategories)
+        .domain(this.colorCategories)
         .range(d3.schemeSet3);
 
       const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
@@ -1051,14 +1143,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             const prop = d['properties'];
             tooltip.transition().duration(100).style("opacity", 1);
 
-            // if (selectedCol1 === 'nsdoh_profiles') {
-            //   console.log("prop: ",prop)
-            //   const state = prop['STATE_NAME']
-            //   const stateId = prop['STATE_FIPS']
-            //   const countyName = prop['COUNTY']
-            //   const 
-            //   let toolTipString = `State: ${state} (${stateId})<br>County: ${countyName} (${fipscode})<br>`
-            // } else {
             const fipscode = useCountry ? prop['STCOFIPS'] : prop.STATEFP + prop.COUNTYFP;
             const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
 
@@ -1173,178 +1257,205 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
 
       }
+
       let legendWidth = 100
       let legendHeight = 75
       let separation = 20
 
+      let legendContainerWidth = this.isCategoric ? 100 : 165
+      let legendContainerHeight = this.isCategoric ? 16 * this.colorCategories.length : 55 * this.columnsUsed
+
       // Create SVG container for the legend
       const svgLegend = d3.select(this.legendContainerId)
         .append("svg")
-        .attr("width", 165)
-        .attr("height", legendHeight + 80)  // Adjust height to fit both gradients
-        .attr("viewBox", [0, 0, 165, legendHeight + 80])
+        .attr("width", legendContainerWidth)
+        .attr("height", legendContainerHeight)
+        .attr("viewBox", [0, 0, legendContainerWidth, legendContainerHeight])
         .attr('transform', `translate(${0}, ${-100})`)
-        .style("background-color", "rgba(250,250,250, 0.9)") // Set grey background
+        .style("background-color", "rgba(250,250,250, 0.9)")
         .style("border", "1px solid black")
         .style("border-radius", "7px")
 
       // Define the first gradient from white to blue
       const defsLegend = svgLegend.append("defs");
 
-      if (this.selectedCol1 !== '--') {
-        const blueGradient = defsLegend.append("linearGradient")
-          .attr("id", "legendGradientBlue")
-          .attr("x1", "0%")
-          .attr("y1", "0%")
-          .attr("x2", "100%")
-          .attr("y2", "0%");
+      if (this.isCategoric === false) {
+        if (this.selectedCol1 !== '--') {
+          const blueGradient = defsLegend.append("linearGradient")
+            .attr("id", "legendGradientBlue")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
 
-        blueGradient.append("stop").attr("offset", "0%").attr("stop-color", "#f7fbff");
-        blueGradient.append("stop").attr("offset", "20%").attr("stop-color", "#c6dbef");
-        blueGradient.append("stop").attr("offset", "40%").attr("stop-color", "#6baed6");
-        blueGradient.append("stop").attr("offset", "60%").attr("stop-color", "#3182bd");
-        blueGradient.append("stop").attr("offset", "80%").attr("stop-color", "#08519c");
-        blueGradient.append("stop").attr("offset", "100%").attr("stop-color", "#08306b");
+          blueGradient.append("stop").attr("offset", "0%").attr("stop-color", "#f7fbff");
+          blueGradient.append("stop").attr("offset", "20%").attr("stop-color", "#c6dbef");
+          blueGradient.append("stop").attr("offset", "40%").attr("stop-color", "#6baed6");
+          blueGradient.append("stop").attr("offset", "60%").attr("stop-color", "#3182bd");
+          blueGradient.append("stop").attr("offset", "80%").attr("stop-color", "#08519c");
+          blueGradient.append("stop").attr("offset", "100%").attr("stop-color", "#08306b");
 
-        // Rectangle for blue gradient
-        svgLegend.append("rect")
-          .attr("x", 20)
-          .attr("y", legendHeight - 50)
-          .attr("width", 100)
-          .attr("height", 10)
-          .style("fill", "url(#legendGradientBlue)");
+          // Rectangle for blue gradient
+          svgLegend.append("rect")
+            .attr("x", 20)
+            .attr("y", legendHeight - 50)
+            .attr("width", 100)
+            .attr("height", 10)
+            .style("fill", "url(#legendGradientBlue)");
 
-        svgLegend.append("text")
-          .attr("x", 15)
-          .attr("y", legendHeight - 55)
-          .attr("text-anchor", "start")
-          .attr("font-size", 8)
-          .attr("font-weight", "bold")
-          .text(this.selectedCol1 !== '--' ? `${this.selectedCol1.charAt(0).toUpperCase()}${this.selectedCol1.slice(1)}` : 'Column 1');
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 55)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .attr("font-weight", "bold")
+            .text(this.selectedCol1 !== '--' ? `${this.selectedCol1.charAt(0).toUpperCase()}${this.selectedCol1.slice(1)}` : 'Column 1');
 
-        // Text labels for blue gradient
-        svgLegend.append("text")
-          .attr("x", 15)
-          .attr("y", legendHeight - 55 + 25)
-          .attr("text-anchor", "start")
-          .attr("font-size", 8)
-          .text(`${Math.floor(this.min1 * 10) / 10}`);
+          // Text labels for blue gradient
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 55 + 25)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .text(`${Math.floor(this.min1 * 10) / 10}`);
 
-        svgLegend.append("text")
-          .attr("x", 125)
-          .attr("y", legendHeight - 55 + 25)
-          .attr("text-anchor", "end")
-          .attr("font-size", 8)
-          .text(`${Math.ceil(this.max1 * 10) / 10}`);
+          svgLegend.append("text")
+            .attr("x", 125)
+            .attr("y", legendHeight - 55 + 25)
+            .attr("text-anchor", "end")
+            .attr("font-size", 8)
+            .text(`${Math.ceil(this.max1 * 10) / 10}`);
+        }
+
+
+        if (this.selectedCol2 !== '--') {
+          // Define the second gradient from white to yellow
+          const yellowGradient = defsLegend.append("linearGradient")
+            .attr("id", "legendGradientYellow")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
+
+          yellowGradient.append("stop")
+            .attr("offset", "0%")
+            .attr("stop-color", "#ffff00")
+            .attr("stop-opacity", 0);  // Transparent yellow
+
+          yellowGradient.append("stop")
+            .attr("offset", "100%")
+            .attr("stop-color", "#ffff00")
+            .attr("stop-opacity", 1);  // Opaque yellow
+
+          // Rectangle for yellow gradient
+          svgLegend.append("rect")
+            .attr("x", 20)
+            .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
+            .attr("width", 100)
+            .attr("height", 10)
+            .style("fill", "url(#legendGradientYellow)");
+
+          // Text labels for yellow gradient
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 40 + separation + 10)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .attr("font-weight", "bold")
+            // .text("Column 2:");
+            .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
+
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 40 + separation + 25 + 10)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            // .text("Low");
+            .text(`${Math.floor(this.min2 * 10) / 10}`);
+
+          svgLegend.append("text")
+            .attr("x", 125)
+            .attr("y", legendHeight - 40 + separation + 25 + 10)
+            .attr("text-anchor", "end")
+            .attr("font-size", 8)
+            // .text("High");
+            .text(`${Math.ceil(this.max2 * 10) / 10}`);
+        }
+
+        if (this.selectedCol3 !== '--') {
+          // Define the red gradient with transparency
+          const redGradient = defsLegend.append("linearGradient")
+            .attr("id", "legendGradientRed")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
+
+          redGradient.append("stop")
+            .attr("offset", "0%")
+            .attr("stop-color", "#ff0000")
+            .attr("stop-opacity", 0);
+
+          redGradient.append("stop")
+            .attr("offset", "100%")
+            .attr("stop-color", "#ff0000")
+            .attr("stop-opacity", 1);
+
+          // Rectangle for red gradient with additional vertical separation
+          svgLegend.append("rect")
+            .attr("x", 20)
+            .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
+            .attr("width", legendWidth)
+            .attr("height", 10)
+            .style("fill", "url(#legendGradientRed)");
+
+          // Text labels for red gradient
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .attr("font-weight", "bold")
+            .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
+
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            // .text("Low");
+            .text(`${Math.floor(this.min2 * 10) / 10}`);
+
+          svgLegend.append("text")
+            .attr("x", 125)
+            .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+            .attr("text-anchor", "end")
+            .attr("font-size", 8)
+            // .text("High");
+            .text(`${Math.ceil(this.max2 * 10) / 10}`);
+        }
+      } else if (this.isCategoric === true) {
+
+        for (let index in this.colorCategories) {
+          let cat = this.colorCategories[index]
+          let indexNum = Number(index)
+
+          svgLegend.append("circle")
+            .attr("cx", 10)
+            .attr("cy", 12 + 15 * indexNum)
+            .attr("r", 4)
+            .style("fill", `${color2(cat)}`)
+
+          svgLegend
+            .append("text")
+            .attr("x", 20)
+            .attr("y", 12 + 15 * indexNum)
+            .text(`${cat}`)
+            .style("font-size", "8px")
+            .attr("alignment-baseline", "middle")
+        }
       }
 
-
-      if (this.selectedCol2 !== '--') {
-        // Define the second gradient from white to yellow
-        const yellowGradient = defsLegend.append("linearGradient")
-          .attr("id", "legendGradientYellow")
-          .attr("x1", "0%")
-          .attr("y1", "0%")
-          .attr("x2", "100%")
-          .attr("y2", "0%");
-
-        yellowGradient.append("stop")
-          .attr("offset", "0%")
-          .attr("stop-color", "#ffff00")
-          .attr("stop-opacity", 0);  // Transparent yellow
-
-        yellowGradient.append("stop")
-          .attr("offset", "100%")
-          .attr("stop-color", "#ffff00")
-          .attr("stop-opacity", 1);  // Opaque yellow
-
-        // Rectangle for yellow gradient
-        svgLegend.append("rect")
-          .attr("x", 20)
-          .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
-          .attr("width", 100)
-          .attr("height", 10)
-          .style("fill", "url(#legendGradientYellow)");
-
-        // Text labels for yellow gradient
-        svgLegend.append("text")
-          .attr("x", 15)
-          .attr("y", legendHeight - 40 + separation + 10)
-          .attr("text-anchor", "start")
-          .attr("font-size", 8)
-          .attr("font-weight", "bold")
-          // .text("Column 2:");
-          .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
-
-        svgLegend.append("text")
-          .attr("x", 15)
-          .attr("y", legendHeight - 40 + separation + 25 + 10)
-          .attr("text-anchor", "start")
-          .attr("font-size", 8)
-          // .text("Low");
-          .text(`${Math.floor(this.min2 * 10) / 10}`);
-
-        svgLegend.append("text")
-          .attr("x", 125)
-          .attr("y", legendHeight - 40 + separation + 25 + 10)
-          .attr("text-anchor", "end")
-          .attr("font-size", 8)
-          // .text("High");
-          .text(`${Math.ceil(this.max2 * 10) / 10}`);
-      }
-
-      if (this.selectedCol3 !== '--') {
-        // Define the red gradient with transparency
-        const redGradient = defsLegend.append("linearGradient")
-          .attr("id", "legendGradientRed")
-          .attr("x1", "0%")
-          .attr("y1", "0%")
-          .attr("x2", "100%")
-          .attr("y2", "0%");
-
-        redGradient.append("stop")
-          .attr("offset", "0%")
-          .attr("stop-color", "#ff0000")
-          .attr("stop-opacity", 0);
-
-        redGradient.append("stop")
-          .attr("offset", "100%")
-          .attr("stop-color", "#ff0000")
-          .attr("stop-opacity", 1);
-
-        // Rectangle for red gradient with additional vertical separation
-        svgLegend.append("rect")
-          .attr("x", 20)
-          .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
-          .attr("width", legendWidth)
-          .attr("height", 10)
-          .style("fill", "url(#legendGradientRed)");
-
-        // Text labels for red gradient
-        svgLegend.append("text")
-          .attr("x", 15)
-          .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
-          .attr("text-anchor", "start")
-          .attr("font-size", 8)
-          .attr("font-weight", "bold")
-          .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
-
-        svgLegend.append("text")
-          .attr("x", 15)
-          .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
-          .attr("text-anchor", "start")
-          .attr("font-size", 8)
-          // .text("Low");
-          .text(`${Math.floor(this.min2 * 10) / 10}`);
-
-        svgLegend.append("text")
-          .attr("x", 125)
-          .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
-          .attr("text-anchor", "end")
-          .attr("font-size", 8)
-          // .text("High");
-          .text(`${Math.ceil(this.max2 * 10) / 10}`);
-      }
     } else if (this.useBivariate === true) {
 
       //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
@@ -1618,7 +1729,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
         .attr('font-family', 'sans-serif')
         .attr('font-size', 10)
         .attr('z-index', 50)
-        .attr('transform', `translate(${legendWidth- 450}, ${legendHeight - 400}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${scaleLegend})`)
+        .attr('transform', `translate(${legendWidth - 450}, ${legendHeight - 400}) rotate(-45 ${k * n / 2},${k * n / 2}) scale(${scaleLegend})`)
 
       // Add the squares to the legend
       d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
