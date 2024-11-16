@@ -5,6 +5,7 @@ import { FormControl } from '@angular/forms';
 import fipsToStateJson from '../../assets/data/fipsToState.json'
 import fipsToCountyJson from '../../assets/data/fipsToCounty.json';
 import { trigger, transition, style, animate } from '@angular/animations';
+import * as L from 'leaflet';
 
 interface GroceryData {
   id: string;
@@ -16,6 +17,7 @@ interface CarmenData {
   rate: string;
 }
 
+
 @Component({
   selector: 'app-county-map',
   templateUrl: './county-map.component.html',
@@ -23,6 +25,8 @@ interface CarmenData {
 })
 export class CountyMapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('container', { static: true }) containerRef!: ElementRef;
+  // map: L.Map;
+
   private scrollListener!: () => void;
 
   private data1: GroceryData[] = [];
@@ -72,7 +76,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   data2Obj = {}
   data3Obj = {}
 
-  useBivariate: boolean = false
+  useBivariate: boolean = true
 
   minCol = Infinity
   minRow = Infinity
@@ -91,85 +95,37 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   }
 
   showTopArrow = false;
-  showBottomArrow = true;
+  showBottomArrow = false;
   showLeftArrow = false;
   showRightArrow = false;
 
   lastScrollTop: number = 0;
   lastScrollLeft: number = 0;
 
-
+  containerRef2 = document.getElementById("mapContainerId");
 
   onScroll(event): void {
-    // if (this.zoomScale >= 6) {
-    //   const container = this.containerRef.nativeElement;
-    //   const { scrollTop, scrollLeft, scrollWidth, scrollHeight, clientWidth, clientHeight } = container;
+    const container = this.containerRef.nativeElement;
 
-    //   const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
-    //   const atTop = scrollTop <= 0;
-    //   const atLeft = scrollLeft <= 0;
-    //   const atRight = scrollLeft + clientWidth >= scrollWidth - 1;
+    const scrollTop = container.scrollTop;
+    const scrollLeft = container.scrollLeft;
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
 
+    // Get the full content width and height
+    const contentWidth = container.scrollWidth;
+    const contentHeight = container.scrollHeight;
 
-    //   const scrollingDown = scrollTop > this.lastScrollTop;
-    //   const scrollingUp = scrollTop < this.lastScrollTop;
-    //   const scrollingRight = scrollLeft > this.lastScrollLeft;
-    //   const scrollingLeft = scrollLeft < this.lastScrollLeft;
+    // Calculate the maximum scroll positions
+    const maxScrollLeft = contentWidth - containerWidth;
+    const maxScrollTop = contentHeight - containerHeight;
 
-    //   // Call functions based on scrolling direction and edge reached
-    //   if (atBottom && scrollingDown) {
-    //     console.log("bottom ", atBottom, scrollingDown, scrollTop, this.lastScrollTop)
-    //     this.navigateTiles('down')
-    //     this.lastScrollTop = 0;
-    //     this.lastScrollLeft = scrollLeft;
-    //   } else if (atTop && scrollingUp) {
-    //     console.log("top ", atTop, scrollingUp, scrollTop, this.lastScrollTop)
-    //     this.navigateTiles('up')
-    //     this.lastScrollTop = 0;
-    //     this.lastScrollLeft = scrollLeft;
-    //   } else if (atLeft && scrollingLeft) {
-    //     console.log("left")
-    //     this.navigateTiles('left')
-    //     this.lastScrollTop = scrollTop;
-    //     this.lastScrollLeft = 0;
-    //   } else if (atRight && scrollingRight) {
-    //     console.log("right")
-    //     this.navigateTiles('right')
-    //     this.lastScrollTop = scrollTop;
-    //     this.lastScrollLeft = 0;
-    //   } else {
-    //     this.lastScrollTop = scrollTop;
-    //     this.lastScrollLeft = scrollLeft;
-    //   }
-
-    // }
-    const container = event.target as HTMLElement;
-    const { scrollTop, scrollHeight, clientHeight, scrollLeft, scrollWidth, clientWidth } = container;
-
-    this.showBottomArrow = scrollTop + clientHeight >= scrollHeight;
-    this.showTopArrow = scrollTop === 0;
-    this.showLeftArrow = scrollLeft === 0;
-    this.showRightArrow = scrollLeft + clientWidth >= scrollWidth;
+    this.showTopArrow = scrollTop < maxScrollTop * 0.1 ? true : false
+    this.showLeftArrow = scrollLeft < maxScrollLeft * 0.1 ? true : false
+    this.showRightArrow = scrollLeft > maxScrollLeft * 0.9 ? true : false
+    this.showBottomArrow = scrollTop > maxScrollTop * 0.9 ? true : false
   }
 
-  checkScrollEdges(scrollTop: number, scrollHeight: number, clientHeight: number, scrollLeft: number, scrollWidth: number, clientWidth: number) {
-    // Show the bottom arrow when at the bottom edge
-    this.showBottomArrow = scrollTop + clientHeight >= scrollHeight;
-
-    // Show the top arrow when at the top edge
-    this.showTopArrow = scrollTop === 0;
-
-    // Show the left arrow when at the left edge
-    this.showLeftArrow = scrollLeft === 0;
-
-    // Show the right arrow when at the right edge
-    this.showRightArrow = scrollLeft + clientWidth >= scrollWidth;
-
-    // Hide arrows after 1 second delay
-    setTimeout(() => {
-      this.hideArrows();
-    }, 1000);
-  }
 
   hideArrows() {
     this.showTopArrow = false;
@@ -730,7 +686,30 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       this.tileAdj[tileName] = temp
     }
     this.createMap()
+    // this.startLeaflet()
+
   }
+
+  // startLeaflet() {
+  //   // // Initialize the Leaflet map
+  //   this.map = L.map('map', {
+  //     center: [42.3601, -71.0589], // Set the map center to Boston's coordinates
+  //     zoom: 4 // Set the initial zoom level (you can adjust this based on preference)
+  //   });
+
+  //   // Add a base tile layer from OpenStreetMap
+  //   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+
+  //   // Create a D3.js overlay layer using Leaflet's SVG support
+  //   const svgLayer = L.svg();
+  //   svgLayer.addTo(this.map);
+
+  //   // Access the SVG container created by Leaflet
+  //   const svg = d3.select(this.map.getPanes().overlayPane).select('svg');
+  //   const g = svg.append('g'); // Create a <g> element for D3.js
+
+  //   // this.createMap()
+  // }
 
   countyidToTileid = {}
 
@@ -790,6 +769,28 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   zoomChange = false
 
   createMap() {
+    // // Initialize the Leaflet map
+    // this.map = L.map('map', {
+    //   center: [42.3601, -71.0589], // Set the map center to Boston's coordinates
+    //   zoom: 4 // Set the initial zoom level (you can adjust this based on preference)
+    // });
+
+    // // Add a base tile layer from OpenStreetMap
+    // // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+
+    // // Create a D3.js overlay layer using Leaflet's SVG support
+    // const svgLayer = L.svg();
+    // svgLayer.addTo(this.map);
+
+    // // Access the SVG container created by Leaflet
+    // const svgLeaf = d3.select(this.map.getPanes().overlayPane).select('svg');
+    // const gLeaf = svgLeaf.append('g'); // Create a <g> element for D3.js
+
+
+
+
+
+
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
     let useCountry = fullCountryArr.includes(selectedState) || this.zoomScale < 6 ? true : false;
@@ -850,12 +851,19 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       .selectAll('svg')
       .remove();
 
+    // const svg = d3.select(this.scatterplotContainerId)
+    //   .append("svg")
+    //   .attr("width", width)
+    //   .attr("height", height)
+    //   .attr("viewBox", [0, 0, width, height])
+    //   .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
+
     const svg = d3.select(this.scatterplotContainerId)
       .append("svg")
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
+      .attr("style", `position: absolute; transform-origin: 0 0;`);
 
     // Set up zoom behavior
     const zoom = d3.zoom()
@@ -883,6 +891,44 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       .on("wheel.zoom", null)     // Disable zooming with the mouse wheel
       .on("mousedown.zoom", null) // Disable zooming by dragging
       .on("dblclick.zoom", null); // Disable zooming by double-clicking
+
+    // const mapGroup = svg.append("g");
+    // Initialize drag behavior
+    // const dragBehavior = d3.drag()
+    //   .on("start", (event) => {
+    //     // Optionally do something when dragging starts
+    //     console.log("Drag started");
+    //   })
+    //   .on("drag", (event) => {
+    //     console.log("on ddrag: ", event.dx, event.dy)
+    //     // Adjust the position of the map group
+    //     const dx = event.dx;
+    //     const dy = event.dy;
+
+    //     // Get the current transform
+    //     const transform = d3.zoomTransform(svg.node());
+    //     const updatedTransform = transform.translate(dx, dy);
+    //     console.log("updated trans: ", updatedTransform.toString())
+
+    //     // Apply the updated transform
+    //     svg.attr("transform", updatedTransform.toString());
+    //   })
+    //   // .on("end", (event) => {
+    //   //   console.log("event: ", event.dx, event.dy)
+    //   //   const currentTransform = d3.zoomTransform(svg.node());
+
+    //   //   // Update the zoom transform programmatically
+    //   //   const dx = event.dx;
+    //   //   const dy = event.dy;
+    //   //   const updatedTransform = currentTransform.translate(dx, dy);
+
+    //   //   // svg.call(zoom.transform, updatedTransform); // Sync zoom transform with drag changes
+
+    //   //   console.log("Drag ended");
+    //   // });
+
+    // // Attach the drag behavior to the map group
+    // svg.call(dragBehavior);
 
     if (this.useBivariate === false) {
       const fipsToState = this.fipsToState

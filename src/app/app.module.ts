@@ -18,6 +18,7 @@ import { TilesMapComponent } from './tiles-map/tiles-map.component';
 import { TileTestComponent } from './tile-test/tile-test.component';
 import { TileTestOnlyComponent } from './tile-test-only/tile-test-only.component';
 import { CountyMapComponent } from './county-map/county-map.component';
+import { LeafletTestComponent } from './leaflet-test/leaflet-test.component';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,8 @@ import { CountyMapComponent } from './county-map/county-map.component';
     TilesMapComponent,
     TileTestComponent,
     TileTestOnlyComponent,
-    CountyMapComponent
+    CountyMapComponent,
+    LeafletTestComponent
   ],
   imports: [
     BrowserModule,

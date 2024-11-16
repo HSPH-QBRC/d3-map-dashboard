@@ -44,7 +44,7 @@
 <mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeBivariate($event)">Use Bivariate
     Choropleth</mat-slide-toggle>
 
-<div #container class="mapContainer" (wheel)="preventHistoryNavigation($event)" (wheel)="onScroll($event)">
+<div class="mapContainer" (wheel)="preventHistoryNavigation($event)" (wheel)="onScroll($event)" #container>
     <div class="zoomButtonContainer">
         <button class="zoomButton" matTooltip="Zoom In" (click)="applyZoom('+')" [disabled]="zoomScale >= maxZoom">
             <mat-icon>add</mat-icon>
@@ -70,21 +70,22 @@
     </div> -->
 
     <div *ngIf="zoomScale >= 6">
-        <div class="arrow arrow-left" (click)="navigateTiles('left')">
+        <div *ngIf="showLeftArrow" class="arrow arrow-left" (click)="navigateTiles('left')">
             <mat-icon class="icon-arrow icon-arrow-left">arrow_back</mat-icon>
         </div>
-        <div class="arrow arrow-right" (click)="navigateTiles('right')">
+        <div *ngIf="showRightArrow" class="arrow arrow-right" (click)="navigateTiles('right')">
             <mat-icon class="icon-arrow icon-arrow-right">arrow_forward</mat-icon>
         </div>
-        <div class="arrow arrow-top" (click)="navigateTiles('up')">
+        <div *ngIf="showTopArrow" class="arrow arrow-top" (click)="navigateTiles('up')">
             <mat-icon class="icon-arrow icon-arrow-top">arrow_upward</mat-icon>
         </div>
-        <div class="arrow arrow-bottom" (click)="navigateTiles('down')">
+        <div *ngIf="showBottomArrow" class="arrow arrow-bottom" (click)="navigateTiles('down')">
             <mat-icon class="icon-arrow icon-arrow-bottom">arrow_downward</mat-icon>
         </div>
     </div>
 
-    <div>
+    <div >
+        <!-- <div  #scatter id="map" style="height: 500px;" ></div> -->
         <div #scatter id="map"></div>
         <div id="legend"></div>
     </div>

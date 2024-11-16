@@ -65,8 +65,11 @@
     justify-content: center;
     color: rgba(0, 0, 0, 0.6);
     cursor: pointer;
-    transition: background-color 0.3s, color 0.3s, opacity 0.3s;
-    opacity: .1;
+    transition:
+        background-color 0.3s,
+        color 0.3s,
+        opacity 0.3s;
+    opacity: 0.8;
 }
 
 .arrow:hover {
@@ -82,7 +85,7 @@
     border-radius: 0 0 100px 100px;
     background-color: rgba(204, 204, 204, 0.6);
     width: 100px;
-    height: 50px; 
+    height: 50px;
 }
 
 .arrow-bottom {
@@ -91,8 +94,8 @@
     transform: translateX(-50%);
     border-radius: 100px 100px 0 0; /* Make the top half a full circle */
     background-color: rgba(204, 204, 204, 0.6);
-    width: 100px; 
-    height: 50px; 
+    width: 100px;
+    height: 50px;
 }
 
 .arrow-left {
@@ -100,8 +103,8 @@
     transform: translateY(-50%);
     border-radius: 0 100px 100px 0;
     background-color: rgba(204, 204, 204, 0.6);
-    width: 50px; 
-    height: 100px; 
+    width: 50px;
+    height: 100px;
 }
 
 .arrow-right {
@@ -111,7 +114,7 @@
     border-radius: 100px 0 0 100px;
     background-color: rgba(204, 204, 204, 0.6);
     width: 50px;
-    height: 100px; 
+    height: 100px;
 }
 
 .icon-arrow {
@@ -120,24 +123,37 @@
     font-size: 50px;
 }
 
-.icon-arrow-top{
-    margin-left: 25px
+.icon-arrow-top {
+    margin-left: 25px;
 }
 
-.icon-arrow-bottom{
-    margin-left: 25px
+.icon-arrow-bottom {
+    margin-left: 25px;
 }
 
-.icon-arrow-left{
-    margin-top: 25px
+.icon-arrow-left {
+    margin-top: 25px;
 }
 
-.icon-arrow-right{
-    margin-top: 25px
+.icon-arrow-right {
+    margin-top: 25px;
 }
 
-#legend{
+#legend {
     position: fixed;
     right: 20px;
     bottom: 10px;
+}
+
+.leaflet-overlay-pane {
+    z-index: 400;
+    pointer-events: none; /* Prevent interference with map interactions */
+}
+
+svg {
+    cursor: grab;
+}
+
+svg:active {
+    cursor: grabbing;
 }
