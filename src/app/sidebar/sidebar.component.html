@@ -1,0 +1,54 @@
+<div class="flex-shrink-0 p-3 bg-white" style="width: 280px;">
+    <a href="/" class="d-flex align-items-center pb-3 mb-3 link-dark text-decoration-none border-bottom">
+        <span class="fs-5 fw-semibold">DASHB<i class="bi bi-globe-americas"></i>ARD</span>
+    </a>
+    <ul class="list-unstyled ps-0">
+        <li class="mb-1">
+            <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
+                data-bs-target="#home-collapse" aria-expanded="true">
+                Year
+            </button>
+            <div class="collapse show" id="home-collapse">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li *ngFor="let col of yearCols">
+                        <mat-checkbox class="link-dark rounded" [(ngModel)]="col.checked">
+                            {{ col.name }}
+                        </mat-checkbox>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <li class="mb-1">
+            <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
+                data-bs-target="#dashboard-collapse" aria-expanded="false">
+                Map
+            </button>
+            <div class="collapse" id="dashboard-collapse">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li *ngFor="let col of mapsCols">
+                        <mat-checkbox class="link-dark rounded" [(ngModel)]="col.checked">
+                            {{ col.name }}
+                        </mat-checkbox>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <li class="mb-1">
+            <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
+                data-bs-target="#orders-collapse" aria-expanded="false">
+                Columns
+            </button>
+            <div class="collapse" id="orders-collapse">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li *ngFor="let col of columns">
+                        <mat-checkbox class="link-dark rounded" [(ngModel)]="col.checked">
+                            {{ col.name }}
+                        </mat-checkbox>
+                    </li>
+                </ul>
+            </div>
+        </li>
+
+    </ul>
+    <button (click)="sendData()">Send Data to County Map</button>
+</div>

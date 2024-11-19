@@ -1,9 +1,15 @@
-<!-- <app-maps></app-maps> -->
-<!-- <app-state-maps></app-state-maps> -->
-<!-- <app-tiles-map></app-tiles-map> -->
+<div class="row">
+    <div class="col-2">
+        <app-sidebar [dataFromCountyMap]="countyMapData"
+            (dataToCountyMap)="onSidebarDataReceived($event)"></app-sidebar>
+    </div>
+    <div class="col-10">
+        <app-county-map [dataFromSidebar]="sidebarData"
+            (dataToSidebar)="onCountyMapDataReceived($event)"></app-county-map>
+    </div>
+</div>
 
-<app-county-map></app-county-map>
- <!-- <app-leaflet-test></app-leaflet-test> -->
 
 
-<!-- <app-tile-test-only></app-tile-test-only> -->
+
+<!-- <app-leaflet-test></app-leaflet-test> -->

@@ -1,4 +1,4 @@
-import { Component, ElementRef, Renderer2, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, Renderer2, ViewChild, AfterViewInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { FormControl } from '@angular/forms';
@@ -24,6 +24,9 @@ interface CarmenData {
   styleUrls: ['./county-map.component.scss']
 })
 export class CountyMapComponent implements AfterViewInit, OnDestroy {
+  @Input() dataFromSidebar!: { years: string[], columns: string[], maps: string[]}; // Data received from the sidebar
+  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[]}>(); // Data sent to the sidebar
+
   @ViewChild('container', { static: true }) containerRef!: ElementRef;
   // map: L.Map;
 
@@ -104,6 +107,21 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
   containerRef2 = document.getElementById("mapContainerId");
 
+  sidebarData = {
+    "years": [],
+    "columns": [],
+    "maps": this.statesArr
+   };
+
+  sendData() {
+    this.sidebarData = {
+      "years": this.yearCols,
+      "columns": this.columns,
+      "maps": this.statesArr
+    }
+    this.dataToSidebar.emit(this.sidebarData); 
+  }
+
   onScroll(event): void {
     const container = this.containerRef.nativeElement;
 
@@ -142,7 +160,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
     "USA 2000 Mainland (County)": "SVI_2000_US_County.json",
-    // "USA 2000 Mainland (County)": "SVI_2000_US_County_new2.json",
     "Alabama": "cb_2017_01_tract_500k.json",
     "Alaska": "cb_2017_02_tract_500k.json",
     "Arizona": "cb_2017_04_tract_500k.json",
@@ -685,6 +702,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       let temp = [xDiff, yDiff, xAdj, yAdj]
       this.tileAdj[tileName] = temp
     }
+
+    this.sendData()
     this.createMap()
     // this.startLeaflet()
 
@@ -877,8 +896,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
     // Function to zoom into a specific point (x, y) with a defined scale
     const zoomTo = (x, y, scale) => {
-      this.mouseX = x
-      this.mouseY = y
+      // this.mouseX = x
+      // this.mouseY = y
       this.zoomScale = scale
       svg.transition()
         .duration(50)
@@ -1507,12 +1526,11 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       //used to fix problem of not scaling the tiles when switching to tiles are zoom = 6.
       //think of a better way to handle this later.
       //also add in mouseX and mouseY to center on the zoom spot
-      // if (this.zoomScale === 6 || this.zoomScale === 7) {
+
       svg.transition()
         .duration(200)
         .call(zoom.transform, d3.zoomIdentity
-          .scale(this.zoomScale));
-      // }
+          .scale(this.zoomScale))
 
       if (this.zoomScale >= 6) {
         this.minRow = Infinity
@@ -1755,6 +1773,27 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       }
       this.zoomChange = false;
 
+      // let moveX = this.moveHorizontal ? 100 : 0
+      // let moveY = this.moveVertical ? 400 : 0
+      // let mapContainer = document.getElementById("map-container")
+
+      // mapContainer.scrollTo({
+      //   left: moveX,
+      //   top: 600,
+      //   behavior: 'smooth', // Smooth scrolling
+      // });
+      // if (this.moveVertical) {
+      //   this.isLoading = true
+      //   setTimeout(() => {
+      //     this.isLoading = false
+      //     window.scrollTo({
+      //       top: 50000,  // Scroll down 500px
+      //       behavior: 'smooth', // Smooth scrolling
+      //     });
+      //   }, 1000);
+      // }
+
+
       let xStart = this.zoomScale < 6 ? 200 : 0
       let yStart = this.zoomScale < 6 ? 0 : -150
       let scaleLegend = this.zoomScale < 6 ? 6 : 4
@@ -1830,6 +1869,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
         .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
         .attr('text-anchor', 'middle')
         .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
+
     }
   }
 
@@ -1892,6 +1932,9 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   tilesVertical = false
 
   navigateTiles(direction: string): void {
+    this.moveHorizontal = false
+    this.moveVertical = false
+
     let firstTile = ''
     let secondTile = ''
     if (direction === 'up' || direction === 'left') {
@@ -1930,6 +1973,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.tileArr.push(firstTile)
           this.tilesHorizontal = false
           loadNewTiles = true
+          this.moveVertical = true
         }
       }
     } else if (direction === 'down') {
@@ -1941,6 +1985,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.tileArr.push(newFirstTile)
           this.tilesHorizontal = false
           loadNewTiles = true
+          this.moveVertical = true
         }
       } else if (verticalTiles) {
         let newSecondTile = `tile_id_${col2}_${row2 + 1}`
@@ -1950,6 +1995,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.tileArr.push(newSecondTile)
           this.tilesHorizontal = false
           loadNewTiles = true
+          this.moveVertical = true
         }
       }
 
@@ -1962,6 +2008,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.tileArr.push(firstTile)
           this.tilesHorizontal = true
           loadNewTiles = true
+          this.moveHorizontal = true
         }
       }
     } else if (direction === 'right') {
@@ -1973,14 +2020,17 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.tileArr.push(newSecondTile)
           this.tilesHorizontal = true
           loadNewTiles = true
+          this.moveHorizontal = true
         }
       }
     }
-    console.log("tiles arr: ", this.tileArr)
     if (loadNewTiles) {
+      console.log("load new tiles: ", this.tileArr)
       this.getData2()
     }
   }
+  moveVertical = false;
+  moveHorizontal = false
 
   findMostFrequent(arr) {
     const counts = new Map();
@@ -2000,5 +2050,57 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     return mostFrequentItem;
   }
 
+  checkIfTileExist(direction) {
+    // Helper function to parse row and col from a tile name
+    const parseTile = (tileName) => {
+      const parts = tileName.split("_");
+      return { col: Number(parts[2]), row: Number(parts[3]) };
+    };
 
+    // Find boundaries
+    let minRow = Infinity, minCol = Infinity;
+    let maxRow = -Infinity, maxCol = -Infinity;
+
+    for (let tileName of this.tileArr) {
+      const { row, col } = parseTile(tileName);
+      minRow = Math.min(row, minRow);
+      minCol = Math.min(col, minCol);
+      maxRow = Math.max(row, maxRow);
+      maxCol = Math.max(col, maxCol);
+    }
+
+    // Determine the row and column delta based on direction
+    const directionDeltas = {
+      left: { dRow: 0, dCol: -1 },
+      right: { dRow: 0, dCol: 1 },
+      up: { dRow: -1, dCol: 0 },
+      down: { dRow: 1, dCol: 0 },
+    };
+
+    const delta = directionDeltas[direction];
+    if (!delta) return false;
+
+    const { dRow, dCol } = delta;
+
+    // Check for next tiles
+    if (minRow === maxRow) {
+      // All tiles are in the same row
+      const { row, col } = parseTile(
+        direction === 'left' ? this.tileArr[0] : this.tileArr[this.tileArr.length - 1]
+      );
+      const nextTile = `tile_id_${col + dCol}_${row + dRow}`;
+      return this.AllTilesArr.includes(nextTile);
+    } else if (minCol === maxCol) {
+      // All tiles are in the same column
+      for (let tileName of this.tileArr) {
+        const { row, col } = parseTile(tileName);
+        const nextTile = `tile_id_${col + dCol}_${row + dRow}`;
+        if (this.AllTilesArr.includes(nextTile)) return true;
+      }
+      return false;
+    }
+
+    return false;
+
+  }
 }

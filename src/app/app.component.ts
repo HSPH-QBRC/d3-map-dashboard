@@ -6,9 +6,24 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  zoomScale = 1
+  countyMapData!: { id: number; name: string; info: string }; // Data sent to sidebar
+  sidebarData!: { selectedCounty: string; details: string }; // Data sent to county map
 
-  handleZoomData(data: string) {
-    this.zoomScale = Number(data)
+  // Handle data from the county map
+  onCountyMapDataReceived(data: { id: number; name: string; info: string }) {
+    this.countyMapData = data;
   }
+
+  // Handle data from the sidebar
+  onSidebarDataReceived(data: { selectedCounty: string; details: string }) {
+    this.sidebarData = data;
+  }
+
+  // zoomScale = 1
+
+  // handleZoomData(data: string) {
+  //   this.zoomScale = Number(data)
+  // }
+
+
 }
