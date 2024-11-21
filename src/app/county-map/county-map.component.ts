@@ -24,8 +24,10 @@ interface CarmenData {
   styleUrls: ['./county-map.component.scss']
 })
 export class CountyMapComponent implements AfterViewInit, OnDestroy {
-  @Input() dataFromSidebar!: { years: string[], columns: string[], maps: string[]}; // Data received from the sidebar
-  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[]}>(); // Data sent to the sidebar
+  // @Input() mapData!: {}; 
+  @Output() dataToSidebar = new EventEmitter<{}>(); 
+  // @Output() getNewData: EventEmitter<string> = new EventEmitter<string>();
+  // @Output() getNewData2: EventEmitter<string> = new EventEmitter<string>();
 
   @ViewChild('container', { static: true }) containerRef!: ElementRef;
   // map: L.Map;
@@ -46,7 +48,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   legendContainerId = '#legend'
   topoJsonObjectsKey = ''
 
-  isLoading: boolean = true
+  isLoading: boolean = true;
 
   min1: number = 10000000000;
   max1: number = 0;
@@ -108,18 +110,21 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   containerRef2 = document.getElementById("mapContainerId");
 
   sidebarData = {
-    "years": [],
-    "columns": [],
-    "maps": this.statesArr
-   };
+    // "years": [],
+    // "columns": [],
+    // "maps": this.statesArr
+  };
 
   sendData() {
     this.sidebarData = {
       "years": this.yearCols,
       "columns": this.columns,
-      "maps": this.statesArr
+      "maps": this.statesArr,
+      "selectedYear": this.selectedYear,
+      "selectedMap": this.selectedState,
+      "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3]
     }
-    this.dataToSidebar.emit(this.sidebarData); 
+    this.dataToSidebar.emit(this.sidebarData);
   }
 
   onScroll(event): void {
@@ -310,7 +315,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
     'tile_id_11_0', 'tile_id_11_1',
   ]
-
+// tileArr = []
+// tileAdj = []
   tileAdj = {
     'tile_id_0_0': [4.5 / 5, 4.4 / 5, 7.5, 10],
     'tile_id_0_1': [4.4 / 5, 1, 10],
@@ -370,6 +376,17 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   colorCategories = []
 
   columnsUsed = 0
+
+  // getData(){
+  //   this.getNewData.emit()
+  //   console.log("getdata")
+  // }
+
+  // getData2(){
+  //   this.getNewData2.emit()
+  //   console.log("getdata2")
+  // }
+  
 
   async getData() {
     //change the logic to this later. currently only categoric data is with Carmen's data using nsdoh_profiles
@@ -788,6 +805,25 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   zoomChange = false
 
   createMap() {
+    // console.log("mapdata: ", this.mapData)
+    // this.min1 = this.mapData['min1']
+    // this.min2 = this.mapData['min2']
+    // this.min3 = this.mapData['min3']
+    // this.max1 = this.mapData['max1']
+    // this.max2 = this.mapData['max2']
+    // this.max3 = this.mapData['max3']
+    // this.data1 = this.mapData['data1']
+    // this.data2 = this.mapData['data2']
+    // this.data3 = this.mapData['data3']
+    // this.dataCarmen = this.mapData['dataCarmen']
+    // this.avgData1 = this.mapData['avgData1']
+    // this.avgData2 = this.mapData['avgData2']
+    // this.avgData3 = this.mapData['avgData3']
+    // this.avgDataCat1 = this.mapData['avgDataCat1']
+    // this.tileArr = this.mapData['tileArr']
+    // this.tileAdj = this.mapData['tileAdj']
+    // this.stateTile = this.mapData['stateTile']
+    // this.topoJsonObjectsKey = this.mapData['topoJsonObjectsKey']
     // // Initialize the Leaflet map
     // this.map = L.map('map', {
     //   center: [42.3601, -71.0589], // Set the map center to Boston's coordinates
@@ -805,11 +841,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     // const svgLeaf = d3.select(this.map.getPanes().overlayPane).select('svg');
     // const gLeaf = svgLeaf.append('g'); // Create a <g> element for D3.js
 
-
-
-
-
-
     const fullCountryArr = this.fullCountryArr
     const selectedState = this.selectedState
     let useCountry = fullCountryArr.includes(selectedState) || this.zoomScale < 6 ? true : false;
@@ -824,11 +855,12 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
-    const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
+    // const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
 
     const avgData1 = this.avgData1
     const avgData2 = this.avgData2
-    const avgData3 = this.avgData3
+    // const avgData3 = this.avgData3
+    console.log("valmap: ", valuemap1)
 
     let xRange1 = this.min1;
     let xRange2 = (this.max1 - this.min1) / 3 + this.min1
@@ -949,6 +981,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     // // Attach the drag behavior to the map group
     // svg.call(dragBehavior);
 
+  
+
     if (this.useBivariate === false) {
       const fipsToState = this.fipsToState
       const fipsToCounty = this.fipsToCounty
@@ -1045,6 +1079,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.minCol = Math.min(col, this.minCol)
           this.minRow = Math.min(row, this.minRow)
         }
+
+        
 
         this.tileArr.forEach((d, i) => {
           let tileName = d;
@@ -1654,6 +1690,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
         )
       } else {
+        console.log("selectedstate: ", this.selectedState)
+        // this.state = this.mapData['state']
         const land = topojson.feature(this.state, {
           type: "GeometryCollection",
           // geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
@@ -1680,7 +1718,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
         svg.append('g')
           .selectAll('path')
           .data(land['features'])
-          // .data(filteredArr)
           .enter().append('path')
           .attr('d', path)
           .attr("class", "tract")
@@ -1690,6 +1727,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             const val1 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData1[id] ? this.avgData1[id]['avg'] : -1) : valuemap1.get(id);
             const val2 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData2[id] ? this.avgData2[id]['avg'] : -1) : valuemap2.get(id);
 
+            // console.log("fill: ", fips, id, val1, val2, this.colors)
             if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
               return this.colors[0];
             } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
@@ -1878,6 +1916,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       this.zoomScale += 2
     } else if (direction === '-' && this.zoomScale > 2) {
       this.zoomScale -= 2
+    } else if (direction === 'fullmap') {
+      this.zoomScale = 1
     }
     this.zoomChange = true
     this.createMap()

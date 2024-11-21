@@ -16,6 +16,10 @@ import { LeafletTestComponent } from './leaflet-test/leaflet-test.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatExpansionModule } from '@angular/material/expansion';
+// import { MatGridListModule } from '@angular/material/grid-list';
+import {MatSliderModule} from '@angular/material/slider';
 
 @NgModule({
   declarations: [
@@ -37,7 +41,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatCardModule,
     MatIconModule,
     FormsModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatButtonModule,
+    MatExpansionModule,
+    // MatGridListModule,
+    MatSliderModule
   ],
   providers: [],
   bootstrap: [AppComponent]

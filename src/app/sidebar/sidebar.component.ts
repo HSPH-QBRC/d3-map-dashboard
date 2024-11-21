@@ -1,5 +1,5 @@
-import { Component, AfterViewInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
-declare var bootstrap: any;
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { MatSlider } from '@angular/material/slider';
 
 @Component({
   selector: 'app-sidebar',
@@ -7,30 +7,39 @@ declare var bootstrap: any;
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent implements OnChanges {
-  @Input() dataFromCountyMap!: { years: string[], columns: string[], maps: string[] }; // Data received from the county map
+  @Input() sidebarData!: { years: string[], columns: string[], maps: string[] }; // Data received from the county map
   @Output() dataToCountyMap = new EventEmitter<{ selectedCounty: string; details: string }>(); // Data sent to the county map
-
+  @ViewChild('slider') slider: MatSlider; // Reference to the slider
 
   yearCols = [];
   mapsCols = [];
   columns = [];
-  selectedYear = '2017'
+  selectedYear = '2000'
+  selectedMap = ''
+  selectedCol1 = ''
+  selectedCol2 = ''
+  selectedCol3 = ''
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.dataFromCountyMap) {
-      console.log('Received data from County Map:', this.dataFromCountyMap);
+    if (this.sidebarData) {
+      console.log('Received data from County Map:', this.sidebarData);
+      this.selectedYear = this.sidebarData['selectedYear']
+      this.selectedMap = this.sidebarData['selectedMap']
+      this.selectedCol1 = this.sidebarData['selectedCol'][0]
+      this.selectedCol2 = this.sidebarData['selectedCol'][1]
+      this.selectedCol3 = this.sidebarData['selectedCol'][2]
       this.createCheckboxes()
     }
   }
 
   createCheckboxes() {
-    for (let category in this.dataFromCountyMap) {
-      // console.log(this.dataFromCountyMap[category])
-      for (let data of this.dataFromCountyMap[category]) {
+    for (let category in this.sidebarData) {
+      for (let data of this.sidebarData[category]) {
         let temp = {
           name: data,
-          checked: false
+          checked: (data === this.selectedMap && category === 'maps') || ((data === this.selectedCol1 || data === this.selectedCol2 || data === this.selectedCol3) && category === 'columns') ? true : false
         }
+
         if (category === 'years') {
           this.yearCols.push(temp)
         } else if (category === 'maps') {
@@ -38,12 +47,8 @@ export class SidebarComponent implements OnChanges {
         } else if (category === 'columns') {
           this.columns.push(temp)
         }
-
       }
-      
     }
-
-    console.log("maps: ", this.mapsCols)
   }
 
   sendData() {

@@ -1,15 +1,14 @@
-<div class="row">
-    <div class="col-2">
-        <app-sidebar [dataFromCountyMap]="countyMapData"
-            (dataToCountyMap)="onSidebarDataReceived($event)"></app-sidebar>
+
+<div class="layout-container">
+    <div class="sidebar">
+        <app-sidebar [sidebarData]="sidebarData">
+        </app-sidebar>
     </div>
-    <div class="col-10">
-        <app-county-map [dataFromSidebar]="sidebarData"
-            (dataToSidebar)="onCountyMapDataReceived($event)"></app-county-map>
+    <div class="main-content">
+        <app-county-map (dataToSidebar)="onCountyMapDataReceived($event)">
+        </app-county-map>
     </div>
 </div>
-
-
 
 
 <!-- <app-leaflet-test></app-leaflet-test> -->

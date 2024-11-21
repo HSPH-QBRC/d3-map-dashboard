@@ -1,29 +1,29 @@
-import { Component } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
+
+
 export class AppComponent {
-  countyMapData!: { id: number; name: string; info: string }; // Data sent to sidebar
-  sidebarData!: { selectedCounty: string; details: string }; // Data sent to county map
+  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[] }>();
 
-  // Handle data from the county map
-  onCountyMapDataReceived(data: { id: number; name: string; info: string }) {
-    this.countyMapData = data;
+
+  sidebarData = {
+    "years": [],
+    "columns": [],
+    "maps": [],
+    "selectedYear": '',
+    "selectedMap": '',
+    "selectedCol": []
+  };
+
+
+  onCountyMapDataReceived(data) {
+    this.sidebarData = data
+    this.dataToSidebar.emit(this.sidebarData);
   }
-
-  // Handle data from the sidebar
-  onSidebarDataReceived(data: { selectedCounty: string; details: string }) {
-    this.sidebarData = data;
-  }
-
-  // zoomScale = 1
-
-  // handleZoomData(data: string) {
-  //   this.zoomScale = Number(data)
-  // }
-
 
 }

@@ -52,6 +52,9 @@
         <button class="zoomButton" matTooltip="Zoom Out" (click)="applyZoom('-')" [disabled]="zoomScale === 1">
             <mat-icon>remove</mat-icon>
         </button>
+        <button class="zoomButton" matTooltip="Zoom Out" (click)="applyZoom('fullmap')" [disabled]="zoomScale === 1">
+            <mat-icon>public</mat-icon>
+        </button>
     </div>
 
     <!-- <div *ngIf="zoomScale >= 6" class="navButtonContainer" [style.left.px]="20">
