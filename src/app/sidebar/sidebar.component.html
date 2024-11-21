@@ -1,5 +1,5 @@
-<div class="p-3"
-    style="width: 280px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);">
+<app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+<div class="p-3" style="width: 280px; background-color: #f9f9f9; border-radius: 8px;">
     <a mat-button routerLink="/"
         class="d-flex align-items-center pb-3 mb-3 link-dark text-decoration-none border-bottom">
         <span class="mat-h5 font-weight-semibold">DASHBOARD</span>
@@ -9,46 +9,56 @@
         <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
             Year
         </button>
-        <div *ngIf="true">
+        <br>
+        <div *ngIf="showYears">
             <div class="slider">
-                {{2000}}
-                <mat-slider thumbLabel [tickInterval]="2" [step]="1" min="2000" [max]="2024" aria-label="units"
-                    [(ngModel)]="selectedYear" >
+                {{minYear}}
+                <mat-slider thumbLabel [tickInterval]="2" [step]="1" [min]="minYear" [max]="maxYear" aria-label="units"
+                    [(ngModel)]="selectedYear">
                 </mat-slider>
-                {{2024}}
+                {{maxYear}}
             </div>
         </div>
 
         <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
             Columns
         </button>
-        <div *ngIf="true">
+        <br>
+        <div *ngIf="showCols">
             <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small" style="padding-left: 16px; margin: 0;">
-                <li *ngFor="let col of columns" style="list-style: none; margin: 4px 0;">
+                <li *ngFor="let col of (showMoreCols ? columns : columns.slice(0, 5))"
+                    style="list-style: none; margin: 4px 0;">
                     <mat-checkbox [(ngModel)]="col.checked" style="display: block;">
                         {{ col.name }}
                     </mat-checkbox>
                 </li>
             </ul>
+            <p style="text-align: right;"><button class="showmore-button" (click)="showMore('cols')">{{showMoreCols ?
+                    'Show less...':'Show more...'}} </button></p>
         </div>
 
         <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
             Map
         </button>
-        <div *ngIf="true">
+        <br>
+        <div *ngIf="showMaps">
             <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small" style="padding-left: 16px; margin: 0;">
-                <li *ngFor="let col of mapsCols" style="list-style: none; margin: 4px 0;">
-                    <mat-checkbox [(ngModel)]="col.checked" style="display: block;">
-                        {{ col.name }}
-                    </mat-checkbox>
+                <li *ngFor="let col of (showMoreMaps ? mapsCols : mapsCols.slice(0, 5))" style="list-style: none; margin: 4px 0;">
+                    <mat-radio-group [(ngModel)]="selectedMap">
+                        <mat-radio-button [value]="col.name" style="display: block;">
+                            {{ col.name }}
+                        </mat-radio-button>
+                    </mat-radio-group>
                 </li>
             </ul>
+            <p style="text-align: right;"><button class="showmore-button" (click)="showMore('maps')">{{showMoreMaps ?
+                    'Show less...':'Show more...'}} </button></p>
         </div>
     </mat-accordion>
 
-    <!-- <div class="text-center mt-3" style="margin-top: 16px;">
-        <button mat-raised-button color="primary" (click)="sendData()" style="width: 100%; font-weight: bold;">
-            Send Data to County Map
+    <div class="button-container">
+        <button mat-raised-button color="primary" (click)="sendData()" class="update-button">
+            Update
         </button>
-    </div> -->
+    </div>
 </div>

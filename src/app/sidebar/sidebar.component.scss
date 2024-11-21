@@ -51,7 +51,6 @@
     line-height: 1.25;
 }
 
-/* Optional: Remove margin around the accordion */
 mat-accordion.no-shadow {
     margin: 0;
 }
@@ -62,12 +61,12 @@ a.mat-button {
     padding-bottom: 16px;
     margin-bottom: 16px;
     text-decoration: none;
-    color: #000; /* Adjust this color if needed */
+    color: #000; 
 }
 
 .mat-h5 {
-    font-size: 1.25rem; /* Adjust for fs-5 */
-    font-weight: 600; /* Adjust for fw-semibold */
+    font-size: 1.25rem; 
+    font-weight: 600;
 }
 
 .slider {
@@ -87,4 +86,28 @@ a.mat-button {
         font-size: 8px;
         font-weight: bold;
     }
+    .mat-radio-label {
+        margin-bottom: 5px !important;
+    }
+}
+
+.button-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+    margin-right: 16px;
+    padding-bottom: 16px;
+}
+
+.showmore-button {
+    background: none;
+    border: none;
+    color: grey;
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit; 
+}
+
+.showmore-button:focus {
+    outline: none; 
 }

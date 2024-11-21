@@ -24,10 +24,9 @@ interface CarmenData {
   styleUrls: ['./county-map.component.scss']
 })
 export class CountyMapComponent implements AfterViewInit, OnDestroy {
-  // @Input() mapData!: {}; 
-  @Output() dataToSidebar = new EventEmitter<{}>(); 
-  // @Output() getNewData: EventEmitter<string> = new EventEmitter<string>();
-  // @Output() getNewData2: EventEmitter<string> = new EventEmitter<string>();
+  @Output() dataToSidebar = new EventEmitter<{}>();
+  @Input() dataFromSidebar: any;
+
 
   @ViewChild('container', { static: true }) containerRef!: ElementRef;
   // map: L.Map;
@@ -60,9 +59,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   yearCols = []
   columns = []
 
-  statesArr = ['USA 2000 Mainland (County)', 'USA 2000 Mainland', 'USA 2018 Mainland', 'USA 2020 Mainland', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
-    'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana',
-    'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+  statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
   selectedCol1: string = 'population';
   // selectedCol1: string = 'nsdoh_profiles'
@@ -89,15 +86,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   maxZoom = 20
   private debounceTimer: any;
 
-  ngAfterViewInit() {
-    this.scrollListener = this.renderer.listen(this.containerRef.nativeElement, 'scroll', this.onScroll.bind(this));
-    this.getData()
-  }
-
-  ngOnDestroy(): void {
-    if (this.scrollListener) this.scrollListener();
-    if (this.debounceTimer) clearTimeout(this.debounceTimer);
-  }
+  
 
   showTopArrow = false;
   showBottomArrow = false;
@@ -115,47 +104,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     // "maps": this.statesArr
   };
 
-  sendData() {
-    this.sidebarData = {
-      "years": this.yearCols,
-      "columns": this.columns,
-      "maps": this.statesArr,
-      "selectedYear": this.selectedYear,
-      "selectedMap": this.selectedState,
-      "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3]
-    }
-    this.dataToSidebar.emit(this.sidebarData);
-  }
-
-  onScroll(event): void {
-    const container = this.containerRef.nativeElement;
-
-    const scrollTop = container.scrollTop;
-    const scrollLeft = container.scrollLeft;
-    const containerWidth = container.offsetWidth;
-    const containerHeight = container.offsetHeight;
-
-    // Get the full content width and height
-    const contentWidth = container.scrollWidth;
-    const contentHeight = container.scrollHeight;
-
-    // Calculate the maximum scroll positions
-    const maxScrollLeft = contentWidth - containerWidth;
-    const maxScrollTop = contentHeight - containerHeight;
-
-    this.showTopArrow = scrollTop < maxScrollTop * 0.1 ? true : false
-    this.showLeftArrow = scrollLeft < maxScrollLeft * 0.1 ? true : false
-    this.showRightArrow = scrollLeft > maxScrollLeft * 0.9 ? true : false
-    this.showBottomArrow = scrollTop > maxScrollTop * 0.9 ? true : false
-  }
-
-
-  hideArrows() {
-    this.showTopArrow = false;
-    this.showBottomArrow = false;
-    this.showLeftArrow = false;
-    this.showRightArrow = false;
-  }
+  
 
   fipsToState = fipsToStateJson
   fipsToCounty = fipsToCountyJson
@@ -315,8 +264,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     'tile_id_10_0', 'tile_id_10_1', 'tile_id_10_2',
     'tile_id_11_0', 'tile_id_11_1',
   ]
-// tileArr = []
-// tileAdj = []
+
   tileAdj = {
     'tile_id_0_0': [4.5 / 5, 4.4 / 5, 7.5, 10],
     'tile_id_0_1': [4.4 / 5, 1, 10],
@@ -370,23 +318,73 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     "tile_id_11_1": "tile_id_11_0"
   }
 
-  // useCarmenData = true
-  // dataCarmentObj = {}
   isCategoric = false
   colorCategories = []
 
-  columnsUsed = 0
+  columnsUsed = 0;
 
-  // getData(){
-  //   this.getNewData.emit()
-  //   console.log("getdata")
-  // }
+  ngOnChanges() {
+    if (this.dataFromSidebar !== undefined) {
+      this.selectedYear = this.dataFromSidebar['years']
+      this.selectedCol1 = this.dataFromSidebar['col1']
+      this.selectedCol2 = this.dataFromSidebar['col2']
+      this.selectedCol3 = this.dataFromSidebar['col3']
+      this.selectedState = this.dataFromSidebar['map']
+      this.resetVariables()
+      this.getData()
+    }
+  }
 
-  // getData2(){
-  //   this.getNewData2.emit()
-  //   console.log("getdata2")
-  // }
-  
+  ngAfterViewInit() {
+    this.scrollListener = this.renderer.listen(this.containerRef.nativeElement, 'scroll', this.onScroll.bind(this));
+    this.getData()
+  }
+
+  ngOnDestroy(): void {
+    if (this.scrollListener) this.scrollListener();
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+  }
+
+  sendData() {
+    this.sidebarData = {
+      "years": this.yearCols,
+      "columns": this.columns,
+      "maps": this.statesArr,
+      "selectedYear": this.selectedYear,
+      "selectedMap": this.selectedState,
+      "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3]
+    }
+    this.dataToSidebar.emit(this.sidebarData);
+  }
+
+  onScroll(event): void {
+    const container = this.containerRef.nativeElement;
+
+    const scrollTop = container.scrollTop;
+    const scrollLeft = container.scrollLeft;
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+
+    // Get the full content width and height
+    const contentWidth = container.scrollWidth;
+    const contentHeight = container.scrollHeight;
+
+    // Calculate the maximum scroll positions
+    const maxScrollLeft = contentWidth - containerWidth;
+    const maxScrollTop = contentHeight - containerHeight;
+
+    this.showTopArrow = scrollTop < maxScrollTop * 0.1 ? true : false
+    this.showLeftArrow = scrollLeft < maxScrollLeft * 0.1 ? true : false
+    this.showRightArrow = scrollLeft > maxScrollLeft * 0.9 ? true : false
+    this.showBottomArrow = scrollTop > maxScrollTop * 0.9 ? true : false
+  }
+
+  hideArrows() {
+    this.showTopArrow = false;
+    this.showBottomArrow = false;
+    this.showLeftArrow = false;
+    this.showRightArrow = false;
+  }
 
   async getData() {
     //change the logic to this later. currently only categoric data is with Carmen's data using nsdoh_profiles
@@ -798,14 +796,11 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     this.avgData2 = {};
     this.avgData3 = {};
     this.avgDataCat1 = {}
-
-
   }
 
   zoomChange = false
 
   createMap() {
-    // console.log("mapdata: ", this.mapData)
     // this.min1 = this.mapData['min1']
     // this.min2 = this.mapData['min2']
     // this.min3 = this.mapData['min3']
@@ -860,7 +855,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     const avgData1 = this.avgData1
     const avgData2 = this.avgData2
     // const avgData3 = this.avgData3
-    console.log("valmap: ", valuemap1)
 
     let xRange1 = this.min1;
     let xRange2 = (this.max1 - this.min1) / 3 + this.min1
@@ -948,10 +942,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     // const dragBehavior = d3.drag()
     //   .on("start", (event) => {
     //     // Optionally do something when dragging starts
-    //     console.log("Drag started");
     //   })
     //   .on("drag", (event) => {
-    //     console.log("on ddrag: ", event.dx, event.dy)
     //     // Adjust the position of the map group
     //     const dx = event.dx;
     //     const dy = event.dy;
@@ -959,13 +951,11 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     //     // Get the current transform
     //     const transform = d3.zoomTransform(svg.node());
     //     const updatedTransform = transform.translate(dx, dy);
-    //     console.log("updated trans: ", updatedTransform.toString())
 
     //     // Apply the updated transform
     //     svg.attr("transform", updatedTransform.toString());
     //   })
     //   // .on("end", (event) => {
-    //   //   console.log("event: ", event.dx, event.dy)
     //   //   const currentTransform = d3.zoomTransform(svg.node());
 
     //   //   // Update the zoom transform programmatically
@@ -975,13 +965,12 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
     //   //   // svg.call(zoom.transform, updatedTransform); // Sync zoom transform with drag changes
 
-    //   //   console.log("Drag ended");
     //   // });
 
     // // Attach the drag behavior to the map group
     // svg.call(dragBehavior);
 
-  
+
 
     if (this.useBivariate === false) {
       const fipsToState = this.fipsToState
@@ -1080,7 +1069,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           this.minRow = Math.min(row, this.minRow)
         }
 
-        
+
 
         this.tileArr.forEach((d, i) => {
           let tileName = d;
@@ -1690,11 +1679,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
         )
       } else {
-        console.log("selectedstate: ", this.selectedState)
-        // this.state = this.mapData['state']
         const land = topojson.feature(this.state, {
           type: "GeometryCollection",
-          // geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
           geometries: this.state.objects[tractName].geometries
         });
 
@@ -1726,8 +1712,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             const id = this.fullCountryArr.includes(this.selectedState) ? d['properties'][fips] : d['properties']['GEOID'];
             const val1 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData1[id] ? this.avgData1[id]['avg'] : -1) : valuemap1.get(id);
             const val2 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData2[id] ? this.avgData2[id]['avg'] : -1) : valuemap2.get(id);
-
-            // console.log("fill: ", fips, id, val1, val2, this.colors)
             if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
               return this.colors[0];
             } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
@@ -2065,7 +2049,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       }
     }
     if (loadNewTiles) {
-      console.log("load new tiles: ", this.tileArr)
       this.getData2()
     }
   }

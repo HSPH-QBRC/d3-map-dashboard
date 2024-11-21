@@ -6,10 +6,10 @@ import { Component, Output, EventEmitter } from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 
-
 export class AppComponent {
-  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[] }>();
+  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[], selectedYear: string, selectedMap: string, selectedCol: string[] }>();
 
+  dataFromSidebar: any;
 
   sidebarData = {
     "years": [],
@@ -20,10 +20,13 @@ export class AppComponent {
     "selectedCol": []
   };
 
-
   onCountyMapDataReceived(data) {
     this.sidebarData = data
     this.dataToSidebar.emit(this.sidebarData);
+  }
+
+  onSidebarDataReceived(data: any) {
+    this.dataFromSidebar = data;
   }
 
 }

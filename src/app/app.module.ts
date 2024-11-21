@@ -20,6 +20,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
 // import { MatGridListModule } from '@angular/material/grid-list';
 import {MatSliderModule} from '@angular/material/slider';
+import {MatRadioModule} from '@angular/material/radio';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,8 @@ import {MatSliderModule} from '@angular/material/slider';
     MatButtonModule,
     MatExpansionModule,
     // MatGridListModule,
-    MatSliderModule
+    MatSliderModule,
+    MatRadioModule
   ],
   providers: [],
   bootstrap: [AppComponent]
