@@ -17,7 +17,6 @@ interface CarmenData {
   rate: string;
 }
 
-
 @Component({
   selector: 'app-county-map',
   templateUrl: './county-map.component.html',
@@ -86,7 +85,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   maxZoom = 20
   private debounceTimer: any;
 
-  
+
 
   showTopArrow = false;
   showBottomArrow = false;
@@ -103,8 +102,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     // "columns": [],
     // "maps": this.statesArr
   };
-
-  
 
   fipsToState = fipsToStateJson
   fipsToCounty = fipsToCountyJson
@@ -330,6 +327,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       this.selectedCol2 = this.dataFromSidebar['col2']
       this.selectedCol3 = this.dataFromSidebar['col3']
       this.selectedState = this.dataFromSidebar['map']
+      this.useBivariate = this.dataFromSidebar['useBivariate']
+      console.log("tilesarr: ", this.tileArr)
       this.resetVariables()
       this.getData()
     }
@@ -770,12 +769,12 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     this.getData()
   }
 
-  onChangeBivariate(event) {
-    this.useBivariate = event.checked;
+  // onChangeBivariate(event) {
+  //   this.useBivariate = event.checked;
 
-    this.resetVariables()
-    this.getData()
-  }
+  //   this.resetVariables()
+  //   this.getData()
+  // }
 
   resetVariables() {
     this.min1 = Infinity;
@@ -785,7 +784,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     this.min3 = Infinity;
     this.max3 = -Infinity;
 
-    this.zoomScale = 1;
+    // this.zoomScale = 1;
 
     this.data1 = [];
     this.data2 = [];
@@ -801,24 +800,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   zoomChange = false
 
   createMap() {
-    // this.min1 = this.mapData['min1']
-    // this.min2 = this.mapData['min2']
-    // this.min3 = this.mapData['min3']
-    // this.max1 = this.mapData['max1']
-    // this.max2 = this.mapData['max2']
-    // this.max3 = this.mapData['max3']
-    // this.data1 = this.mapData['data1']
-    // this.data2 = this.mapData['data2']
-    // this.data3 = this.mapData['data3']
-    // this.dataCarmen = this.mapData['dataCarmen']
-    // this.avgData1 = this.mapData['avgData1']
-    // this.avgData2 = this.mapData['avgData2']
-    // this.avgData3 = this.mapData['avgData3']
-    // this.avgDataCat1 = this.mapData['avgDataCat1']
-    // this.tileArr = this.mapData['tileArr']
-    // this.tileAdj = this.mapData['tileAdj']
-    // this.stateTile = this.mapData['stateTile']
-    // this.topoJsonObjectsKey = this.mapData['topoJsonObjectsKey']
     // // Initialize the Leaflet map
     // this.map = L.map('map', {
     //   center: [42.3601, -71.0589], // Set the map center to Boston's coordinates
@@ -850,11 +831,11 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
-    // const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
+    const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
 
     const avgData1 = this.avgData1
     const avgData2 = this.avgData2
-    // const avgData3 = this.avgData3
+    const avgData3 = this.avgData3
 
     let xRange1 = this.min1;
     let xRange2 = (this.max1 - this.min1) / 3 + this.min1
@@ -895,13 +876,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     d3.select(this.legendContainerId)
       .selectAll('svg')
       .remove();
-
-    // const svg = d3.select(this.scatterplotContainerId)
-    //   .append("svg")
-    //   .attr("width", width)
-    //   .attr("height", height)
-    //   .attr("viewBox", [0, 0, width, height])
-    //   .attr("style", `max-width: 100%; height: auto; transform-origin: 0 0;`)
 
     const svg = d3.select(this.scatterplotContainerId)
       .append("svg")
@@ -981,7 +955,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
       const color1 = d3.scaleSequential(d3.interpolateBlues).domain([this.min1, this.max1]);
 
-      // const colorCategories = ['Profile 1', 'Profile 2', 'Profile 3', 'Profile 4', 'Profile 5', 'Profile 6', 'Profile 7', 'Profile 8',];
       const color2 = d3.scaleOrdinal()
         .domain(this.colorCategories)
         .range(d3.schemeSet3);
@@ -1212,8 +1185,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           geometries: this.state.objects[tractName].geometries.filter((d) => (d.properties.geoid / 10000 | 0) % 100 !== 99)
         });
 
-        // svg.append("style").text(`.tract:hover {fill: orange }`);
-
         const [longitude, latitude] = this.stateCentroids[this.selectedState];
         const path = d3.geoPath()
           .projection(d3.geoTransverseMercator()
@@ -1264,9 +1235,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             tooltip.html(toolTipString)
               .style("left", (event.pageX + 10) + "px")
               .style("top", (event.pageY - 10) + "px");
-            // }
-
-
 
           })
           .on("mouseout", function (event, d) {
@@ -1579,6 +1547,7 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
         this.tileArr.forEach((d, i) => {
           let tileName = d;
+          console.log("tilename: ", tileName, this.stateTile)
 
           const land = topojson.feature(this.stateTile[i], {
             type: "GeometryCollection",
@@ -1601,7 +1570,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           const parts = this.tileArr[i].split('_');
           let row = Number(parts[3])
           let col = Number(parts[2])
-
+          console.log(`tile_${col}_${row}: translate(${(col - this.minCol) * tileWidth + xTrans} , ${(row - this.minRow) * tileHeight + yTrans})`, row, this.minRow, tileHeight, yTrans)
+          console.log("tilearr:  ", this.tileArr)
           svg.append('g')
             // .attr('transform', `translate(${(col - this.minCol) * tileWidth}, ${(row - this.minRow) * tileHeight})`)
             .attr("class", `tile_${col}_${row}`)

@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { MatSlider } from '@angular/material/slider';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-sidebar',
@@ -7,10 +8,11 @@ import { MatSlider } from '@angular/material/slider';
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent implements OnChanges {
-  @Input() sidebarData!: { years: string[], columns: string[], maps: string[] }; // Data received from the county map
-  // @Output() dataToCountyMap = new EventEmitter<{ selectedCounty: string; details: string }>(); // Data sent to the county map
-  @ViewChild('slider') slider: MatSlider; // Reference to the slider
+  @Input() sidebarData!: { years: string[], columns: string[], maps: string[] };
+  @ViewChild('slider') slider: MatSlider;
   @Output() dataToParent = new EventEmitter<any>();
+
+  constructor(private snackBar: MatSnackBar) { }
 
   isLoading = true;
   yearCols = [];
@@ -30,6 +32,8 @@ export class SidebarComponent implements OnChanges {
 
   showMoreCols = false
   showMoreMaps = false
+
+  useBivariate = true
 
   ngOnChanges(changes: SimpleChanges): void {
 
@@ -101,14 +105,27 @@ export class SidebarComponent implements OnChanges {
   }
 
   sendData() {
-    const data = {
-      years: this.selectedYear.toString(),
-      col1: this.selectedCol1,
-      col2: this.selectedCol2,
-      col3: this.selectedCol3,
-      map: this.selectedMap
+    if (this.selectedCol1 === "--") {
+      let message = 'Please select at least 1 column.'
+      this.onErrorSnackbar(message)
+    } else if ((this.selectedCol1 === "--" || this.selectedCol2 === "--") && this.useBivariate === true) {
+      let message = 'In order to display Bivariate plot, you must select 2 columns.'
+      this.onErrorSnackbar(message)
+    } else {
+      const data = {
+        years: this.selectedYear.toString(),
+        col1: this.selectedCol1,
+        col2: this.selectedCol2,
+        col3: this.selectedCol3,
+        map: this.selectedMap,
+        useBivariate: this.useBivariate
+      }
+      console.log("sidebar data: ", data)
+      this.showMoreCols = false;
+      this.showMoreMaps = false;
+      this.dataToParent.emit(data);
     }
-    this.dataToParent.emit(data);
+
   }
 
   showMore(name) {
@@ -117,5 +134,72 @@ export class SidebarComponent implements OnChanges {
     } else if (name === 'maps') {
       this.showMoreMaps = !this.showMoreMaps
     }
+  }
+
+  onChangeBivariate() {
+    this.useBivariate = !this.useBivariate
+  }
+
+  onCheckboxChange(index, isCheck, name) {
+    if (isCheck === true && this.selectedCol1 !== "--" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--") {
+      let message = 'Currently we are only able to display 3 columns max right now'
+      this.onErrorSnackbar(message)
+    }
+
+    if (index === 0) {
+      if (isCheck === true) {
+        this.selectedCol1 = name
+      } else {
+        if (this.selectedCol2 !== "--") {
+          this.selectedCol1 = this.selectedCol2
+          this.selectedCol2 = this.selectedCol3
+          this.selectedCol3 = "--"
+        } else {
+          this.selectedCol1 = "--"
+        }
+
+      }
+    }
+    else if (index === 1) {
+      if (isCheck === true) {
+        this.selectedCol2 = name
+      } else {
+        if (this.selectedCol3 !== "--") {
+          this.selectedCol2 = this.selectedCol3
+          this.selectedCol3 = "--"
+        } else {
+          this.selectedCol2 = "--"
+        }
+
+      }
+    }
+    else if (index === 2) {
+      if (isCheck === true) {
+        this.selectedCol3 = name
+      } else {
+        this.selectedCol3 = "--"
+      }
+    } else {
+      if (isCheck === true) {
+        if (this.selectedCol1 === "--") {
+          this.selectedCol1 = name
+        } else if (this.selectedCol2 === "--") {
+          this.selectedCol2 = name
+        } else if (this.selectedCol3 === "--") {
+          this.selectedCol3 = name
+        }
+      }
+    }
+    this.organizeData()
+
+  }
+
+  onErrorSnackbar(message): void {
+    // const message = `Currently we are only able to display 3 columns max right now`;
+    this.snackBar.open(message, 'Close', {
+      duration: 3000, // Snackbar will close after 3 seconds
+      horizontalPosition: 'left',
+      verticalPosition: 'bottom',
+    });
   }
 }

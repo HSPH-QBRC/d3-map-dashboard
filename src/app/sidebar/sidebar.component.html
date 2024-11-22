@@ -1,11 +1,17 @@
 <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
 <div class="p-3" style="width: 280px; background-color: #f9f9f9; border-radius: 8px;">
-    <a mat-button routerLink="/"
-        class="d-flex align-items-center pb-3 mb-3 link-dark text-decoration-none border-bottom">
-        <span class="mat-h5 font-weight-semibold">DASHBOARD</span>
+    <a mat-button routerLink="/" class="title-container">
+        <span class="mat-h5 font-weight-semibold dashboard-title">DASHBOARD</span>
     </a>
 
     <mat-accordion class="no-shadow" multi>
+        <mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeBivariate()"
+            color="primary">Use
+            Bivariate Choropleth</mat-slide-toggle>
+        <mat-slide-toggle class="example-margin" [checked]="!useBivariate" (change)="onChangeBivariate()"
+            color="primary">Use
+            Heatmap Overlays</mat-slide-toggle>
+        <br>
         <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
             Year
         </button>
@@ -26,9 +32,11 @@
         <br>
         <div *ngIf="showCols">
             <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small" style="padding-left: 16px; margin: 0;">
-                <li *ngFor="let col of (showMoreCols ? columns : columns.slice(0, 5))"
+                <li *ngFor="let col of (showMoreCols ? columns : columns.slice(0, 5)); let i = index"
                     style="list-style: none; margin: 4px 0;">
-                    <mat-checkbox [(ngModel)]="col.checked" style="display: block;">
+                    <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
+                        [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
+                        (change)="onCheckboxChange(i, col.checked, col.name)">
                         {{ col.name }}
                     </mat-checkbox>
                 </li>
@@ -43,7 +51,8 @@
         <br>
         <div *ngIf="showMaps">
             <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small" style="padding-left: 16px; margin: 0;">
-                <li *ngFor="let col of (showMoreMaps ? mapsCols : mapsCols.slice(0, 5))" style="list-style: none; margin: 4px 0;">
+                <li *ngFor="let col of (showMoreMaps ? mapsCols : mapsCols.slice(0, 5))"
+                    style="list-style: none; margin: 4px 0;">
                     <mat-radio-group [(ngModel)]="selectedMap">
                         <mat-radio-button [value]="col.name" style="display: block;">
                             {{ col.name }}

@@ -18,9 +18,9 @@ import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
-// import { MatGridListModule } from '@angular/material/grid-list';
 import {MatSliderModule} from '@angular/material/slider';
 import {MatRadioModule} from '@angular/material/radio';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [
@@ -45,9 +45,9 @@ import {MatRadioModule} from '@angular/material/radio';
     MatCheckboxModule,
     MatButtonModule,
     MatExpansionModule,
-    // MatGridListModule,
     MatSliderModule,
-    MatRadioModule
+    MatRadioModule,
+    MatSnackBarModule
   ],
   providers: [],
   bootstrap: [AppComponent]

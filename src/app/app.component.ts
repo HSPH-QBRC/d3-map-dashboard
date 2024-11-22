@@ -7,7 +7,7 @@ import { Component, Output, EventEmitter } from '@angular/core';
 })
 
 export class AppComponent {
-  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[], selectedYear: string, selectedMap: string, selectedCol: string[] }>();
+  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[], selectedYear: string, selectedMap: string, selectedCol: string[], useBivariate: boolean }>();
 
   dataFromSidebar: any;
 
@@ -17,7 +17,8 @@ export class AppComponent {
     "maps": [],
     "selectedYear": '',
     "selectedMap": '',
-    "selectedCol": []
+    "selectedCol": [],
+    useBivariate: false
   };
 
   onCountyMapDataReceived(data) {
