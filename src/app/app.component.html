@@ -1,13 +1,34 @@
-
 <div class="layout-container">
     <div class="sidebar">
         <app-sidebar [sidebarData]="sidebarData" (dataToParent)="onSidebarDataReceived($event)">
         </app-sidebar>
     </div>
     <div class="main-content">
-        <app-county-map [dataFromSidebar]="dataFromSidebar" (dataToSidebar)="onCountyMapDataReceived($event)">
-        </app-county-map>
+        <!-- <div class="main-mapContainer"> -->
+            <app-county-map [dataFromSidebar]="dataFromSidebar"
+                (dataToSidebar)="onCountyMapDataReceived($event)"></app-county-map>
+        <!-- </div> -->
+
+
+
+
+        <!-- <div class="timelineBar">
+            <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
+                Year
+            </button>
+            <br>
+            <div *ngIf="showYears">
+                <div class="slider">
+                    {{minYear}}
+                    <mat-slider thumbLabel [tickInterval]="2" [step]="1" [min]="minYear" [max]="maxYear"
+                        aria-label="units" [(ngModel)]="selectedYear">
+                    </mat-slider>
+                    {{maxYear}}
+                </div>
+            </div>
+        </div> -->
     </div>
+
 </div>
 
 

@@ -11,8 +11,11 @@
         <mat-slide-toggle class="example-margin" [checked]="!useBivariate" (change)="onChangeBivariate()"
             color="primary">Use
             Heatmap Overlays</mat-slide-toggle>
+        <mat-slide-toggle class="example-margin" [checked]="showRedline" (change)="onChangeRedline()"
+            color="warn">Show Redlining Districts</mat-slide-toggle>
         <br>
-        <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
+        <br>
+        <!-- <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
             Year
         </button>
         <br>
@@ -24,7 +27,7 @@
                 </mat-slider>
                 {{maxYear}}
             </div>
-        </div>
+        </div> -->
 
         <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
             Columns

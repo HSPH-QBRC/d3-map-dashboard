@@ -5,6 +5,7 @@
 #map {
     width: 100%; /* Define a width */
     margin: 0 auto; /* This will center the div horizontally */
+    overflow: auto;
 }
 
 .example-margin {
@@ -156,4 +157,38 @@ svg {
 
 svg:active {
     cursor: grabbing;
+}
+
+.timelineBar{
+    width: 100vw;
+    height: 50px;
+    position: fixed;
+    bottom: 0;
+}
+
+.slider-map {
+    padding-left: 10vw;
+}
+
+::ng-deep {
+    .mat-slider-thumb-label {
+        transform: rotate(45deg) !important;
+        border-radius: 50% 50% 0 !important;
+    }
+    .mat-slider-thumb {
+        transform: scale(0) !important;
+    }
+    .mat-slider-thumb-label-text {
+        opacity: 1 !important;
+        font-size: 8px;
+        font-weight: bold;
+    }
+    .mat-radio-label {
+        margin-bottom: 5px !important;
+    }
+
+    .slider-map .mat-slider-horizontal {
+        min-width: 50vw !important;
+    }
+
 }

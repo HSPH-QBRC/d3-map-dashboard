@@ -55,6 +55,9 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   min3: number = 10000000000;
   max3: number = 0;
   selectedYear: string = '2017';
+  minYear: number = 1900
+  maxYear: number = 2024
+  showYears: boolean = false
   yearCols = []
   columns = []
 
@@ -92,16 +95,14 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
   showLeftArrow = false;
   showRightArrow = false;
 
+  showRedline = true
+
   lastScrollTop: number = 0;
   lastScrollLeft: number = 0;
 
   containerRef2 = document.getElementById("mapContainerId");
 
-  sidebarData = {
-    // "years": [],
-    // "columns": [],
-    // "maps": this.statesArr
-  };
+  sidebarData = {};
 
   fipsToState = fipsToStateJson
   fipsToCounty = fipsToCountyJson
@@ -110,7 +111,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
     "USA 2018 Mainland": "SVI_2018_US_tract_edit.json",
     "USA 2020 Mainland": "SVI2020_US_mainland_tract.json",
     "USA 2000 Mainland": "SVI2000_US_mainland_tract.json",
-    "USA 2000 Mainland (County)": "SVI_2000_US_County.json",
+    "USA 2000 Mainland (County)": "svi_2000_us_county_merge_redline_mainland.json",
+    // "USA 2000 Mainland (County)": "SVI_2000_US_County.json",
     "Alabama": "cb_2017_01_tract_500k.json",
     "Alaska": "cb_2017_02_tract_500k.json",
     "Arizona": "cb_2017_04_tract_500k.json",
@@ -328,8 +330,9 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
       this.selectedCol3 = this.dataFromSidebar['col3']
       this.selectedState = this.dataFromSidebar['map']
       this.useBivariate = this.dataFromSidebar['useBivariate']
-      console.log("tilesarr: ", this.tileArr)
+      this.showRedline = this.dataFromSidebar['showRedline']
       this.resetVariables()
+
       this.getData()
     }
   }
@@ -405,6 +408,9 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
         }
       }
       this.yearCols.sort((a, b) => a - b);
+      this.minYear = this.yearCols[0]
+      this.maxYear = this.yearCols[this.yearCols.length - 1]
+      this.showYears = true
     }
 
     for (const d of csvData_carmen) {
@@ -849,6 +855,8 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
     let max2 = this.max2
     let max3 = this.max3
+
+    let showRedline = this.showRedline
 
     const fipsToState = this.fipsToState
     const fipsToCounty = this.fipsToCounty
@@ -1547,7 +1555,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
         this.tileArr.forEach((d, i) => {
           let tileName = d;
-          console.log("tilename: ", tileName, this.stateTile)
 
           const land = topojson.feature(this.stateTile[i], {
             type: "GeometryCollection",
@@ -1570,8 +1577,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
           const parts = this.tileArr[i].split('_');
           let row = Number(parts[3])
           let col = Number(parts[2])
-          console.log(`tile_${col}_${row}: translate(${(col - this.minCol) * tileWidth + xTrans} , ${(row - this.minRow) * tileHeight + yTrans})`, row, this.minRow, tileHeight, yTrans)
-          console.log("tilearr:  ", this.tileArr)
           svg.append('g')
             // .attr('transform', `translate(${(col - this.minCol) * tileWidth}, ${(row - this.minRow) * tileHeight})`)
             .attr("class", `tile_${col}_${row}`)
@@ -1634,20 +1639,13 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             .attr('stroke', 'rgba(119, 119, 119, .7)')
             .attr('stroke-width', .05)
             .on("click", (event, d) => {
-              let countyId = d['properties']['STCNTY']
-              // let currTile = this.countyidToTileid[countyId]
-
               const [mouseX, mouseY] = d3.pointer(event);
-              console.log("mouse click: ", mouseX, mouseY)
               if (this.zoomScale <= this.maxZoom) {
                 this.zoomScale += 2
                 zoomTo(mouseX / 2, mouseY / 1.5, this.zoomScale);
               }
             })
-        }
-
-
-        )
+        })
       } else {
         const land = topojson.feature(this.state, {
           type: "GeometryCollection",
@@ -1669,15 +1667,20 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
         // Create a new path generator for each tile using the tile-specific projection
         const path = d3.geoPath().projection(projection);
+        const filteredData = showRedline ? land['features'] : land['features'].filter(item => item.properties.layer_type !== 'Redlining District');
 
         // Add the part of the map corresponding to this tile
         svg.append('g')
           .selectAll('path')
-          .data(land['features'])
+          .data(filteredData)
           .enter().append('path')
           .attr('d', path)
           .attr("class", "tract")
           .attr("fill", d => {
+            const layer_type = d['properties']['layer_type']
+            if (layer_type === 'Redlining District' && showRedline === true) {
+              return 'tomato'
+            }
             const fips = selectedState === 'USA 2000 Mainland (County)' ? 'STCOFIPS' : 'FIPS'
             const id = this.fullCountryArr.includes(this.selectedState) ? d['properties'][fips] : d['properties']['GEOID'];
             const val1 = selectedState === 'USA 2000 Mainland (County)' ? (this.avgData1[id] ? this.avgData1[id]['avg'] : -1) : valuemap1.get(id);
@@ -1711,7 +1714,22 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
             tooltip.transition().duration(100).style("opacity", 1);
             const fipscode = useCountry ? prop['STCNTY'] : prop.STATEFP + prop.COUNTYFP;
             const countyName = useCountry ? prop['COUNTY'] : `${fipsToCounty[fipscode]['County']}`;
-            if (useCountry && !useCensusCountry) {
+            const layer_type = d['properties']['layer_type']
+            if (layer_type === 'Redlining District' && showRedline === true) {
+              const state = prop.state
+              const city = prop.city
+              const area_id = prop.area_id
+              const residential = prop.residential
+              const category = prop.category
+              const grade = prop.grade
+              const commercial = prop.commercial
+              const industrial = prop.industrial
+              const city_survey = prop.city_survey
+
+              tooltip.html(`State: ${state}<br>City: ${city}<br>Area ID: ${area_id}<br>Residential: ${residential}<br>Category: ${category}<br>Grade: ${grade}<br>Commercial: ${commercial}<br>Industrial: ${industrial}<br>City Survey: ${city_survey}<br>`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+            } else if (useCountry && !useCensusCountry) {
               const id = prop.STCOFIPS
               const state = prop.STATE_NAME
               const stateId = prop.STATE_FIPS
@@ -1767,13 +1785,15 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
       // let moveX = this.moveHorizontal ? 100 : 0
       // let moveY = this.moveVertical ? 400 : 0
-      // let mapContainer = document.getElementById("map-container")
+      // let mapContainer = document.getElementById('map-container')
 
       // mapContainer.scrollTo({
-      //   left: moveX,
-      //   top: 600,
+      //   left: 100,
+      //   top: 0,
       //   behavior: 'smooth', // Smooth scrolling
       // });
+      // mapContainer.scrollTop = -100
+      // console.log("scroll callled on map")
       // if (this.moveVertical) {
       //   this.isLoading = true
       //   setTimeout(() => {
@@ -2095,5 +2115,12 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
 
     return false;
 
+  }
+
+  onYearChange(year){
+    this.selectedYear = year.toString()
+    this.resetVariables()
+
+    this.getData()
   }
 }

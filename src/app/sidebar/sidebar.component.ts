@@ -34,6 +34,7 @@ export class SidebarComponent implements OnChanges {
   showMoreMaps = false
 
   useBivariate = true
+  showRedline = true
 
   ngOnChanges(changes: SimpleChanges): void {
 
@@ -118,9 +119,9 @@ export class SidebarComponent implements OnChanges {
         col2: this.selectedCol2,
         col3: this.selectedCol3,
         map: this.selectedMap,
-        useBivariate: this.useBivariate
+        useBivariate: this.useBivariate,
+        showRedline: this.showRedline
       }
-      console.log("sidebar data: ", data)
       this.showMoreCols = false;
       this.showMoreMaps = false;
       this.dataToParent.emit(data);
@@ -138,6 +139,10 @@ export class SidebarComponent implements OnChanges {
 
   onChangeBivariate() {
     this.useBivariate = !this.useBivariate
+  }
+
+  onChangeRedline(){
+    this.showRedline = !this.showRedline
   }
 
   onCheckboxChange(index, isCheck, name) {
@@ -195,7 +200,6 @@ export class SidebarComponent implements OnChanges {
   }
 
   onErrorSnackbar(message): void {
-    // const message = `Currently we are only able to display 3 columns max right now`;
     this.snackBar.open(message, 'Close', {
       duration: 3000, // Snackbar will close after 3 seconds
       horizontalPosition: 'left',
