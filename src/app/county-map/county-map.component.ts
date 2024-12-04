@@ -420,10 +420,6 @@ export class CountyMapComponent implements AfterViewInit, OnDestroy {
         id: id,
         rate: rate
       })
-
-      // this.dataCarmentObj[id] = {
-      //   rate: rate
-      // }
     }
 
     for (const d of csvData) {

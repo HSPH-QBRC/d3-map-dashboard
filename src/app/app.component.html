@@ -4,11 +4,11 @@
         </app-sidebar>
     </div>
     <div class="main-content">
-        <!-- <div class="main-mapContainer"> -->
-            <app-county-map [dataFromSidebar]="dataFromSidebar"
-                (dataToSidebar)="onCountyMapDataReceived($event)"></app-county-map>
-        <!-- </div> -->
+        <!-- <app-county-map [dataFromSidebar]="dataFromSidebar"
+                (dataToSidebar)="onCountyMapDataReceived($event)"></app-county-map> -->
 
+        <app-leaflet-map [dataFromSidebar]="dataFromSidebar"
+        (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map>
 
 
 

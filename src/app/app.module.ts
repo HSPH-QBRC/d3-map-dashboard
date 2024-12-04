@@ -21,6 +21,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import {MatSliderModule} from '@angular/material/slider';
 import {MatRadioModule} from '@angular/material/radio';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { LeafletMapComponent } from './leaflet-map/leaflet-map.component';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -28,7 +30,8 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     LoadingSpinnerComponent,
     CountyMapComponent,
     LeafletTestComponent,
-    SidebarComponent
+    SidebarComponent,
+    LeafletMapComponent
   ],
   imports: [
     BrowserModule,
@@ -47,7 +50,8 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     MatExpansionModule,
     MatSliderModule,
     MatRadioModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    HttpClientModule
   ],
   providers: [],
   bootstrap: [AppComponent]
