@@ -33,8 +33,8 @@ export class SidebarComponent implements OnChanges {
   showMoreCols = false
   showMoreMaps = false
 
-  useBivariate = true
-  showRedline = true
+  useBivariate:boolean = true
+  showRedline:boolean = true
 
   ngOnChanges(changes: SimpleChanges): void {
 

@@ -35,8 +35,8 @@ export class LeafletMapComponent implements OnInit {
   minYear = 1900
   maxYear = 2099
   showYears = false
-  showRedline = true
-  useBivariate = true
+  showRedline: boolean = true
+  useBivariate: boolean = true
 
   selectedYear: string = '2017';
   selectedCol1: string = 'population';
@@ -371,6 +371,7 @@ export class LeafletMapComponent implements OnInit {
   loadAndInitializeMap(): void {
     this.http.get(`./assets/maps/${this.currentMap}`).subscribe({
       next: (data) => {
+        console.log("data: ", this.currentMap, data)
         this.initializesMap(data);
       },
       error: (err) => {
@@ -416,6 +417,8 @@ export class LeafletMapComponent implements OnInit {
     let avgData1 = this.avgData1
     let avgData2 = this.avgData2
 
+    let showRedline = this.showRedline
+
     // let data1 = this.data1
     // let data2 = this.data2
     // let data3 = this.data3
@@ -425,58 +428,64 @@ export class LeafletMapComponent implements OnInit {
     let colors = this.colors
     let currentZoom = this.currentZoomLevel
 
+    this.map.createPane('redPane');
+    this.map.getPane('redPane').style.zIndex = '500';
+
+    this.map.createPane('tractsPane');
+    this.map.getPane('tractsPane').style.zIndex = '499';
+
     let areaLayer = L.geoJSON(area, {
       style: function (d) {
         const layer_type = d['properties']['layer_type']
-        if (layer_type === 'Redlining District' && this.showRedline === true) {
+        const pane = layer_type === 'Redlining District' ? 'redPane' : 'tractsPane';
+        if (layer_type === 'Redlining District') {
+          let fillColor = d['properties']['fill']
+          if (showRedline) {
+            return {
+              pane: pane,
+              color: '#808080',        // Border color
+              opacity: 1,    // Full opacity for the border
+              weight: 1,            // Border width
+              fillColor: fillColor,    // Fill color
+              fillOpacity: .6       // Full opacity for the fill
+            };
+          }
+        } else {
+          const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
+          const id = d['properties'][fips]
+          let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
+          let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
+          let color = 'white'
+          if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
+            color = colors[0];
+          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
+            color = colors[1];
+          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
+            color = colors[2];
+          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
+            color = colors[3];
+          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
+            color = colors[4];
+          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
+            color = colors[5];
+          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
+            color = colors[6];
+          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
+            color = colors[7];
+          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
+            color = colors[8];
+          } else {
+            color = 'white'
+          }
           return {
-            color: 'yellow',        // Border color
+            pane: pane,
+            color: '#808080',        // Border color
+            opacity: 1,    // Full opacity for the border
             weight: 1,            // Border width
-            fillColor: 'yellow',    // Fill color
-            fillOpacity: 1,       // Full opacity for the fill
-            opacity: 1            // Full opacity for the border
+            fillColor: color,    // Fill color
+            fillOpacity: .9       // Full opacity for the fill
           };
         }
-        // if (currentZoom >= 9) {
-        //   console.log("d1: ", data1)
-        // }
-
-
-
-        const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
-        const id = d['properties'][fips]
-        let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
-        let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
-        let color = 'white'
-        if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
-          color = colors[0];
-        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
-          color = colors[1];
-        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
-          color = colors[2];
-        } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
-          color = colors[3];
-        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
-          color = colors[4];
-        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
-          color = colors[5];
-        } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
-          color = colors[6];
-        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
-          color = colors[7];
-        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
-          color = colors[8];
-        } else {
-          color = 'white'
-        }
-        return {
-          color: '#808080',        // Border color
-          opacity: 1,    // Full opacity for the border
-          weight: 1,            // Border width
-          fillColor: color,    // Fill color
-          fillOpacity: .9       // Full opacity for the fill
-        };
-
       },
       onEachFeature: function (feature, layer) {
         let tooltipContent = `
@@ -498,18 +507,13 @@ export class LeafletMapComponent implements OnInit {
       }
     }).addTo(this.map);
     areaLayer.addTo(this.map);
-
-    // const usaBounds: L.LatLngBoundsLiteral = [
-    //   [24.396308, -125.0], // Southwest corner (latitude, longitude)
-    //   [49.384358, -66.93457], // Northeast corner
-    // ];
     this.map.fitBounds(this.currentBounds);
 
     this.previousZoomLevel = this.map.getZoom();
     this.map.on('zoomend', () => {
       const currentZoom = this.map.getZoom();
       this.currentZoomLevel = currentZoom
-      console.log("prev zoom: ", this.previousZoomLevel)
+      console.log("current zoom: ", this.currentZoomLevel)
 
       if (currentZoom >= 9 && currentZoom > this.previousZoomLevel) {
         console.log(`Current zoom level: ${currentZoom}`);
@@ -517,7 +521,8 @@ export class LeafletMapComponent implements OnInit {
         console.log('Southwest corner:', bounds.getSouthWest());
         console.log('Northeast corner:', bounds.getNorthEast());
         console.log('Bounds:', bounds.toBBoxString());
-        this.currentMap = '/tile_id_1_3_test.json';
+        // this.currentMap = '/tile_id_1_3_test.json';
+        this.currentMap = '/tile_id_12_7_redline_test1.json'
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.loadAndInitializeMap()
       } else if (currentZoom < 9 && currentZoom < this.previousZoomLevel) {
