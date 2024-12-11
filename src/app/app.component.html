@@ -1,13 +1,13 @@
 <div class="layout-container">
     <div class="sidebar">
-        <app-sidebar [sidebarData]="sidebarData" (dataToParent)="onSidebarDataReceived($event)">
+        <app-sidebar [sidebarData]="sidebarData" (dataToParent)="onSidebarDataReceived($event)" (dataToParentStateNameOnly)="onSidebarDataReceivedStateNameOnly($event)">
         </app-sidebar>
     </div>
     <div class="main-content">
         <!-- <app-county-map [dataFromSidebar]="dataFromSidebar"
                 (dataToSidebar)="onCountyMapDataReceived($event)"></app-county-map> -->
 
-        <app-leaflet-map [dataFromSidebar]="dataFromSidebar"
+        <app-leaflet-map [dataFromSidebar]="dataFromSidebar" [dataFromSidebarStateNameOnly]="dataFromSidebarStateNameOnly"
         (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map>
         <!-- <app-leaflet-layer-controler-test></app-leaflet-layer-controler-test> -->
 

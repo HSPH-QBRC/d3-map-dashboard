@@ -25,6 +25,7 @@ import { LeafletMapComponent } from './leaflet-map/leaflet-map.component';
 import { HttpClientModule } from '@angular/common/http';
 import { LeafletLayerControlerTestComponent } from './leaflet-layer-controler-test/leaflet-layer-controler-test.component';
 
+import { MatInputModule } from '@angular/material/input';
 @NgModule({
   declarations: [
     AppComponent,
@@ -53,7 +54,8 @@ import { LeafletLayerControlerTestComponent } from './leaflet-layer-controler-te
     MatSliderModule,
     MatRadioModule,
     MatSnackBarModule,
-    HttpClientModule
+    HttpClientModule,
+    MatInputModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

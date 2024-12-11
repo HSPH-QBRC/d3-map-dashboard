@@ -20,6 +20,7 @@ interface CarmenData {
 })
 export class LeafletMapComponent implements OnInit {
   @Input() dataFromSidebar: any;
+  @Input() dataFromSidebarStateNameOnly: any;
   @Output() dataToSidebar = new EventEmitter<{}>();
 
 
@@ -29,12 +30,14 @@ export class LeafletMapComponent implements OnInit {
   private data3: GroceryData[] = [];
   private dataCarmen: CarmenData[] = [];
 
+  layerControl!: L.Control.Layers;
+
   yearCols = []
   columns = []
   minYear = 1900
   maxYear = 2099
   showYears = false
-  showRedline: boolean = false
+  // showRedline: boolean = false
   useBivariate: boolean = true
 
   selectedYear: string = '2017';
@@ -45,8 +48,9 @@ export class LeafletMapComponent implements OnInit {
   selectedCol3: string = '--';
   selectedState = 'USA 2000 Mainland (County)';
   statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
-  fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
+  // fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
 
+  stateName = 'United States of America'
   // currentMap = 'svi_2000_us_county_11_25_test.json'
 
   colors = [
@@ -73,6 +77,13 @@ export class LeafletMapComponent implements OnInit {
 
   isLoading = false
 
+  previousZoomLevel = 4
+  currentZoomLevel = 4
+  currentBounds: L.LatLngBoundsLiteral = [
+    [24.396308, -125.0], // Southwest corner (latitude, longitude)
+    [49.384358, -66.93457], // Northeast corner
+  ];
+
   constructor(
     private http: HttpClient,
     private csvDataService: CsvDataService
@@ -86,9 +97,18 @@ export class LeafletMapComponent implements OnInit {
       this.selectedCol3 = this.dataFromSidebar['col3']
       this.selectedState = this.dataFromSidebar['map']
       this.useBivariate = this.dataFromSidebar['useBivariate']
+      this.stateName = this.dataFromSidebar['stateName']
       // this.showRedline = this.dataFromSidebar['showRedline']
       this.resetVariables()
       this.loadCSVData()
+    }
+    if (this.dataFromSidebarStateNameOnly !== undefined) {
+      this.stateName = this.dataFromSidebarStateNameOnly
+      this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
+        console.log("bounds: ", boundsData)
+        this.currentBounds = boundsData[this.stateName.toLowerCase()]
+        this.loadAndInitializeMap()
+      });
     }
   }
 
@@ -97,9 +117,6 @@ export class LeafletMapComponent implements OnInit {
   redlineData = []
 
   ngOnInit(): void {
-    // this.http.get('/assets/maps/redline_tiles/tile_boundaries.json').subscribe((data) => {
-    //   this.tileBounds = data
-    // });
     this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
       this.tileBounds = data
     });
@@ -114,10 +131,11 @@ export class LeafletMapComponent implements OnInit {
     this.sidebarData = {
       "years": this.yearCols,
       "columns": this.columns,
-      "maps": this.statesArr,
+      // "maps": this.statesArr,
       "selectedYear": this.selectedYear,
-      "selectedMap": this.selectedState,
-      "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3]
+      // "selectedMap": this.selectedState,
+      "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3],
+      "stateName": this.stateName
     }
     this.dataToSidebar.emit(this.sidebarData);
 
@@ -142,8 +160,8 @@ export class LeafletMapComponent implements OnInit {
     this.avgDataCat1 = {}
   }
 
-  visibleTiles = []
-  tiles = []
+  // visibleTiles = []
+  // tiles = []
 
   async loadCSVData(): Promise<void> {
     this.isLoading = true
@@ -399,7 +417,6 @@ export class LeafletMapComponent implements OnInit {
       index++
       this.useNewMap = index === 1 ? true : false
 
-      // let mapPath = this.currentZoomLevel >= 9 ? `redline_tiles/${map}` : map
       let mapPath = this.currentZoomLevel >= 9 ? `tiles_no_redline/${map}` : map
 
       this.http.get(`./assets/maps/${mapPath}`).subscribe({
@@ -416,6 +433,8 @@ export class LeafletMapComponent implements OnInit {
     }
 
   }
+
+  // layerControl
 
   initializesMap(area: any): void {
     const mapContainer = document.getElementById('map-container');
@@ -434,13 +453,6 @@ export class LeafletMapComponent implements OnInit {
       this.map = L.map(mapContainer);
     }
 
-
-    // Add OpenStreetMap tiles
-    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    });
-    osmLayer.addTo(this.map);
-
     const redlineLayer = L.geoJSON(this.redlineData, {
       style: function (d) {
         const pane = 'redPane'
@@ -448,11 +460,11 @@ export class LeafletMapComponent implements OnInit {
 
         return {
           pane: pane,
-          color: '#808080',        // Border color
-          opacity: 1,    // Full opacity for the border
-          weight: 1,            // Border width
-          fillColor: fillColor,    // Fill color
-          fillOpacity: .6       // Full opacity for the fill
+          color: '#808080',
+          opacity: 1,
+          weight: 1,
+          fillColor: fillColor,
+          fillOpacity: .6
         }
       },
       onEachFeature: (feature, layer) => {
@@ -478,18 +490,51 @@ export class LeafletMapComponent implements OnInit {
           opacity: 1          // Make the tooltip fully opaque
         });
       }
-    }).addTo(this.map!);
+    })
+    // .addTo(this.map!);
+
+    const openStreetMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    });
+    openStreetMapLayer.addTo(this.map);
+
+    const openTopoMapLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'
+    });
+    // openTopoMapLayer.addTo(this.map);
+
+    const cartoDBLightLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+    });
+    // cartoDBLightLayer.addTo(this.map);
+
+    const humanitarianOSMLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    // humanitarianOSMLayer.addTo(this.map);
+
+    const wikimediaLayer = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://foundation.wikimedia.org/wiki/Maps_Terms_of_Use">Wikimedia Maps</a>'
+    });
+    // wikimediaLayer.addTo(this.map);
 
     // Define layer control
     const baseLayers = {
-      'Bivariate Choloropleth': osmLayer
+      'Open Street Map': openStreetMapLayer,
+      'Open Topo Map': openTopoMapLayer,
+      'CartoDB - Light': cartoDBLightLayer,
+      'Humanitarian OSM': humanitarianOSMLayer,
+      'Wikimedia': wikimediaLayer
     };
 
     const overlays = {
       'Redlining Districts': redlineLayer
     };
+    if (this.layerControl) {
+      this.map.removeControl(this.layerControl);
+    }
+    this.layerControl = L.control.layers(baseLayers, overlays).addTo(this.map);
 
-    L.control.layers(baseLayers, overlays).addTo(this.map);
 
     let xRange1 = this.min1;
     let xRange2 = (this.max1 - this.min1) / 3 + this.min1
@@ -521,58 +566,50 @@ export class LeafletMapComponent implements OnInit {
     this.map.createPane('tractsPane');
     this.map.getPane('tractsPane').style.zIndex = '499';
 
+    this.map.fitBounds(this.currentBounds);
+    if(this.currentZoomLevel >= 9){
+      this.currentZoomLevel = this.map.getZoom()
+    }
+
     let areaLayer = L.geoJSON(area, {
       style: function (d) {
         const layer_type = d['properties']['layer_type']
-        const pane = layer_type === 'Redlining District' ? 'redPane' : 'tractsPane';
-        // if (layer_type === 'Redlining District') {
-        //   let fillColor = d['properties']['fill']
-        //   if (showRedline) {
-        //     return {
-        //       pane: pane,
-        //       color: '#808080',       
-        //       opacity: 1, 
-        //       weight: 1,
-        //       fillColor: fillColor,
-        //       fillOpacity: .6 
-        //     };
-        //   }
-        // } else {
-          const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
-          const id = d['properties'][fips]
-          let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
-          let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
-          let color = 'white'
-          if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
-            color = colors[0];
-          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
-            color = colors[1];
-          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
-            color = colors[2];
-          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
-            color = colors[3];
-          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
-            color = colors[4];
-          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
-            color = colors[5];
-          } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
-            color = colors[6];
-          } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
-            color = colors[7];
-          } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
-            color = colors[8];
-          } else {
-            color = 'white'
-          }
-          return {
-            pane: pane,
-            color: '#808080',        // Border color
-            opacity: 1,    // Full opacity for the border
-            weight: 1,            // Border width
-            fillColor: color,    // Fill color
-            fillOpacity: .9       // Full opacity for the fill
-          };
-        // }
+        // const pane = layer_type === 'Redlining District' ? 'redPane' : 'tractsPane';
+        const pane = 'tractsPane';
+        const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
+        const id = d['properties'][fips]
+        let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
+        let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
+        let color = 'white'
+        if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange1 && val2 < yRange2) {
+          color = colors[0];
+        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange1 && val2 < yRange2) {
+          color = colors[1];
+        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange1 && val2 < yRange2) {
+          color = colors[2];
+        } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange2 && val2 < yRange3) {
+          color = colors[3];
+        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange2 && val2 < yRange3) {
+          color = colors[4];
+        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange2 && val2 < yRange3) {
+          color = colors[5];
+        } else if (val1 >= xRange1 && val1 < xRange2 && val2 >= yRange3 && val2 <= yRange4) {
+          color = colors[6];
+        } else if (val1 >= xRange2 && val1 < xRange3 && val2 >= yRange3 && val2 <= yRange4) {
+          color = colors[7];
+        } else if (val1 >= xRange3 && val1 <= xRange4 && val2 >= yRange3 && val2 <= yRange4) {
+          color = colors[8];
+        } else {
+          color = 'white'
+        }
+        return {
+          pane: pane,
+          color: '#808080',
+          opacity: 1,
+          weight: 1,
+          fillColor: color,
+          fillOpacity: .9
+        };
       },
       onEachFeature: function (feature, layer) {
         if (currentZoom < 9) {
@@ -594,17 +631,14 @@ export class LeafletMapComponent implements OnInit {
             opacity: 1          // Make the tooltip fully opaque
           });
         } else {
-          // const layer_type = feature.properties.layer_type
-          const layer_type = 'USA Map'
-          // if (layer_type === 'USA Map') {
-            let fips = feature.properties.FIPS
-            let location = feature.properties.LOCATION
+          let fips = feature.properties.FIPS
+          let location = feature.properties.LOCATION
 
-            const parts = location.split(",").map(part => part.trim());
-            const censusTract = parts[0]; // "Census Tract 26.03"
-            const county = parts[1];      // "Clark County"
-            const state = parts[2];       // "Nevada"
-            let censusTractTooltip = `
+          const parts = location.split(",").map(part => part.trim());
+          const censusTract = parts[0];
+          const county = parts[1];
+          const state = parts[2];
+          let censusTractTooltip = `
               <strong> State:</strong> ${state || 'N/A'}<br>
               <strong> County:</strong> ${county || 'N/A'}<br>
               <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
@@ -612,51 +646,27 @@ export class LeafletMapComponent implements OnInit {
               <strong> ${selectedCol1}:</strong> ${valuemap1.get(fips).toFixed(2) || 'N/A'}<br>
               <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips).toFixed(2) || 'N/A'}<br>
             `;
-            layer.bindTooltip(censusTractTooltip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
-            });
-          // } 
-          // else if (layer_type === 'Redlining District') {
-          //   let city = feature.properties['city']
-          //   let state = feature.properties['state']
-          //   let category = feature.properties['category']
-          //   let label = feature.properties['label']
-          //   let city_survey = feature.properties['city_survey']
-          //   let commercial = feature.properties['commercial']
-          //   let residential = feature.properties['residential']
-
-          //   let redLineTooltip = `
-          //   <strong> Location:</strong> ${city || 'N/A'}, ${state || 'N/A'}<br>
-          //   <strong> Category:</strong> ${category || 'N/A'}<br>
-          //   <strong> Label:</strong> ${label || 'N/A'}<br>
-          //   <strong> City Survey:</strong> ${city_survey || 'N/A'}<br>
-          //   <strong> Commericial:</strong> ${commercial || 'N/A'}<br>
-          //   <strong> Residential:</strong> ${residential || 'N/A'}<br>
-          // `;
-          //   layer.bindTooltip(redLineTooltip, {
-          //     permanent: false,  // Tooltip will appear only on hover
-          //     direction: 'top',   // Tooltip position relative to the feature
-          //     opacity: 1          // Make the tooltip fully opaque
-          //   });
-          // }
+          layer.bindTooltip(censusTractTooltip, {
+            permanent: false,  // Tooltip will appear only on hover
+            direction: 'top',   // Tooltip position relative to the feature
+            opacity: 1          // Make the tooltip fully opaque
+          });
         }
       }
     }).addTo(this.map);
     areaLayer.addTo(this.map);
-    this.map.fitBounds(this.currentBounds);
-
+    // this.map.fitBounds(this.currentBounds);
+    // if(this.currentZoomLevel >= 9){
+    //   console.log("zoom: ", this.map.getZoom())
+    //   this.currentZoomLevel = this.map.getZoom()
+    // }
+   
     this.previousZoomLevel = this.map.getZoom();
     this.map.on('zoomend', () => {
-      const currentZoom = this.map.getZoom();
-      this.currentZoomLevel = currentZoom
+      this.currentZoomLevel = this.map.getZoom();
 
       if (currentZoom >= 9 && currentZoom > this.previousZoomLevel) {
         const bounds = this.map.getBounds();
-        // this.currentMap = '/tile_id_1_3_test.json';
-        // this.currentMap = 'redline_tiles/tile_id_21_5.json'
-
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         this.loadAndInitializeMap()
@@ -668,13 +678,21 @@ export class LeafletMapComponent implements OnInit {
       }
     });
 
+    this.map.on('moveend', () => {
+      if (this.currentZoomLevel >= 9) {
+        const bounds = this.map.getBounds();
+        this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
+        let prevMapArr = this.currentCensusTractsMapArr
+        this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
+        console.log("current census intersections: ", this.currentCensusTractsMapArr)
+        if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
+          console.log("not the same", prevMapArr, this.currentCensusTractsMapArr)
+          this.loadAndInitializeMap()
+        }
+      }
+    });
+
   }
-  previousZoomLevel = 4
-  currentZoomLevel = 4
-  currentBounds: L.LatLngBoundsLiteral = [
-    [24.396308, -125.0], // Southwest corner (latitude, longitude)
-    [49.384358, -66.93457], // Northeast corner
-  ];
 
   findMostFrequent(arr) {
     const counts = new Map();

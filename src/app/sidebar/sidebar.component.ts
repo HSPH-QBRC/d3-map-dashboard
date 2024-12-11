@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { MatSlider } from '@angular/material/slider';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,51 +12,73 @@ export class SidebarComponent implements OnChanges {
   @Input() sidebarData!: { years: string[], columns: string[], maps: string[] };
   @ViewChild('slider') slider: MatSlider;
   @Output() dataToParent = new EventEmitter<any>();
+  @Output() dataToParentStateNameOnly = new EventEmitter<any>();
 
-  constructor(private snackBar: MatSnackBar) { }
+  constructor(
+    private snackBar: MatSnackBar,
+    private http: HttpClient,
+  ) { }
 
   isLoading = true;
   yearCols = [];
-  mapsCols = [];
+  // mapsCols = [];
   columns = [];
   selectedYear = '2000'
-  selectedMap = ''
+  // selectedMap = ''
   selectedCol1 = ''
   selectedCol2 = ''
   selectedCol3 = ''
+  stateName = ''
+
+  prevYear = '2000'
+  // prevMap = ''
+  prevCol1 = ''
+  prevCol2 = ''
+  prevCol3 = ''
+  prevStateName = ''
+  prevUseBivariate = true
+
   showYears = false
   showCols = false
-  showMaps = false
+  // showMaps = false
 
   minYear = Infinity
   maxYear = -Infinity
 
   showMoreCols = false
-  showMoreMaps = false
+  // showMoreMaps = false
 
-  useBivariate:boolean = true
-  // showRedline:boolean = true
+  useBivariate: boolean = true
+  // showRedline:boolean = false
 
   ngOnChanges(changes: SimpleChanges): void {
-
+    console.log("check to see when this is updated on side")
     if (Object.keys(this.sidebarData['years']).length > 0) {
       this.isLoading = false
       this.showYears = false
       this.showCols = false
-      this.showMaps = false
+      // this.showMaps = false
 
       this.selectedYear = this.sidebarData['selectedYear']
-      this.selectedMap = this.sidebarData['selectedMap']
+      // this.selectedMap = this.sidebarData['selectedMap']
       this.selectedCol1 = this.sidebarData['selectedCol'][0]
       this.selectedCol2 = this.sidebarData['selectedCol'][1]
       this.selectedCol3 = this.sidebarData['selectedCol'][2]
+      this.stateName = this.sidebarData['stateName']
+
+      this.prevYear = this.sidebarData['selectedYear']
+      // this.prevMap = this.sidebarData['selectedMap']
+      this.prevCol1 = this.sidebarData['selectedCol'][0]
+      this.prevCol2 = this.sidebarData['selectedCol'][1]
+      this.prevCol3 = this.sidebarData['selectedCol'][2]
+      this.prevStateName = this.sidebarData['stateName']
 
       this.organizeData()
     }
   }
 
   organizeData() {
-    this.mapsCols = []
+    // this.mapsCols = []
     this.columns = []
     let tempArrCols = []
     for (let category in this.sidebarData) {
@@ -79,20 +102,22 @@ export class SidebarComponent implements OnChanges {
         }
         let combinedArr = [...tempArrCols, ...this.columns]
         this.columns = combinedArr
-      } else if (category === 'maps') {
-        this.sidebarData[category].sort((a, b) => a.localeCompare(b));
-        for (let data of this.sidebarData[category]) {
-          let radioObj = {
-            name: data
-          }
+      } 
+      // else if (category === 'maps') {
+      //   this.sidebarData[category].sort((a, b) => a.localeCompare(b));
+      //   for (let data of this.sidebarData[category]) {
+      //     let radioObj = {
+      //       name: data
+      //     }
 
-          if (this.selectedMap === data) {
-            this.mapsCols.unshift(radioObj)
-          } else {
-            this.mapsCols.push(radioObj)
-          }
-        }
-      } else if (category === 'years') {
+      //     if (this.selectedMap === data) {
+      //       this.mapsCols.unshift(radioObj)
+      //     } else {
+      //       this.mapsCols.push(radioObj)
+      //     }
+      //   }
+      // }
+       else if (category === 'years') {
         for (let year of this.sidebarData[category]) {
           let numYear = Number(year)
           this.minYear = Math.min(numYear, this.minYear)
@@ -102,7 +127,7 @@ export class SidebarComponent implements OnChanges {
     }
     this.showYears = true
     this.showCols = true
-    this.showMaps = true
+    // this.showMaps = true
   }
 
   sendData() {
@@ -118,13 +143,30 @@ export class SidebarComponent implements OnChanges {
         col1: this.selectedCol1,
         col2: this.selectedCol2,
         col3: this.selectedCol3,
-        map: this.selectedMap,
+        // map: this.selectedMap,
         useBivariate: this.useBivariate,
+        stateName: this.stateName
         // showRedline: this.showRedline
       }
       this.showMoreCols = false;
-      this.showMoreMaps = false;
-      this.dataToParent.emit(data);
+      // this.showMoreMaps = false;
+
+
+      if (this.useBivariate === this.prevUseBivariate && this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.selectedCol3 === this.prevCol3 && this.stateName !== this.prevStateName) {
+        console.log("change in statename: ", this.stateName, this.prevStateName)
+        this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
+          console.log("bounds: ", boundsData)
+          if (boundsData[this.stateName]) {
+            this.dataToParentStateNameOnly.emit(this.stateName)
+          } else {
+            let message = 'Could not find this location. Did you spell the State name correctly?'
+            this.onErrorSnackbar(message)
+          }
+        });
+
+      } else {
+        this.dataToParent.emit(data);
+      }
     }
 
   }
@@ -132,9 +174,10 @@ export class SidebarComponent implements OnChanges {
   showMore(name) {
     if (name === 'cols') {
       this.showMoreCols = !this.showMoreCols
-    } else if (name === 'maps') {
-      this.showMoreMaps = !this.showMoreMaps
-    }
+    } 
+    // else if (name === 'maps') {
+    //   this.showMoreMaps = !this.showMoreMaps
+    // }
   }
 
   onChangeBivariate() {

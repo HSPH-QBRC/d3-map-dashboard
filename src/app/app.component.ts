@@ -7,20 +7,22 @@ import { Component, Output, EventEmitter } from '@angular/core';
 })
 
 export class AppComponent {
-  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], maps: string[], selectedYear: string, selectedMap: string, selectedCol: string[], useBivariate: boolean}>();
+  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], selectedYear: string, selectedCol: string[], useBivariate: boolean, stateName: string}>();
 
   dataFromSidebar: any;
+  dataFromSidebarStateNameOnly: any;
 
   showYears = true
 
   sidebarData = {
     "years": [],
     "columns": [],
-    "maps": [],
+    // "maps": [],
     "selectedYear": '',
-    "selectedMap": '',
+    // "selectedMap": '',
     "selectedCol": [],
     useBivariate: false,
+    "stateName": ''
     // showRedline: false,
   };
 
@@ -31,6 +33,10 @@ export class AppComponent {
 
   onSidebarDataReceived(data: any) {
     this.dataFromSidebar = data;
+  }
+
+  onSidebarDataReceivedStateNameOnly(data: any) {
+    this.dataFromSidebarStateNameOnly = data;
   }
 
 }
