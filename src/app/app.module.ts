@@ -23,6 +23,7 @@ import {MatRadioModule} from '@angular/material/radio';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { LeafletMapComponent } from './leaflet-map/leaflet-map.component';
 import { HttpClientModule } from '@angular/common/http';
+import { LeafletLayerControlerTestComponent } from './leaflet-layer-controler-test/leaflet-layer-controler-test.component';
 
 @NgModule({
   declarations: [
@@ -31,7 +32,8 @@ import { HttpClientModule } from '@angular/common/http';
     CountyMapComponent,
     LeafletTestComponent,
     SidebarComponent,
-    LeafletMapComponent
+    LeafletMapComponent,
+    LeafletLayerControlerTestComponent
   ],
   imports: [
     BrowserModule,

@@ -35,4 +35,11 @@
     .slider-map .mat-slider-horizontal {
         min-width: 50vw !important;
     }
+
+    *:focus {
+        outline: 0;
+    }
+    .leaflet-control-layers {
+        z-index: 1000;
+    }
 }

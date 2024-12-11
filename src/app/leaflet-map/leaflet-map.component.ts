@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import * as L from 'leaflet';
 import { HttpClient } from '@angular/common/http';
 import { CsvDataService } from '../csv-data.service';
@@ -28,14 +28,13 @@ export class LeafletMapComponent implements OnInit {
   private data2: GroceryData[] = [];
   private data3: GroceryData[] = [];
   private dataCarmen: CarmenData[] = [];
-  // groceryData: any[] = []
 
   yearCols = []
   columns = []
   minYear = 1900
   maxYear = 2099
   showYears = false
-  showRedline: boolean = true
+  showRedline: boolean = false
   useBivariate: boolean = true
 
   selectedYear: string = '2017';
@@ -48,7 +47,7 @@ export class LeafletMapComponent implements OnInit {
   statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
 
-  currentMap = 'svi_2000_us_county_11_25_test.json'
+  // currentMap = 'svi_2000_us_county_11_25_test.json'
 
   colors = [
     "#e8e8e8", "#ace4e4", "#5ac8c8",
@@ -87,13 +86,27 @@ export class LeafletMapComponent implements OnInit {
       this.selectedCol3 = this.dataFromSidebar['col3']
       this.selectedState = this.dataFromSidebar['map']
       this.useBivariate = this.dataFromSidebar['useBivariate']
-      this.showRedline = this.dataFromSidebar['showRedline']
+      // this.showRedline = this.dataFromSidebar['showRedline']
       this.resetVariables()
       this.loadCSVData()
     }
   }
 
+  //bounds: [[west, north], [east, south]]
+  tileBounds: any = {}
+  redlineData = []
+
   ngOnInit(): void {
+    // this.http.get('/assets/maps/redline_tiles/tile_boundaries.json').subscribe((data) => {
+    //   this.tileBounds = data
+    // });
+    this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
+      this.tileBounds = data
+    });
+
+    this.http.get('./assets/maps/tiles_no_redline/mappinginequality.json').subscribe((geojsonData: any) => {
+      this.redlineData = geojsonData
+    })
     this.loadCSVData()
   }
 
@@ -118,8 +131,6 @@ export class LeafletMapComponent implements OnInit {
     this.min3 = Infinity;
     this.max3 = -Infinity;
 
-    // this.zoomScale = 1;
-
     this.data1 = [];
     this.data2 = [];
     this.data3 = [];
@@ -130,6 +141,9 @@ export class LeafletMapComponent implements OnInit {
     this.avgData3 = {};
     this.avgDataCat1 = {}
   }
+
+  visibleTiles = []
+  tiles = []
 
   async loadCSVData(): Promise<void> {
     this.isLoading = true
@@ -368,19 +382,39 @@ export class LeafletMapComponent implements OnInit {
 
   }
 
+  // currentCensusTractsMapArr = ['tile_id_21_5.json']
+  currentCensusTractsMapArr = []
+  fullMapArr = ['svi_2000_us_county_11_25_test.json']
+  useNewMap = true
+
   loadAndInitializeMap(): void {
-    this.http.get(`./assets/maps/${this.currentMap}`).subscribe({
-      next: (data) => {
-        console.log("data: ", this.currentMap, data)
-        this.initializesMap(data);
-      },
-      error: (err) => {
-        console.error('Error loading JSON:', err);
-      },
-      complete: () => {
-        console.log('Request completed.');
-      },
-    });
+    let currMap = []
+    if (this.currentZoomLevel >= 9) {
+      currMap = this.currentCensusTractsMapArr
+    } else {
+      currMap = this.fullMapArr
+    }
+    let index = 0
+    for (let map of currMap) {
+      index++
+      this.useNewMap = index === 1 ? true : false
+
+      // let mapPath = this.currentZoomLevel >= 9 ? `redline_tiles/${map}` : map
+      let mapPath = this.currentZoomLevel >= 9 ? `tiles_no_redline/${map}` : map
+
+      this.http.get(`./assets/maps/${mapPath}`).subscribe({
+        next: (data) => {
+          this.initializesMap(data);
+        },
+        error: (err) => {
+          console.error('Error loading JSON:', err);
+        },
+        complete: () => {
+          console.log('Request completed.');
+        },
+      });
+    }
+
   }
 
   initializesMap(area: any): void {
@@ -391,18 +425,71 @@ export class LeafletMapComponent implements OnInit {
       return;
     }
 
-    if (this.map) {
+    if (this.map && this.useNewMap) {
       this.map.remove();
       this.map = undefined; // Clear the reference to the map instance
     }
 
-    this.map = L.map(mapContainer);
+    if (this.useNewMap) {
+      this.map = L.map(mapContainer);
+    }
+
 
     // Add OpenStreetMap tiles
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     });
     osmLayer.addTo(this.map);
+
+    const redlineLayer = L.geoJSON(this.redlineData, {
+      style: function (d) {
+        const pane = 'redPane'
+        let fillColor = d['properties']['fill']
+
+        return {
+          pane: pane,
+          color: '#808080',        // Border color
+          opacity: 1,    // Full opacity for the border
+          weight: 1,            // Border width
+          fillColor: fillColor,    // Fill color
+          fillOpacity: .6       // Full opacity for the fill
+        }
+      },
+      onEachFeature: (feature, layer) => {
+        let city = feature.properties['city']
+        let state = feature.properties['state']
+        let category = feature.properties['category']
+        let label = feature.properties['label']
+        let city_survey = feature.properties['city_survey']
+        let commercial = feature.properties['commercial']
+        let residential = feature.properties['residential']
+
+        let redLineTooltip = `
+            <strong> Location:</strong> ${city || 'N/A'}, ${state || 'N/A'}<br>
+            <strong> Category:</strong> ${category || 'N/A'}<br>
+            <strong> Label:</strong> ${label || 'N/A'}<br>
+            <strong> City Survey:</strong> ${city_survey || 'N/A'}<br>
+            <strong> Commericial:</strong> ${commercial || 'N/A'}<br>
+            <strong> Residential:</strong> ${residential || 'N/A'}<br>
+          `;
+        layer.bindTooltip(redLineTooltip, {
+          permanent: false,  // Tooltip will appear only on hover
+          direction: 'top',   // Tooltip position relative to the feature
+          opacity: 1          // Make the tooltip fully opaque
+        });
+      }
+    }).addTo(this.map!);
+
+    // Define layer control
+    const baseLayers = {
+      'Bivariate Choloropleth': osmLayer
+    };
+
+    const overlays = {
+      'Redlining Districts': redlineLayer
+    };
+
+    L.control.layers(baseLayers, overlays).addTo(this.map);
 
     let xRange1 = this.min1;
     let xRange2 = (this.max1 - this.min1) / 3 + this.min1
@@ -417,16 +504,16 @@ export class LeafletMapComponent implements OnInit {
     let avgData1 = this.avgData1
     let avgData2 = this.avgData2
 
-    let showRedline = this.showRedline
+    // let showRedline = this.showRedline
 
-    // let data1 = this.data1
-    // let data2 = this.data2
-    // let data3 = this.data3
     const valuemap1 = new Map(this.data1.map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.data2.map(d => [d.id, d.rate]));
     const valuemap3 = new Map(this.data3.map(d => [d.id, d.rate]));
     let colors = this.colors
     let currentZoom = this.currentZoomLevel
+    let selectedCol1 = this.selectedCol1
+    let selectedCol2 = this.selectedCol2
+    let selectedCol3 = this.selectedCol3
 
     this.map.createPane('redPane');
     this.map.getPane('redPane').style.zIndex = '500';
@@ -438,19 +525,19 @@ export class LeafletMapComponent implements OnInit {
       style: function (d) {
         const layer_type = d['properties']['layer_type']
         const pane = layer_type === 'Redlining District' ? 'redPane' : 'tractsPane';
-        if (layer_type === 'Redlining District') {
-          let fillColor = d['properties']['fill']
-          if (showRedline) {
-            return {
-              pane: pane,
-              color: '#808080',        // Border color
-              opacity: 1,    // Full opacity for the border
-              weight: 1,            // Border width
-              fillColor: fillColor,    // Fill color
-              fillOpacity: .6       // Full opacity for the fill
-            };
-          }
-        } else {
+        // if (layer_type === 'Redlining District') {
+        //   let fillColor = d['properties']['fill']
+        //   if (showRedline) {
+        //     return {
+        //       pane: pane,
+        //       color: '#808080',       
+        //       opacity: 1, 
+        //       weight: 1,
+        //       fillColor: fillColor,
+        //       fillOpacity: .6 
+        //     };
+        //   }
+        // } else {
           const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
           const id = d['properties'][fips]
           let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
@@ -485,25 +572,76 @@ export class LeafletMapComponent implements OnInit {
             fillColor: color,    // Fill color
             fillOpacity: .9       // Full opacity for the fill
           };
-        }
+        // }
       },
       onEachFeature: function (feature, layer) {
-        let tooltipContent = `
-          <strong> State:</strong> ${feature.properties.STATE_NAME}<br>
-         <strong> County:</strong> ${feature.properties.COUNTY || 'N/A'}<br>
-          <strong> FIPS:</strong> ${feature.properties.STCOFIPS || 'N/A'} km²
-        `;
-        layer.bindTooltip(tooltipContent, {
-          permanent: false,  // Tooltip will appear only on hover
-          direction: 'top',   // Tooltip position relative to the feature
-          opacity: 1          // Make the tooltip fully opaque
-        });
+        if (currentZoom < 9) {
+          let state = feature.properties.STATE_NAME
+          let county = feature.properties.COUNTY
+          let fips = feature.properties.STCOFIPS
+          let avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
+          let avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
+          let countyTooltip = `
+            <strong> State:</strong> ${state || 'N/A'}<br>
+            <strong> County:</strong> ${county || 'N/A'}<br>
+            <strong> FIPS:</strong> ${fips || 'N/A'}<br>
+            <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
+            <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
+          `;
+          layer.bindTooltip(countyTooltip, {
+            permanent: false,  // Tooltip will appear only on hover
+            direction: 'top',   // Tooltip position relative to the feature
+            opacity: 1          // Make the tooltip fully opaque
+          });
+        } else {
+          // const layer_type = feature.properties.layer_type
+          const layer_type = 'USA Map'
+          // if (layer_type === 'USA Map') {
+            let fips = feature.properties.FIPS
+            let location = feature.properties.LOCATION
 
-        layer.bindPopup(tooltipContent, {
-          permanent: true,  // Tooltip will appear only on hover
-          direction: 'top',   // Tooltip position relative to the feature
-          opacity: 1          // Make the tooltip fully opaque
-        });
+            const parts = location.split(",").map(part => part.trim());
+            const censusTract = parts[0]; // "Census Tract 26.03"
+            const county = parts[1];      // "Clark County"
+            const state = parts[2];       // "Nevada"
+            let censusTractTooltip = `
+              <strong> State:</strong> ${state || 'N/A'}<br>
+              <strong> County:</strong> ${county || 'N/A'}<br>
+              <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
+              <strong> FIPS:</strong> ${fips || 'N/A'}<br>
+              <strong> ${selectedCol1}:</strong> ${valuemap1.get(fips).toFixed(2) || 'N/A'}<br>
+              <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips).toFixed(2) || 'N/A'}<br>
+            `;
+            layer.bindTooltip(censusTractTooltip, {
+              permanent: false,  // Tooltip will appear only on hover
+              direction: 'top',   // Tooltip position relative to the feature
+              opacity: 1          // Make the tooltip fully opaque
+            });
+          // } 
+          // else if (layer_type === 'Redlining District') {
+          //   let city = feature.properties['city']
+          //   let state = feature.properties['state']
+          //   let category = feature.properties['category']
+          //   let label = feature.properties['label']
+          //   let city_survey = feature.properties['city_survey']
+          //   let commercial = feature.properties['commercial']
+          //   let residential = feature.properties['residential']
+
+          //   let redLineTooltip = `
+          //   <strong> Location:</strong> ${city || 'N/A'}, ${state || 'N/A'}<br>
+          //   <strong> Category:</strong> ${category || 'N/A'}<br>
+          //   <strong> Label:</strong> ${label || 'N/A'}<br>
+          //   <strong> City Survey:</strong> ${city_survey || 'N/A'}<br>
+          //   <strong> Commericial:</strong> ${commercial || 'N/A'}<br>
+          //   <strong> Residential:</strong> ${residential || 'N/A'}<br>
+          // `;
+          //   layer.bindTooltip(redLineTooltip, {
+          //     permanent: false,  // Tooltip will appear only on hover
+          //     direction: 'top',   // Tooltip position relative to the feature
+          //     opacity: 1          // Make the tooltip fully opaque
+          //   });
+          // }
+        }
       }
     }).addTo(this.map);
     areaLayer.addTo(this.map);
@@ -513,21 +651,18 @@ export class LeafletMapComponent implements OnInit {
     this.map.on('zoomend', () => {
       const currentZoom = this.map.getZoom();
       this.currentZoomLevel = currentZoom
-      console.log("current zoom: ", this.currentZoomLevel)
 
       if (currentZoom >= 9 && currentZoom > this.previousZoomLevel) {
-        console.log(`Current zoom level: ${currentZoom}`);
         const bounds = this.map.getBounds();
-        console.log('Southwest corner:', bounds.getSouthWest());
-        console.log('Northeast corner:', bounds.getNorthEast());
-        console.log('Bounds:', bounds.toBBoxString());
         // this.currentMap = '/tile_id_1_3_test.json';
-        this.currentMap = '/tile_id_12_7_redline_test1.json'
+        // this.currentMap = 'redline_tiles/tile_id_21_5.json'
+
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
+        this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         this.loadAndInitializeMap()
       } else if (currentZoom < 9 && currentZoom < this.previousZoomLevel) {
         const bounds = this.map.getBounds();
-        this.currentMap = 'svi_2000_us_county_11_25_test.json';
+        // this.currentMap = 'svi_2000_us_county_11_25_test.json';
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.loadAndInitializeMap()
       }
@@ -558,6 +693,38 @@ export class LeafletMapComponent implements OnInit {
 
     return mostFrequentItem;
   }
+
+  findIntersectingTiles(currentBounds: [[number, number], [number, number]]) {
+    const currentSouth = currentBounds[0]['lat'];
+    const currentWest = currentBounds[0]['lng'];
+    const currentNorth = currentBounds[1]['lat'];
+    const currentEast = currentBounds[1]['lng'];
+
+    const intersectingTiles = [];
+
+    for (const [tileId, tileBound] of Object.entries(this.tileBounds)) {
+
+      const tileWest = tileBound[0][0]
+      const tileEast = tileBound[1][0]
+      const tileNorth = tileBound[0][1]
+      const tileSouth = tileBound[1][1]
+
+      // Check if the tile bounds intersect with the current map bounds
+      const isIntersecting =
+        tileWest < currentEast && // Tile's west is left of the current east
+        tileEast > currentWest && // Tile's east is right of the current west
+        tileNorth > currentSouth && // Tile's north is above the current south
+        tileSouth < currentNorth; // Tile's south is below the current north
+
+      if (isIntersecting) {
+        intersectingTiles.push(tileId);
+      }
+    }
+    console.log("intersecting: ", intersectingTiles)
+
+    return intersectingTiles;
+  }
+
 
   onYearChange(year) {
     this.selectedYear = year.toString()

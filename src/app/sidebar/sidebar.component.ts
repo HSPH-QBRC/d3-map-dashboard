@@ -34,7 +34,7 @@ export class SidebarComponent implements OnChanges {
   showMoreMaps = false
 
   useBivariate:boolean = true
-  showRedline:boolean = true
+  // showRedline:boolean = true
 
   ngOnChanges(changes: SimpleChanges): void {
 
@@ -120,7 +120,7 @@ export class SidebarComponent implements OnChanges {
         col3: this.selectedCol3,
         map: this.selectedMap,
         useBivariate: this.useBivariate,
-        showRedline: this.showRedline
+        // showRedline: this.showRedline
       }
       this.showMoreCols = false;
       this.showMoreMaps = false;
@@ -141,9 +141,9 @@ export class SidebarComponent implements OnChanges {
     this.useBivariate = !this.useBivariate
   }
 
-  onChangeRedline(){
-    this.showRedline = !this.showRedline
-  }
+  // onChangeRedline(){
+  //   this.showRedline = !this.showRedline
+  // }
 
   onCheckboxChange(index, isCheck, name) {
     if (isCheck === true && this.selectedCol1 !== "--" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--") {
