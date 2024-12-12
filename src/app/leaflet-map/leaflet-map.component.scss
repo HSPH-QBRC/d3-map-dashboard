@@ -42,4 +42,12 @@
     .leaflet-control-layers {
         z-index: 1000;
     }
+
+    .d3-legend-container {
+        background: transparent;
+        padding: 10px;
+        border-radius: 5px;
+        transform: rotate(-45deg);
+        transform-origin: center;
+    }
 }

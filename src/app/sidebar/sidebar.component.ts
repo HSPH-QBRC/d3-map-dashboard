@@ -52,7 +52,6 @@ export class SidebarComponent implements OnChanges {
   // showRedline:boolean = false
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log("check to see when this is updated on side")
     if (Object.keys(this.sidebarData['years']).length > 0) {
       this.isLoading = false
       this.showYears = false
