@@ -11,26 +11,11 @@
         <mat-slide-toggle class="example-margin" [checked]="!useBivariate" (change)="onChangeBivariate()"
             color="primary">Use
             Heatmap Overlays</mat-slide-toggle>
-        <!-- <mat-slide-toggle class="example-margin" [checked]="showRedline" (change)="onChangeRedline()"
-            color="warn">Show Redlining Districts</mat-slide-toggle> -->
         <br>
         <br>
-        <!-- <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
-            Year
-        </button>
-        <br>
-        <div *ngIf="showYears">
-            <div class="slider">
-                {{minYear}}
-                <mat-slider thumbLabel [tickInterval]="2" [step]="1" [min]="minYear" [max]="maxYear" aria-label="units"
-                    [(ngModel)]="selectedYear">
-                </mat-slider>
-                {{maxYear}}
-            </div>
-        </div> -->
         <mat-form-field class="example-margin" appearance="outline">
             <mat-label>Enter State Name</mat-label>
-            <input matInput [(ngModel)]="stateName" placeholder="e.g. California">
+            <input matInput [(ngModel)]="stateName" placeholder="e.g. California" (keydown.enter)="sendData()">
             <button *ngIf="stateName" matSuffix mat-icon-button aria-label="Clear" (click)="stateName=null">
                 <mat-icon>close</mat-icon>
             </button>

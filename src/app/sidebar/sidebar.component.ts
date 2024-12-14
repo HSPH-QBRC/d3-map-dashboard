@@ -21,17 +21,14 @@ export class SidebarComponent implements OnChanges {
 
   isLoading = true;
   yearCols = [];
-  // mapsCols = [];
   columns = [];
   selectedYear = '2000'
-  // selectedMap = ''
   selectedCol1 = ''
   selectedCol2 = ''
   selectedCol3 = ''
   stateName = ''
 
   prevYear = '2000'
-  // prevMap = ''
   prevCol1 = ''
   prevCol2 = ''
   prevCol3 = ''
@@ -40,33 +37,27 @@ export class SidebarComponent implements OnChanges {
 
   showYears = false
   showCols = false
-  // showMaps = false
 
   minYear = Infinity
   maxYear = -Infinity
 
   showMoreCols = false
-  // showMoreMaps = false
 
   useBivariate: boolean = true
-  // showRedline:boolean = false
 
   ngOnChanges(changes: SimpleChanges): void {
     if (Object.keys(this.sidebarData['years']).length > 0) {
       this.isLoading = false
       this.showYears = false
       this.showCols = false
-      // this.showMaps = false
 
       this.selectedYear = this.sidebarData['selectedYear']
-      // this.selectedMap = this.sidebarData['selectedMap']
       this.selectedCol1 = this.sidebarData['selectedCol'][0]
       this.selectedCol2 = this.sidebarData['selectedCol'][1]
       this.selectedCol3 = this.sidebarData['selectedCol'][2]
       this.stateName = this.sidebarData['stateName']
 
       this.prevYear = this.sidebarData['selectedYear']
-      // this.prevMap = this.sidebarData['selectedMap']
       this.prevCol1 = this.sidebarData['selectedCol'][0]
       this.prevCol2 = this.sidebarData['selectedCol'][1]
       this.prevCol3 = this.sidebarData['selectedCol'][2]
@@ -77,7 +68,6 @@ export class SidebarComponent implements OnChanges {
   }
 
   organizeData() {
-    // this.mapsCols = []
     this.columns = []
     let tempArrCols = []
     for (let category in this.sidebarData) {
@@ -102,20 +92,6 @@ export class SidebarComponent implements OnChanges {
         let combinedArr = [...tempArrCols, ...this.columns]
         this.columns = combinedArr
       } 
-      // else if (category === 'maps') {
-      //   this.sidebarData[category].sort((a, b) => a.localeCompare(b));
-      //   for (let data of this.sidebarData[category]) {
-      //     let radioObj = {
-      //       name: data
-      //     }
-
-      //     if (this.selectedMap === data) {
-      //       this.mapsCols.unshift(radioObj)
-      //     } else {
-      //       this.mapsCols.push(radioObj)
-      //     }
-      //   }
-      // }
        else if (category === 'years') {
         for (let year of this.sidebarData[category]) {
           let numYear = Number(year)
@@ -126,7 +102,6 @@ export class SidebarComponent implements OnChanges {
     }
     this.showYears = true
     this.showCols = true
-    // this.showMaps = true
   }
 
   sendData() {
@@ -142,19 +117,13 @@ export class SidebarComponent implements OnChanges {
         col1: this.selectedCol1,
         col2: this.selectedCol2,
         col3: this.selectedCol3,
-        // map: this.selectedMap,
         useBivariate: this.useBivariate,
         stateName: this.stateName
-        // showRedline: this.showRedline
       }
       this.showMoreCols = false;
-      // this.showMoreMaps = false;
-
 
       if (this.useBivariate === this.prevUseBivariate && this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.selectedCol3 === this.prevCol3 && this.stateName !== this.prevStateName) {
-        console.log("change in statename: ", this.stateName, this.prevStateName)
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-          console.log("bounds: ", boundsData)
           if (boundsData[this.stateName]) {
             this.dataToParentStateNameOnly.emit(this.stateName)
           } else {
@@ -167,25 +136,28 @@ export class SidebarComponent implements OnChanges {
         this.dataToParent.emit(data);
       }
     }
-
   }
 
   showMore(name) {
     if (name === 'cols') {
       this.showMoreCols = !this.showMoreCols
     } 
-    // else if (name === 'maps') {
-    //   this.showMoreMaps = !this.showMoreMaps
-    // }
   }
 
   onChangeBivariate() {
     this.useBivariate = !this.useBivariate
-  }
 
-  // onChangeRedline(){
-  //   this.showRedline = !this.showRedline
-  // }
+    const data = {
+      years: this.selectedYear.toString(),
+      col1: this.selectedCol1,
+      col2: this.selectedCol2,
+      col3: this.selectedCol3,
+      useBivariate: this.useBivariate,
+      stateName: this.stateName
+    }
+
+    this.dataToParent.emit(data);
+  }
 
   onCheckboxChange(index, isCheck, name) {
     if (isCheck === true && this.selectedCol1 !== "--" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--") {
@@ -238,12 +210,11 @@ export class SidebarComponent implements OnChanges {
       }
     }
     this.organizeData()
-
   }
 
   onErrorSnackbar(message): void {
     this.snackBar.open(message, 'Close', {
-      duration: 3000, // Snackbar will close after 3 seconds
+      duration: 3000, 
       horizontalPosition: 'left',
       verticalPosition: 'bottom',
     });
