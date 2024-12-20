@@ -91,8 +91,8 @@ export class SidebarComponent implements OnChanges {
         }
         let combinedArr = [...tempArrCols, ...this.columns]
         this.columns = combinedArr
-      } 
-       else if (category === 'years') {
+      }
+      else if (category === 'years') {
         for (let year of this.sidebarData[category]) {
           let numYear = Number(year)
           this.minYear = Math.min(numYear, this.minYear)
@@ -100,6 +100,7 @@ export class SidebarComponent implements OnChanges {
         }
       }
     }
+    console.log("selected: ", this.selectedCol1, this.selectedCol2, this.selectedCol3)
     this.showYears = true
     this.showCols = true
   }
@@ -110,6 +111,9 @@ export class SidebarComponent implements OnChanges {
       this.onErrorSnackbar(message)
     } else if ((this.selectedCol1 === "--" || this.selectedCol2 === "--") && this.useBivariate === true) {
       let message = 'In order to display Bivariate plot, you must select 2 columns.'
+      this.onErrorSnackbar(message)
+    } else if ((this.selectedCol1 === "nsdoh_profiles" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--") || this.selectedCol2 === "nsdoh_profiles" || this.selectedCol3 === "nsdoh_profiles") {
+      let message = 'NSDOH Profiles must be the only column selected.'
       this.onErrorSnackbar(message)
     } else {
       const data = {
@@ -141,7 +145,7 @@ export class SidebarComponent implements OnChanges {
   showMore(name) {
     if (name === 'cols') {
       this.showMoreCols = !this.showMoreCols
-    } 
+    }
   }
 
   onChangeBivariate() {
@@ -164,7 +168,7 @@ export class SidebarComponent implements OnChanges {
       let message = 'Currently we are only able to display 3 columns max right now'
       this.onErrorSnackbar(message)
     }
-
+    console.log("checkbox change: ", index, isCheck, name, this.columns)
     if (index === 0) {
       if (isCheck === true) {
         this.selectedCol1 = name
@@ -214,7 +218,7 @@ export class SidebarComponent implements OnChanges {
 
   onErrorSnackbar(message): void {
     this.snackBar.open(message, 'Close', {
-      duration: 3000, 
+      duration: 3000,
       horizontalPosition: 'left',
       verticalPosition: 'bottom',
     });

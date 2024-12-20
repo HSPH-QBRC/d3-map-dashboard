@@ -49,7 +49,7 @@ export class LeafletMapComponent implements OnInit {
   selectedCol2: string = 'count_sales_445110';
   selectedCol3: string = '--';
   selectedState = 'USA 2000 Mainland (County)';
-  statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+  // statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   // fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
 
   stateName = 'United States of America'
@@ -105,8 +105,6 @@ export class LeafletMapComponent implements OnInit {
     this.prevSelectedCol3 = this.selectedCol3
     this.prevStateName = this.stateName
 
-
-
     if (this.dataFromSidebar !== undefined) {
       this.selectedYear = this.dataFromSidebar['years']
       this.selectedCol1 = this.dataFromSidebar['col1']
@@ -116,10 +114,9 @@ export class LeafletMapComponent implements OnInit {
       this.useBivariate = this.dataFromSidebar['useBivariate']
       this.stateName = this.dataFromSidebar['stateName']
 
-      console.log("statname: ", this.stateName, this.useBivariate)
-
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
+        console.log("cols changed: ", this.prevSelectedCol2, this.selectedCol2)
         this.resetVariables()
         this.loadCSVData()
       } else {
@@ -221,13 +218,11 @@ export class LeafletMapComponent implements OnInit {
   carmenData
 
   async loadCSVData(): Promise<void> {
-    console.log("loadcsv")
     this.isLoading = true
     let csvFile = './assets/data/nanda_grocery_tract_2003-2017_01P.csv'
     let carmenFile = './assets/data/nsdoh_data.csv'
     try {
       if (!this.groceryData) {
-        console.log("grocery is empty: ", this.groceryData)
         this.groceryData = await this.csvDataService.loadCSVData(csvFile);
       }
 
@@ -252,7 +247,6 @@ export class LeafletMapComponent implements OnInit {
         this.showYears = true
 
       }
-
       for (const d of carmenData) {
         const id = d['GEOID']
         const rate = d['nsdoh_profiles']
@@ -303,7 +297,6 @@ export class LeafletMapComponent implements OnInit {
         if (!isNaN(rate3) && rate3 !== null && rate3 !== undefined && rate3 !== -1 && rate3 !== -Infinity) {
           this.min3 = Math.min(this.min3, rate3)
           this.max3 = Math.max(this.max3, rate3)
-          console.log("got into col 3")
           this.fullData3[currYear].push({
             id: d['tract_fips10'],
             rate: rate3,
@@ -364,7 +357,6 @@ export class LeafletMapComponent implements OnInit {
       if (this.selectedCol2 !== '--') {
         this.columnsUsed += 1;
         for (let currYear of this.yearCols) {
-          // for (let i of this.data1) {
           for (let i of this.fullData2[currYear]) {
             let id = i['id'].substring(0, 5);
             let rate = i['rate']
@@ -374,7 +366,6 @@ export class LeafletMapComponent implements OnInit {
               this.fullAvgData2[currYear] = {}
             }
 
-            // if (!this.avgData1[id]) {
             if (!this.fullAvgData2[currYear][id]) {
               this.fullAvgData2[currYear][id] = {
                 rateArr: [],
@@ -461,90 +452,6 @@ export class LeafletMapComponent implements OnInit {
         }
       }
 
-
-      console.log("avg data1: ", this.fullAvgData1, this.fullAvgData2, this.fullAvgData3)
-      // if (this.selectedCol2 !== '--') {
-      //   this.columnsUsed += 1;
-      //   for (let i of this.data2) {
-      //     let id = i['id'].substring(0, 5);
-      //     let rate = i['rate']
-      //     let pop = i['population']
-
-      //     if (!this.avgData2[id]) {
-      //       this.avgData2[id] = {
-      //         rateArr: [],
-      //         populationArr: []
-      //       }
-      //     }
-      //     this.avgData2[id].rateArr.push(rate)
-      //     this.avgData2[id].populationArr.push(pop)
-      //   }
-
-      //   for (let i in this.avgData2) {
-      //     if (this.avgData2[i]['rateArr'].length !== 0) {
-      //       this.avgData2[i]['sum'] = this.avgData2[i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
-      //     } else {
-      //       this.avgData2[i]['sum'] = 0
-      //     }
-      //   }
-
-      //   for (let i in this.avgData2) {
-      //     if (this.avgData2[i]['rateArr'].length !== 0) {
-      //       if (this.avgData2[i]['avg'] === undefined) {
-      //         this.avgData2[i]['avg'] = 0
-      //       }
-      //       for (let index in this.avgData2[i]['rateArr']) {
-      //         let rate = Number(this.avgData2[i]['rateArr'][index])
-      //         let pop = Number(this.avgData2[i]['populationArr'][index])
-      //         let popSum = Number(this.avgData2[i]['sum'])
-      //         let weightedRate = rate * pop / popSum
-      //         this.avgData2[i]['avg'] += weightedRate
-      //       }
-      //     }
-      //   }
-      // }
-
-      // if (this.selectedCol3 !== '--') {
-      //   this.columnsUsed += 1;
-      //   for (let i of this.data3) {
-      //     let id = i['id'].substring(0, 5);
-      //     let rate = i['rate']
-      //     let pop = i['population']
-
-      //     if (!this.avgData3[id]) {
-      //       this.avgData3[id] = {
-      //         rateArr: [],
-      //         populationArr: []
-      //       }
-      //     }
-      //     this.avgData3[id].rateArr.push(rate)
-      //     this.avgData3[id].populationArr.push(pop)
-      //   }
-
-      //   for (let i in this.avgData3) {
-      //     if (this.avgData3[i]['rateArr'].length !== 0) {
-      //       this.avgData3[i]['sum'] = this.avgData3[i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
-      //     } else {
-      //       this.avgData3[i]['sum'] = 0
-      //     }
-      //   }
-
-      //   for (let i in this.avgData3) {
-      //     if (this.avgData3[i]['rateArr'].length !== 0) {
-      //       if (this.avgData3[i]['avg'] === undefined) {
-      //         this.avgData3[i]['avg'] = 0
-      //       }
-      //       for (let index in this.avgData3[i]['rateArr']) {
-      //         let rate = Number(this.avgData3[i]['rateArr'][index])
-      //         let pop = Number(this.avgData3[i]['populationArr'][index])
-      //         let popSum = Number(this.avgData3[i]['sum'])
-      //         let weightedRate = rate * pop / popSum
-      //         this.avgData3[i]['avg'] += weightedRate
-      //       }
-      //     }
-      //   }
-      // }
-
       //collects info to find which profile appears the most in a County
       if (this.selectedCol1 === 'nsdoh_profiles') {
         for (let i of this.dataCarmen) {
@@ -572,6 +479,7 @@ export class LeafletMapComponent implements OnInit {
         }
 
       }
+      console.log("carmen data: ", this.dataCarmen, this.colorCategories, this.avgDataCat1)
 
       this.columns = Object.keys(groceryData[0])
       this.columns.push('--')
@@ -757,10 +665,13 @@ export class LeafletMapComponent implements OnInit {
 
     let avgData1 = this.fullAvgData1[this.selectedYear]
     let avgData2 = this.fullAvgData2[this.selectedYear]
+    let avgDataCarmen = this.avgDataCat1
 
     const valuemap1 = new Map(this.fullData1[this.selectedYear].map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.fullData2[this.selectedYear].map(d => [d.id, d.rate]));
     const valuemap3 = new Map(this.fullData3[this.selectedYear].map(d => [d.id, d.rate]));
+    const valuemapCarmen = new Map(this.dataCarmen.map(d => [d.id, d.rate]));
+
     let colors = this.colors
     let currentZoom = this.currentZoomLevel
     let selectedCol1 = this.selectedCol1
@@ -768,6 +679,10 @@ export class LeafletMapComponent implements OnInit {
     let selectedCol3 = this.selectedCol3
 
     let useBivariate = this.useBivariate
+
+    const color2 = d3.scaleOrdinal()
+      .domain(this.colorCategories)
+      .range(d3.schemeSet3);
 
     let blues = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
 
@@ -854,63 +769,126 @@ export class LeafletMapComponent implements OnInit {
             fillOpacity: .9
           };
         } else if (!useBivariate) {
+          if (selectedCol1 === 'nsdoh_profiles') {
+            const pane = 'tractsPane';
+            // let state = d['properties'].STATE_NAME
+            // let county = d['properties'].COUNTY
+            let id = currentZoom < 9 ? d['properties'].STCOFIPS : d['properties'].FIPS
+            const profile = currentZoom < 9 ? (avgDataCarmen[id] !== undefined ? avgDataCarmen[id]['mostFreq'] : "Profile 9") : valuemapCarmen.get(id)
+            return {
+              pane: pane,
+              color: '#2a2a2a',
+              opacity: .6,
+              weight: 1,
+              // fillColor: 'tomato',
+              fillColor: color2(profile),
+              fillOpacity: .9,
+            };
+          } else {
+            const pane = 'tractsPane';
+            const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
+            const id = d['properties'][fips]
+            let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
 
-          const pane = 'tractsPane';
-          const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
-          const id = d['properties'][fips]
-          let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
-          // let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
+            return {
+              pane: pane,
+              color: '#2a2a2a',
+              opacity: .6,
+              weight: 1,
+              fillColor: getColor(val1, min1, max1, 'blue'),
+              fillOpacity: .9,
+            };
+          }
 
-          return {
-            pane: pane,
-            color: '#2a2a2a',
-            opacity: .6,
-            weight: 1,
-            fillColor: getColor(val1, min1, max1, 'blue'),
-            fillOpacity: .9,
-          };
         }
       },
       onEachFeature: function (feature, layer) {
-        if (currentZoom < 9) {
-          let state = feature.properties.STATE_NAME
-          let county = feature.properties.COUNTY
-          let fips = feature.properties.STCOFIPS
-          let avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
-          let avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
-          let countyTooltip = `
-            <strong> State:</strong> ${state || 'N/A'}<br>
+        if (selectedCol1 === 'nsdoh_profiles') {
+          if (currentZoom < 9) {
+            let state = feature.properties.STATE_NAME
+            let county = feature.properties.COUNTY
+            let censusTract = feature.properties.STCOFIPS
+            let colName = selectedCol1
+            let profile = avgDataCarmen[censusTract] !== undefined ? avgDataCarmen[censusTract]['mostFreq'] : "N/A"
+
+            let nsdohProfileToolTip = `
+              <strong> State:</strong> ${state || 'N/A'}<br>
+              <strong> County:</strong> ${county || 'N/A'}<br>
+              <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
+              <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
+            `;
+            layer.bindTooltip(nsdohProfileToolTip, {
+              permanent: false,  // Tooltip will appear only on hover
+              direction: 'top',   // Tooltip position relative to the feature
+              opacity: 1          // Make the tooltip fully opaque
+            });
+          } else {
+            let state = feature.properties.STATE_NAME
+            let county = feature.properties.COUNTY
+            let censusTract = feature.properties.FIPS
+            let colName = selectedCol1
+            let profile = valuemapCarmen.get(censusTract)
+
+            let nsdohProfileToolTip = `
+              <strong> State:</strong> ${state || 'N/A'}<br>
+              <strong> County:</strong> ${county || 'N/A'}<br>
+              <strong> Census Tract:</strong> ${county || 'N/A'}<br>
+              <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
+            `;
+            layer.bindTooltip(nsdohProfileToolTip, {
+              permanent: false,  // Tooltip will appear only on hover
+              direction: 'top',   // Tooltip position relative to the feature
+              opacity: 1          // Make the tooltip fully opaque
+            });
+
+          }
+        } else {
+          if (currentZoom < 9) {
+            let state = feature.properties.STATE_NAME
+            let county = feature.properties.COUNTY
+            let fips = feature.properties.STCOFIPS
+            let avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
+            let avgValue2 = selectedCol2 !== '--' ? (avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0) : 0
+
+            let countyTooltip =
+              `<strong> State:</strong> ${state || 'N/A'}<br>
             <strong> County:</strong> ${county || 'N/A'}<br>
             <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-            <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
-            <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
-          `;
-          layer.bindTooltip(countyTooltip, {
-            permanent: false,  // Tooltip will appear only on hover
-            direction: 'top',   // Tooltip position relative to the feature
-            opacity: 1          // Make the tooltip fully opaque
-          });
-        } else {
-          let fips = feature.properties.FIPS
-          let location = feature.properties.LOCATION
+            <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>`;
 
-          const parts = location.split(",").map(part => part.trim());
-          const censusTract = parts[0];
-          const county = parts[1];
-          const state = parts[2];
-          let censusTractTooltip = `
+            // Add optional column 2 content if applicable
+            if (selectedCol2 !== '--') {
+              countyTooltip += `<strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>`;
+            }
+            layer.bindTooltip(countyTooltip, {
+              permanent: false,  // Tooltip will appear only on hover
+              direction: 'top',   // Tooltip position relative to the feature
+              opacity: 1          // Make the tooltip fully opaque
+            });
+          } else {
+            let fips = feature.properties.FIPS
+            let location = feature.properties.LOCATION
+
+            const parts = location.split(",").map(part => part.trim());
+            const censusTract = parts[0];
+            const county = parts[1];
+            const state = parts[2];
+            const val1 = Number(valuemap1.get(fips))
+            const val2 = Number(valuemap2.get(fips))
+            let censusTractTooltip = `
               <strong> State:</strong> ${state || 'N/A'}<br>
               <strong> County:</strong> ${county || 'N/A'}<br>
               <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
               <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-              <strong> ${selectedCol1}:</strong> ${valuemap1.get(fips) || 'N/A'}<br>
-              <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips) || 'N/A'}<br>
+              <strong> ${selectedCol1}:</strong> ${val1.toFixed(2) || 'N/A'}<br>
+              <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
             `;
-          layer.bindTooltip(censusTractTooltip, {
-            permanent: false,  // Tooltip will appear only on hover
-            direction: 'top',   // Tooltip position relative to the feature
-            opacity: 1          // Make the tooltip fully opaque
-          });
+            layer.bindTooltip(censusTractTooltip, {
+              permanent: false,  // Tooltip will appear only on hover
+              direction: 'top',   // Tooltip position relative to the feature
+              opacity: 1          // Make the tooltip fully opaque
+            });
+          }
         }
       }
     }).addTo(this.map);
@@ -922,7 +900,6 @@ export class LeafletMapComponent implements OnInit {
           const pane = 'tractsPane';
           const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
           const id = d['properties'][fips]
-          // let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
           let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
 
           let opacity = val2 / max2 + 0.2
@@ -973,20 +950,15 @@ export class LeafletMapComponent implements OnInit {
             <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips) || 'N/A'}<br>
           `;
             layer.bindTooltip(censusTractTooltip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
+              permanent: false,
+              direction: 'top',
+              opacity: 1
             });
           }
         }
       }).addTo(this.map);
       areaLayer2.addTo(this.map);
     }
-
-
-
-
-
 
     this.previousZoomLevel = this.map.getZoom();
     this.map.on('zoomend', () => {
@@ -999,7 +971,6 @@ export class LeafletMapComponent implements OnInit {
         this.loadAndInitializeMap()
       } else if (currentZoom < 9 && currentZoom < this.previousZoomLevel) {
         const bounds = this.map.getBounds();
-        // this.currentMap = 'svi_2000_us_county_11_25_test.json';
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.loadAndInitializeMap()
       }
@@ -1011,9 +982,7 @@ export class LeafletMapComponent implements OnInit {
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
-        console.log("current census intersections: ", this.currentCensusTractsMapArr)
         if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
-          console.log("not the same", prevMapArr, this.currentCensusTractsMapArr)
           this.loadAndInitializeMap()
         }
       }
@@ -1054,18 +1023,16 @@ export class LeafletMapComponent implements OnInit {
       const tileNorth = tileBound[0][1]
       const tileSouth = tileBound[1][1]
 
-      // Check if the tile bounds intersect with the current map bounds
       const isIntersecting =
-        tileWest < currentEast && // Tile's west is left of the current east
-        tileEast > currentWest && // Tile's east is right of the current west
-        tileNorth > currentSouth && // Tile's north is above the current south
-        tileSouth < currentNorth; // Tile's south is below the current north
+        tileWest < currentEast &&
+        tileEast > currentWest &&
+        tileNorth > currentSouth &&
+        tileSouth < currentNorth;
 
       if (isIntersecting) {
         intersectingTiles.push(tileId);
       }
     }
-    console.log("intersecting: ", intersectingTiles)
 
     return intersectingTiles;
   }
@@ -1087,10 +1054,8 @@ export class LeafletMapComponent implements OnInit {
     this.legendControl = L.control({ position: 'bottomright' });
 
     this.legendControl.onAdd = () => {
-      const div = L.DomUtil.create('div', 'd3-legend-container');
-      if (this.useBivariate) {
-        this.createD3Legend(div);
-      }
+      const div = this.useBivariate ? L.DomUtil.create('div', 'd3-legend-container') : L.DomUtil.create('div', 'd3-legend-container2')
+      this.createD3Legend(div);
 
       return div;
     };
@@ -1099,73 +1064,265 @@ export class LeafletMapComponent implements OnInit {
   }
 
   createD3Legend(container: HTMLElement): void {
+    let bivariateViewBox = [-15, -15, 100, 100]
+    let heatmapViewBox = [0, 0, 100, 100]
     const svgLegend = d3
       .select(container)
       .append("svg")
       .attr("width", 80)
-      .attr("height", 80)
-      .attr("viewBox", [-15, -15, 100, 100])
+      .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? 120 : 80)
+      .attr("viewBox", this.useBivariate ? bivariateViewBox : heatmapViewBox)
 
-    // Create the grid for the legend
-    const k = 24; // size of each cell in the grid 
-    const n = 3 // Grid size for the legend
-    const legendGroup = svgLegend.append('g')
-      .attr('font-family', 'sans-serif')
-      .attr('font-size', 10)
+    if (this.useBivariate) {
+      // Create the grid for the legend
+      const k = 24; // size of each cell in the grid 
+      const n = 3 // Grid size for the legend
+      const legendGroup = svgLegend.append('g')
+        .attr('font-family', 'sans-serif')
+        .attr('font-size', 10)
 
-    // Add the squares to the legend
-    d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
-      legendGroup.append('rect')
-        .attr('width', k)
-        .attr('height', k)
-        .attr('x', i * k)
-        .attr('y', (n - 1 - j) * k)
-        .attr('fill', this.colors[j * n + i])
-    });
+      // Add the squares to the legend
+      d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
+        legendGroup.append('rect')
+          .attr('width', k)
+          .attr('height', k)
+          .attr('x', i * k)
+          .attr('y', (n - 1 - j) * k)
+          .attr('fill', this.colors[j * n + i])
+      });
 
-    // Add diagonal lines with arrows
-    svgLegend.append('defs')
-      .append('marker')
-      .attr('id', 'arrowMarker')
-      .attr('viewBox', '0 0 10 10')
-      .attr('refX', 5)
-      .attr('refY', 5)
-      .attr('markerWidth', 7)
-      .attr('markerHeight', 7)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('d', 'M0,0 L10,5 L0,10 Z')  // Triangle path for the arrow
-      .attr('fill', 'black');
+      // Add diagonal lines with arrows
+      svgLegend.append('defs')
+        .append('marker')
+        .attr('id', 'arrowMarker')
+        .attr('viewBox', '0 0 10 10')
+        .attr('refX', 5)
+        .attr('refY', 5)
+        .attr('markerWidth', 7)
+        .attr('markerHeight', 7)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,0 L10,5 L0,10 Z')  // Triangle path for the arrow
+        .attr('fill', 'black');
 
-    legendGroup.append('line')
-      .attr('marker-end', `url(#arrowMarker)`)
-      .attr('x1', 0)
-      .attr('x2', n * k)
-      .attr('y1', n * k)
-      .attr('y2', n * k)
-      .attr('stroke', 'black')
-      .attr('stroke-width', 1.75);
+      legendGroup.append('line')
+        .attr('marker-end', `url(#arrowMarker)`)
+        .attr('x1', 0)
+        .attr('x2', n * k)
+        .attr('y1', n * k)
+        .attr('y2', n * k)
+        .attr('stroke', 'black')
+        .attr('stroke-width', 1.75);
 
-    legendGroup.append('line')
-      .attr('marker-end', `url(#arrowMarker)`)
-      .attr('y2', 0)
-      .attr('y1', n * k)
-      .attr('stroke', 'black')
-      .attr('stroke-width', 1.75);
+      legendGroup.append('line')
+        .attr('marker-end', `url(#arrowMarker)`)
+        .attr('y2', 0)
+        .attr('y1', n * k)
+        .attr('stroke', 'black')
+        .attr('stroke-width', 1.75);
 
-    legendGroup.append('text')
-      .attr('font-weight', 'bold')
-      .attr('dy', '0.71em')
-      .attr('transform', `rotate(90) translate(${n / 2 * k}, 6)`)
-      .attr('text-anchor', 'middle')
-      .text(`${this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}`);
+      legendGroup.append('text')
+        .attr('font-weight', 'bold')
+        .attr('dy', '0.71em')
+        .attr('transform', `rotate(90) translate(${n / 2 * k}, 6)`)
+        .attr('text-anchor', 'middle')
+        .text(`${this.selectedCol2.charAt(0).toUpperCase() + this.selectedCol2.slice(1)}`);
 
-    legendGroup.append('text')
-      .attr('font-weight', 'bold')
-      .attr('dy', '0.71em')
-      .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
-      .attr('text-anchor', 'middle')
-      .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
+      legendGroup.append('text')
+        .attr('font-weight', 'bold')
+        .attr('dy', '0.71em')
+        .attr('transform', `translate(${n / 2 * k}, ${n * k + 6})`)
+        .attr('text-anchor', 'middle')
+        .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
+    } else {
+      if (this.selectedCol1 === 'nsdoh_profiles') {
+        const color2 = d3.scaleOrdinal()
+          .domain(this.colorCategories)
+          .range(d3.schemeSet3);
+
+        for (let index in this.colorCategories) {
+          let cat = this.colorCategories[index]
+          let indexNum = Number(index)
+
+          svgLegend.append("circle")
+            .attr("cx", 10)
+            .attr("cy", 12 + 15 * indexNum)
+            .attr("r", 4)
+            .style("fill", `${color2(cat)}`)
+
+          svgLegend
+            .append("text")
+            .attr("x", 20)
+            .attr("y", 12 + 15 * indexNum)
+            .text(`${cat}`)
+            .style("font-size", "8px")
+            .attr("alignment-baseline", "middle")
+        }
+
+
+      } else {
+        let legendWidth = 100
+        let legendHeight = 75
+        let separation = 20
+        // const defsLegend = svgLegend.append("defs");
+        const legendGroup = svgLegend.append('g')
+          .attr('font-family', 'sans-serif')
+          .attr('font-size', 10)
+        if (this.selectedCol1 !== '--') {
+          const blueGradient = legendGroup.append("linearGradient")
+            .attr("id", "legendGradientBlue")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
+
+          blueGradient.append("stop").attr("offset", "0%").attr("stop-color", "#f7fbff");
+          blueGradient.append("stop").attr("offset", "20%").attr("stop-color", "#c6dbef");
+          blueGradient.append("stop").attr("offset", "40%").attr("stop-color", "#6baed6");
+          blueGradient.append("stop").attr("offset", "60%").attr("stop-color", "#3182bd");
+          blueGradient.append("stop").attr("offset", "80%").attr("stop-color", "#08519c");
+          blueGradient.append("stop").attr("offset", "100%").attr("stop-color", "#08306b");
+
+          // Rectangle for blue gradient
+          svgLegend.append("rect")
+            .attr("x", 20)
+            .attr("y", legendHeight - 50)
+            .attr("width", 100)
+            .attr("height", 10)
+            .style("fill", "url(#legendGradientBlue)");
+
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 55)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .attr("font-weight", "bold")
+            .text(this.selectedCol1 !== '--' ? `${this.selectedCol1.charAt(0).toUpperCase()}${this.selectedCol1.slice(1)}` : 'Column 1');
+
+          // Text labels for blue gradient
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 55 + 25)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .text(`${Math.floor(this.min1 * 10) / 10}`);
+
+          svgLegend.append("text")
+            .attr("x", 100)
+            .attr("y", legendHeight - 55 + 25)
+            .attr("text-anchor", "end")
+            .attr("font-size", 8)
+            .text(`${Math.ceil(this.max1 * 10) / 10}`);
+        }
+
+        if (this.selectedCol2 !== '--') {
+          // Define the second gradient from white to yellow
+          const yellowGradient = legendGroup.append("linearGradient")
+            .attr("id", "legendGradientYellow")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
+
+          yellowGradient.append("stop")
+            .attr("offset", "0%")
+            .attr("stop-color", "#ffff00")
+            .attr("stop-opacity", 0);  // Transparent yellow
+
+          yellowGradient.append("stop")
+            .attr("offset", "100%")
+            .attr("stop-color", "#ffff00")
+            .attr("stop-opacity", 1);  // Opaque yellow
+
+          // Rectangle for yellow gradient
+          svgLegend.append("rect")
+            .attr("x", 20)
+            .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
+            .attr("width", 100)
+            .attr("height", 10)
+            .style("fill", "url(#legendGradientYellow)");
+
+          // Text labels for yellow gradient
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 40 + separation + 10)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .attr("font-weight", "bold")
+            // .text("Column 2:");
+            .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
+
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", legendHeight - 40 + separation + 25 + 10)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            // .text("Low");
+            .text(`${Math.floor(this.min2 * 10) / 10}`);
+
+          svgLegend.append("text")
+            .attr("x", 100)
+            .attr("y", legendHeight - 40 + separation + 25 + 10)
+            .attr("text-anchor", "end")
+            .attr("font-size", 8)
+            // .text("High");
+            .text(`${Math.ceil(this.max2 * 10) / 10}`);
+        }
+
+        if (this.selectedCol3 !== '--') {
+          // Define the red gradient with transparency
+          const redGradient = legendGroup.append("linearGradient")
+            .attr("id", "legendGradientRed")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
+
+          redGradient.append("stop")
+            .attr("offset", "0%")
+            .attr("stop-color", "#ff0000")
+            .attr("stop-opacity", 0);
+
+          redGradient.append("stop")
+            .attr("offset", "100%")
+            .attr("stop-color", "#ff0000")
+            .attr("stop-opacity", 1);
+
+          // Rectangle for red gradient with additional vertical separation
+          svgLegend.append("rect")
+            .attr("x", 20)
+            .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
+            .attr("width", legendWidth)
+            .attr("height", 10)
+            .style("fill", "url(#legendGradientRed)");
+
+          // Text labels for red gradient
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .attr("font-weight", "bold")
+            .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
+
+          svgLegend.append("text")
+            .attr("x", 15)
+            .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+            .attr("text-anchor", "start")
+            .attr("font-size", 8)
+            .text(`${Math.floor(this.min2 * 10) / 10}`);
+
+          svgLegend.append("text")
+            .attr("x", 100)
+            .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+            .attr("text-anchor", "end")
+            .attr("font-size", 8)
+            .text(`${Math.ceil(this.max2 * 10) / 10}`);
+        }
+      }
+
+
+    }
   }
 
   // blues = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];

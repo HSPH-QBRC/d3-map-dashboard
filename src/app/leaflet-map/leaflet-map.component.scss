@@ -8,7 +8,7 @@
     position: fixed;
     bottom: 0;
     background-color: #f9f9f9;
-    z-index: 9999;
+    z-index: 999;
 }
 
 .slider-map {
@@ -48,6 +48,14 @@
         padding: 10px;
         border-radius: 5px;
         transform: rotate(-45deg);
+        transform-origin: center;
+    }
+
+    .d3-legend-container2 {
+        background: transparent;
+        padding: 10px;
+        border-radius: 5px;
+        // transform: rotate(-45deg);
         transform-origin: center;
     }
 }

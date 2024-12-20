@@ -40,25 +40,6 @@
             <p style="text-align: right;"><button class="showmore-button" (click)="showMore('cols')">{{showMoreCols ?
                     'Show less...':'Show more...'}} </button></p>
         </div>
-
-        <!-- <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
-            Map
-        </button>
-        <br> -->
-        <!-- <div *ngIf="showMaps">
-            <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small" style="padding-left: 16px; margin: 0;">
-                <li *ngFor="let col of (showMoreMaps ? mapsCols : mapsCols.slice(0, 5))"
-                    style="list-style: none; margin: 4px 0;">
-                    <mat-radio-group [(ngModel)]="selectedMap">
-                        <mat-radio-button [value]="col.name" style="display: block;">
-                            {{ col.name }}
-                        </mat-radio-button>
-                    </mat-radio-group>
-                </li>
-            </ul>
-            <p style="text-align: right;"><button class="showmore-button" (click)="showMore('maps')">{{showMoreMaps ?
-                    'Show less...':'Show more...'}} </button></p>
-        </div> -->
         
     </mat-accordion>
 
