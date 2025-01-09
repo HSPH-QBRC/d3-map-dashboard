@@ -7,30 +7,10 @@
         <!-- <app-county-map [dataFromSidebar]="dataFromSidebar"
                 (dataToSidebar)="onCountyMapDataReceived($event)"></app-county-map> -->
 
-        <app-leaflet-map [dataFromSidebar]="dataFromSidebar" [dataFromSidebarStateNameOnly]="dataFromSidebarStateNameOnly"
-        (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map>
-        <!-- <app-leaflet-layer-controler-test></app-leaflet-layer-controler-test> -->
-
-
-
-        <!-- <div class="timelineBar">
-            <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
-                Year
-            </button>
-            <br>
-            <div *ngIf="showYears">
-                <div class="slider">
-                    {{minYear}}
-                    <mat-slider thumbLabel [tickInterval]="2" [step]="1" [min]="minYear" [max]="maxYear"
-                        aria-label="units" [(ngModel)]="selectedYear">
-                    </mat-slider>
-                    {{maxYear}}
-                </div>
-            </div>
-        </div> -->
+        <!-- <app-leaflet-map [dataFromSidebar]="dataFromSidebar" [dataFromSidebarStateNameOnly]="dataFromSidebarStateNameOnly"
+        (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map> -->
+   
+        <app-leaflet-map-lambda-api [dataFromSidebar]="dataFromSidebar" [dataFromSidebarStateNameOnly]="dataFromSidebarStateNameOnly"
+        (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map-lambda-api>
     </div>
-
 </div>
-
-
-<!-- <app-leaflet-test></app-leaflet-test> -->

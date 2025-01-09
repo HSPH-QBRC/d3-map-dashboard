@@ -12,7 +12,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {MatCardModule} from '@angular/material/card';
 import {MatIconModule} from '@angular/material/icon';
 import { CountyMapComponent } from './county-map/county-map.component';
-import { LeafletTestComponent } from './leaflet-test/leaflet-test.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -23,18 +22,16 @@ import {MatRadioModule} from '@angular/material/radio';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { LeafletMapComponent } from './leaflet-map/leaflet-map.component';
 import { HttpClientModule } from '@angular/common/http';
-import { LeafletLayerControlerTestComponent } from './leaflet-layer-controler-test/leaflet-layer-controler-test.component';
-
 import { MatInputModule } from '@angular/material/input';
+import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-map-lambda-api.component';
 @NgModule({
   declarations: [
     AppComponent,
     LoadingSpinnerComponent,
     CountyMapComponent,
-    LeafletTestComponent,
     SidebarComponent,
     LeafletMapComponent,
-    LeafletLayerControlerTestComponent
+    LeafletMapLambdaApiComponent
   ],
   imports: [
     BrowserModule,

@@ -16,11 +16,12 @@ interface CarmenData {
 }
 
 @Component({
-  selector: 'app-leaflet-map',
-  templateUrl: './leaflet-map.component.html',
-  styleUrls: ['./leaflet-map.component.scss']
+  selector: 'app-leaflet-map-lambda-api',
+  templateUrl: './leaflet-map-lambda-api.component.html',
+  styleUrls: ['./leaflet-map-lambda-api.component.scss']
 })
-export class LeafletMapComponent implements OnInit {
+export class LeafletMapLambdaApiComponent implements OnInit {
+
   @Input() dataFromSidebar: any;
   @Input() dataFromSidebarStateNameOnly: any;
   @Output() dataToSidebar = new EventEmitter<{}>();
@@ -147,12 +148,12 @@ export class LeafletMapComponent implements OnInit {
 
   ngOnInit(): void {
 
-    const timerLabel = `api gateway timer`;
-    console.time(timerLabel); // Start the timer
-    this.http.get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}`).subscribe((data: any)=>{
-      console.log("data from my api: ", data)
-      console.timeEnd(timerLabel)
-    })
+    // const timerLabel = `api gateway timer`;
+    // console.time(timerLabel); // Start the timer
+    // this.http.get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}`).subscribe((data: any) => {
+    //   console.log("data from my api: ", data)
+    //   console.timeEnd(timerLabel)
+    // })
     this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
       this.tileBounds = data
     });
@@ -512,6 +513,7 @@ export class LeafletMapComponent implements OnInit {
       this.useNewMap = index === 1 ? true : false
 
       let mapPath = this.currentZoomLevel >= 9 ? `tiles_no_redline/${map}` : map
+      console.log("map path: ", mapPath)
 
       this.http.get(`./assets/maps/${mapPath}`).subscribe({
         next: (data) => {
@@ -587,13 +589,13 @@ export class LeafletMapComponent implements OnInit {
         let residential = feature.properties['residential']
 
         let redLineTooltip = `
-            <strong> Location:</strong> ${city || 'N/A'}, ${state || 'N/A'}<br>
-            <strong> Category:</strong> ${category || 'N/A'}<br>
-            <strong> Label:</strong> ${label || 'N/A'}<br>
-            <strong> City Survey:</strong> ${city_survey || 'N/A'}<br>
-            <strong> Commericial:</strong> ${commercial || 'N/A'}<br>
-            <strong> Residential:</strong> ${residential || 'N/A'}<br>
-          `;
+              <strong> Location:</strong> ${city || 'N/A'}, ${state || 'N/A'}<br>
+              <strong> Category:</strong> ${category || 'N/A'}<br>
+              <strong> Label:</strong> ${label || 'N/A'}<br>
+              <strong> City Survey:</strong> ${city_survey || 'N/A'}<br>
+              <strong> Commericial:</strong> ${commercial || 'N/A'}<br>
+              <strong> Residential:</strong> ${residential || 'N/A'}<br>
+            `;
         layer.bindTooltip(redLineTooltip, {
           permanent: false,  // Tooltip will appear only on hover
           direction: 'top',   // Tooltip position relative to the feature
@@ -811,11 +813,11 @@ export class LeafletMapComponent implements OnInit {
             let profile = avgDataCarmen[censusTract] !== undefined ? avgDataCarmen[censusTract]['mostFreq'] : "N/A"
 
             let nsdohProfileToolTip = `
-              <strong> State:</strong> ${state || 'N/A'}<br>
-              <strong> County:</strong> ${county || 'N/A'}<br>
-              <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
-              <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
-            `;
+                <strong> State:</strong> ${state || 'N/A'}<br>
+                <strong> County:</strong> ${county || 'N/A'}<br>
+                <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
+                <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
+              `;
             layer.bindTooltip(nsdohProfileToolTip, {
               permanent: false,  // Tooltip will appear only on hover
               direction: 'top',   // Tooltip position relative to the feature
@@ -829,11 +831,11 @@ export class LeafletMapComponent implements OnInit {
             let profile = valuemapCarmen.get(censusTract)
 
             let nsdohProfileToolTip = `
-              <strong> State:</strong> ${state || 'N/A'}<br>
-              <strong> County:</strong> ${county || 'N/A'}<br>
-              <strong> Census Tract:</strong> ${county || 'N/A'}<br>
-              <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
-            `;
+                <strong> State:</strong> ${state || 'N/A'}<br>
+                <strong> County:</strong> ${county || 'N/A'}<br>
+                <strong> Census Tract:</strong> ${county || 'N/A'}<br>
+                <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
+              `;
             layer.bindTooltip(nsdohProfileToolTip, {
               permanent: false,  // Tooltip will appear only on hover
               direction: 'top',   // Tooltip position relative to the feature
@@ -851,9 +853,9 @@ export class LeafletMapComponent implements OnInit {
 
             let countyTooltip =
               `<strong> State:</strong> ${state || 'N/A'}<br>
-            <strong> County:</strong> ${county || 'N/A'}<br>
-            <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-            <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>`;
+              <strong> County:</strong> ${county || 'N/A'}<br>
+              <strong> FIPS:</strong> ${fips || 'N/A'}<br>
+              <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>`;
 
             // Add optional column 2 content if applicable
             if (selectedCol2 !== '--') {
@@ -875,13 +877,13 @@ export class LeafletMapComponent implements OnInit {
             const val1 = Number(valuemap1.get(fips))
             const val2 = Number(valuemap2.get(fips))
             let censusTractTooltip = `
-              <strong> State:</strong> ${state || 'N/A'}<br>
-              <strong> County:</strong> ${county || 'N/A'}<br>
-              <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
-              <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-              <strong> ${selectedCol1}:</strong> ${val1.toFixed(2) || 'N/A'}<br>
-              <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
-            `;
+                <strong> State:</strong> ${state || 'N/A'}<br>
+                <strong> County:</strong> ${county || 'N/A'}<br>
+                <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
+                <strong> FIPS:</strong> ${fips || 'N/A'}<br>
+                <strong> ${selectedCol1}:</strong> ${val1.toFixed(2) || 'N/A'}<br>
+                <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
+              `;
             layer.bindTooltip(censusTractTooltip, {
               permanent: false,  // Tooltip will appear only on hover
               direction: 'top',   // Tooltip position relative to the feature
@@ -921,12 +923,12 @@ export class LeafletMapComponent implements OnInit {
             let avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
             let avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
             let countyTooltip = `
-          <strong> State:</strong> ${state || 'N/A'}<br>
-          <strong> County:</strong> ${county || 'N/A'}<br>
-          <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-          <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
-          <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
-        `;
+            <strong> State:</strong> ${state || 'N/A'}<br>
+            <strong> County:</strong> ${county || 'N/A'}<br>
+            <strong> FIPS:</strong> ${fips || 'N/A'}<br>
+            <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
+            <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
+          `;
             layer.bindTooltip(countyTooltip, {
               permanent: false,  // Tooltip will appear only on hover
               direction: 'top',   // Tooltip position relative to the feature
@@ -941,13 +943,13 @@ export class LeafletMapComponent implements OnInit {
             const county = parts[1];
             const state = parts[2];
             let censusTractTooltip = `
-            <strong> State:</strong> ${state || 'N/A'}<br>
-            <strong> County:</strong> ${county || 'N/A'}<br>
-            <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
-            <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-            <strong> ${selectedCol1}:</strong> ${valuemap1.get(fips) || 'N/A'}<br>
-            <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips) || 'N/A'}<br>
-          `;
+              <strong> State:</strong> ${state || 'N/A'}<br>
+              <strong> County:</strong> ${county || 'N/A'}<br>
+              <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
+              <strong> FIPS:</strong> ${fips || 'N/A'}<br>
+              <strong> ${selectedCol1}:</strong> ${valuemap1.get(fips) || 'N/A'}<br>
+              <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips) || 'N/A'}<br>
+            `;
             layer.bindTooltip(censusTractTooltip, {
               permanent: false,
               direction: 'top',
@@ -1324,9 +1326,4 @@ export class LeafletMapComponent implements OnInit {
     }
   }
 
-  // blues = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
-  // getColor(value: number, min: number, max: number): string {
-  //   const index = Math.round(((value - min) / (max - min)) * (this.blues.length - 1));
-  //   return this.blues[Math.max(0, Math.min(this.blues.length - 1, index))];
-  // }
 }
