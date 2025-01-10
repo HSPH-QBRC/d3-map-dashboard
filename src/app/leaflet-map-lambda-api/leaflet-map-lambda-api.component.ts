@@ -35,8 +35,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   layerControl!: L.Control.Layers;
 
-  yearCols = []
-  columns = []
+  yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+  columns = ['tract_fips10', 'year', 'population', 'aland10', 'count_445110', 'count_sales_445110', 'count_emp_445110', 'popden_445110', 'popden_sales_445110', 'popden_emp_445110', 'aden_445110', 'aden_sales_445110', 'aden_emp_445110', 'count_4452', 'count_sales_4452', 'count_emp_4452', 'popden_4452', 'popden_sales_4452', 'popden_emp_4452', 'aden_4452', 'aden_sales_4452', 'aden_emp_4452', 'count_452311', 'count_sales_452311', 'count_emp_452311', 'popden_452311', 'popden_sales_452311', 'popden_emp_452311', 'aden_452311', 'aden_sales_452311', 'aden_emp_452311']
   minYear = 1900
   maxYear = 2099
   showYears = false
@@ -116,7 +116,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
-        console.log("cols changed: ", this.prevSelectedCol2, this.selectedCol2)
         this.resetVariables()
         this.loadCSVData()
       } else {
@@ -147,13 +146,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   redlineData = []
 
   ngOnInit(): void {
-
-    // const timerLabel = `api gateway timer`;
-    // console.time(timerLabel); // Start the timer
-    // this.http.get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}`).subscribe((data: any) => {
-    //   console.log("data from my api: ", data)
-    //   console.timeEnd(timerLabel)
-    // })
     this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
       this.tileBounds = data
     });
@@ -202,10 +194,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.fullAvgData2 = {}
     this.fullAvgData3 = {}
 
-  }
+    this.offset = 0
+    if (this.selectedCol1 !== 'nsdoh_profiles') {
+      this.groceryData = []
+    }
 
-  // visibleTiles = []
-  // tiles = []
+  }
 
   fullData1 = {}
   fullData2 = {}
@@ -214,39 +208,89 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   fullAvgData2 = {}
   fullAvgData3 = {}
 
-  groceryData
-  carmenData
+  groceryData = []
+  carmenData = []
+
+  offset = 0
+  fetchData = (category): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const fetchNextBatch = () => {
+        this.http
+          .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${this.offset}`)
+          .subscribe(
+            (data: any) => {
+              if (data && data.message !== 'No more rows available.') {
+                if (category === 'grocery') {
+                  this.groceryData.push(...data);
+                } else if (category === 'carmen') {
+                  this.carmenData.push(...data)
+                }
+                this.offset += 1; // Increment offset for the next batch
+                fetchNextBatch(); // Fetch the next batch
+              } else {
+                console.log("All data fetched");
+                resolve(); // Resolve the promise when all data is fetched
+              }
+            },
+            (error) => {
+              console.error("Error fetching data:", error);
+              reject(error); // Reject the promise if an error occurs
+            }
+          );
+      };
+
+      fetchNextBatch(); // Start the recursive fetching
+    });
+  };
+
 
   async loadCSVData(): Promise<void> {
-    this.isLoading = true
-    let csvFile = './assets/data/nanda_grocery_tract_2003-2017_01P.csv'
-    let carmenFile = './assets/data/nsdoh_data.csv'
+    // this.isLoading = true
+    // let csvFile = './assets/data/nanda_grocery_tract_2003-2017_01P.csv'
+    // let carmenFile = './assets/data/nsdoh_data.csv'
     try {
-      if (!this.groceryData) {
-        this.groceryData = await this.csvDataService.loadCSVData(csvFile);
+      // if (!this.groceryData) {
+      // this.groceryData = await this.csvDataService.loadCSVData(csvFile);
+      // }
+
+      if (this.selectedCol1 === 'nsdoh_profiles') {
+        console.time('carmen time')
+        await this.fetchData('carmen')
+        console.timeEnd('carmen time')
+      } else {
+        console.time('grocery time')
+        this.isLoading = true
+        await this.fetchData('grocery')
+        this.isLoading = false
+        console.log("grocery data: ", this.groceryData)
+        console.timeEnd('grocery time')
       }
 
-      if (!this.carmenData) {
-        this.carmenData = await this.csvDataService.loadCSVData(carmenFile);
-      }
+
+      // if (!this.carmenData) {
+      //   this.carmenData = await this.csvDataService.loadCSVData(carmenFile);
+      // }
       const groceryData = this.groceryData
       const carmenData = this.carmenData
 
-
-
       //get min/max values for Years
-      if (this.yearCols.length === 0) {
-        for (const d of groceryData) {
-          if (d['year'] && !this.yearCols.includes(d['year'])) {
-            this.yearCols.push(d['year'])
-          }
-        }
-        this.yearCols.sort((a, b) => a - b);
-        this.minYear = this.yearCols[0]
-        this.maxYear = this.yearCols[this.yearCols.length - 1]
-        this.showYears = true
+      // if (this.yearCols.length === 0) {
+      //   for (const d of groceryData) {
+      //     if (d['year'] && !this.yearCols.includes(d['year'])) {
+      //       this.yearCols.push(d['year'])
+      //     }
+      //   }
+      //   this.yearCols.sort((a, b) => a - b);
+      //   this.minYear = this.yearCols[0]
+      //   this.maxYear = this.yearCols[this.yearCols.length - 1]
+      //   this.showYears = true
 
-      }
+      // }
+      this.yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+      this.minYear = 2003
+      this.maxYear = 2017
+      this.showYears = true
+
       for (const d of carmenData) {
         const id = d['GEOID']
         const rate = d['nsdoh_profiles']
@@ -257,7 +301,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
 
       for (const d of groceryData) {
-        let currYear = d['year']
+        let currYear = this.selectedYear
         if (!this.fullData1[currYear]) {
           this.fullData1[currYear] = []
         }
@@ -308,148 +352,151 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.columnsUsed = 0
       if (this.selectedCol1 !== '--') {
         this.columnsUsed += 1;
-        for (let currYear of this.yearCols) {
-          for (let i of this.fullData1[currYear]) {
-            let id = i['id'].substring(0, 5);
-            let rate = i['rate']
-            let pop = i['population']
+        // for (let currYear of this.yearCols) {
+        let currYear = this.selectedYear
+        for (let i of this.fullData1[currYear]) {
+          let id = i['id'].substring(0, 5);
+          let rate = i['rate']
+          let pop = i['population']
 
-            if (!this.fullAvgData1[currYear]) {
-              this.fullAvgData1[currYear] = {}
-            }
-
-            if (!this.fullAvgData1[currYear][id]) {
-              this.fullAvgData1[currYear][id] = {
-                rateArr: [],
-                populationArr: []
-              }
-            }
-            this.fullAvgData1[currYear][id].rateArr.push(rate)
-            this.fullAvgData1[currYear][id].populationArr.push(pop)
+          if (!this.fullAvgData1[currYear]) {
+            this.fullAvgData1[currYear] = {}
           }
 
-          for (let i in this.fullAvgData1[currYear]) {
-            if (this.fullAvgData1[currYear][i]['rateArr'].length !== 0) {
-              this.fullAvgData1[currYear][i]['sum'] = this.fullAvgData1[currYear][i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
-            } else {
-              this.fullAvgData1[currYear][i]['sum'] = 0
+          if (!this.fullAvgData1[currYear][id]) {
+            this.fullAvgData1[currYear][id] = {
+              rateArr: [],
+              populationArr: []
             }
           }
-
-          for (let i in this.fullAvgData1[currYear]) {
-            if (this.fullAvgData1[currYear][i]['rateArr'].length !== 0) {
-              if (this.fullAvgData1[currYear][i]['avg'] === undefined) {
-                this.fullAvgData1[currYear][i]['avg'] = 0
-              }
-              for (let index in this.fullAvgData1[currYear][i]['rateArr']) {
-                let rate = Number(this.fullAvgData1[currYear][i]['rateArr'][index])
-                let pop = Number(this.fullAvgData1[currYear][i]['populationArr'][index])
-                let popSum = Number(this.fullAvgData1[currYear][i]['sum'])
-                let weightedRate = rate * pop / popSum
-                this.fullAvgData1[currYear][i]['avg'] += weightedRate
-              }
-            }
-          }
-
+          this.fullAvgData1[currYear][id].rateArr.push(rate)
+          this.fullAvgData1[currYear][id].populationArr.push(pop)
         }
+
+        for (let i in this.fullAvgData1[currYear]) {
+          if (this.fullAvgData1[currYear][i]['rateArr'].length !== 0) {
+            this.fullAvgData1[currYear][i]['sum'] = this.fullAvgData1[currYear][i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
+          } else {
+            this.fullAvgData1[currYear][i]['sum'] = 0
+          }
+        }
+
+        for (let i in this.fullAvgData1[currYear]) {
+          if (this.fullAvgData1[currYear][i]['rateArr'].length !== 0) {
+            if (this.fullAvgData1[currYear][i]['avg'] === undefined) {
+              this.fullAvgData1[currYear][i]['avg'] = 0
+            }
+            for (let index in this.fullAvgData1[currYear][i]['rateArr']) {
+              let rate = Number(this.fullAvgData1[currYear][i]['rateArr'][index])
+              let pop = Number(this.fullAvgData1[currYear][i]['populationArr'][index])
+              let popSum = Number(this.fullAvgData1[currYear][i]['sum'])
+              let weightedRate = rate * pop / popSum
+              this.fullAvgData1[currYear][i]['avg'] += weightedRate
+            }
+          }
+        }
+
+        // }
       }
 
       if (this.selectedCol2 !== '--') {
         this.columnsUsed += 1;
-        for (let currYear of this.yearCols) {
-          for (let i of this.fullData2[currYear]) {
-            let id = i['id'].substring(0, 5);
-            let rate = i['rate']
-            let pop = i['population']
+        // for (let currYear of this.yearCols) {
+        let currYear = this.selectedYear
+        for (let i of this.fullData2[currYear]) {
+          let id = i['id'].substring(0, 5);
+          let rate = i['rate']
+          let pop = i['population']
 
-            if (!this.fullAvgData2[currYear]) {
-              this.fullAvgData2[currYear] = {}
-            }
-
-            if (!this.fullAvgData2[currYear][id]) {
-              this.fullAvgData2[currYear][id] = {
-                rateArr: [],
-                populationArr: []
-              }
-            }
-            this.fullAvgData2[currYear][id].rateArr.push(rate)
-            this.fullAvgData2[currYear][id].populationArr.push(pop)
+          if (!this.fullAvgData2[currYear]) {
+            this.fullAvgData2[currYear] = {}
           }
 
-          for (let i in this.fullAvgData2[currYear]) {
-            if (this.fullAvgData2[currYear][i]['rateArr'].length !== 0) {
-              this.fullAvgData2[currYear][i]['sum'] = this.fullAvgData2[currYear][i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
-            } else {
-              this.fullAvgData2[currYear][i]['sum'] = 0
+          if (!this.fullAvgData2[currYear][id]) {
+            this.fullAvgData2[currYear][id] = {
+              rateArr: [],
+              populationArr: []
             }
           }
-
-          for (let i in this.fullAvgData2[currYear]) {
-            if (this.fullAvgData2[currYear][i]['rateArr'].length !== 0) {
-              if (this.fullAvgData2[currYear][i]['avg'] === undefined) {
-                this.fullAvgData2[currYear][i]['avg'] = 0
-              }
-              for (let index in this.fullAvgData2[currYear][i]['rateArr']) {
-                let rate = Number(this.fullAvgData2[currYear][i]['rateArr'][index])
-                let pop = Number(this.fullAvgData2[currYear][i]['populationArr'][index])
-                let popSum = Number(this.fullAvgData2[currYear][i]['sum'])
-                let weightedRate = rate * pop / popSum
-                this.fullAvgData2[currYear][i]['avg'] += weightedRate
-              }
-            }
-          }
-
+          this.fullAvgData2[currYear][id].rateArr.push(rate)
+          this.fullAvgData2[currYear][id].populationArr.push(pop)
         }
+
+        for (let i in this.fullAvgData2[currYear]) {
+          if (this.fullAvgData2[currYear][i]['rateArr'].length !== 0) {
+            this.fullAvgData2[currYear][i]['sum'] = this.fullAvgData2[currYear][i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
+          } else {
+            this.fullAvgData2[currYear][i]['sum'] = 0
+          }
+        }
+
+        for (let i in this.fullAvgData2[currYear]) {
+          if (this.fullAvgData2[currYear][i]['rateArr'].length !== 0) {
+            if (this.fullAvgData2[currYear][i]['avg'] === undefined) {
+              this.fullAvgData2[currYear][i]['avg'] = 0
+            }
+            for (let index in this.fullAvgData2[currYear][i]['rateArr']) {
+              let rate = Number(this.fullAvgData2[currYear][i]['rateArr'][index])
+              let pop = Number(this.fullAvgData2[currYear][i]['populationArr'][index])
+              let popSum = Number(this.fullAvgData2[currYear][i]['sum'])
+              let weightedRate = rate * pop / popSum
+              this.fullAvgData2[currYear][i]['avg'] += weightedRate
+            }
+          }
+        }
+
+        // }
       }
 
       if (this.selectedCol3 !== '--') {
         this.columnsUsed += 1;
-        for (let currYear of this.yearCols) {
-          // for (let i of this.data1) {
-          for (let i of this.fullData3[currYear]) {
-            let id = i['id'].substring(0, 5);
-            let rate = i['rate']
-            let pop = i['population']
+        // for (let currYear of this.yearCols) {
+        // for (let i of this.data1) {
+        let currYear = this.selectedYear
+        for (let i of this.fullData3[currYear]) {
+          let id = i['id'].substring(0, 5);
+          let rate = i['rate']
+          let pop = i['population']
 
-            if (!this.fullAvgData3[currYear]) {
-              this.fullAvgData3[currYear] = {}
-            }
-
-            // if (!this.avgData1[id]) {
-            if (!this.fullAvgData3[currYear][id]) {
-              this.fullAvgData3[currYear][id] = {
-                rateArr: [],
-                populationArr: []
-              }
-            }
-            this.fullAvgData3[currYear][id].rateArr.push(rate)
-            this.fullAvgData3[currYear][id].populationArr.push(pop)
+          if (!this.fullAvgData3[currYear]) {
+            this.fullAvgData3[currYear] = {}
           }
 
-          for (let i in this.fullAvgData3[currYear]) {
-            if (this.fullAvgData3[currYear][i]['rateArr'].length !== 0) {
-              this.fullAvgData3[currYear][i]['sum'] = this.fullAvgData3[currYear][i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
-            } else {
-              this.fullAvgData3[currYear][i]['sum'] = 0
+          // if (!this.avgData1[id]) {
+          if (!this.fullAvgData3[currYear][id]) {
+            this.fullAvgData3[currYear][id] = {
+              rateArr: [],
+              populationArr: []
             }
           }
-
-          for (let i in this.fullAvgData3[currYear]) {
-            if (this.fullAvgData3[currYear][i]['rateArr'].length !== 0) {
-              if (this.fullAvgData3[currYear][i]['avg'] === undefined) {
-                this.fullAvgData3[currYear][i]['avg'] = 0
-              }
-              for (let index in this.fullAvgData3[currYear][i]['rateArr']) {
-                let rate = Number(this.fullAvgData3[currYear][i]['rateArr'][index])
-                let pop = Number(this.fullAvgData3[currYear][i]['populationArr'][index])
-                let popSum = Number(this.fullAvgData3[currYear][i]['sum'])
-                let weightedRate = rate * pop / popSum
-                this.fullAvgData3[currYear][i]['avg'] += weightedRate
-              }
-            }
-          }
-
+          this.fullAvgData3[currYear][id].rateArr.push(rate)
+          this.fullAvgData3[currYear][id].populationArr.push(pop)
         }
+
+        for (let i in this.fullAvgData3[currYear]) {
+          if (this.fullAvgData3[currYear][i]['rateArr'].length !== 0) {
+            this.fullAvgData3[currYear][i]['sum'] = this.fullAvgData3[currYear][i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
+          } else {
+            this.fullAvgData3[currYear][i]['sum'] = 0
+          }
+        }
+
+        for (let i in this.fullAvgData3[currYear]) {
+          if (this.fullAvgData3[currYear][i]['rateArr'].length !== 0) {
+            if (this.fullAvgData3[currYear][i]['avg'] === undefined) {
+              this.fullAvgData3[currYear][i]['avg'] = 0
+            }
+            for (let index in this.fullAvgData3[currYear][i]['rateArr']) {
+              let rate = Number(this.fullAvgData3[currYear][i]['rateArr'][index])
+              let pop = Number(this.fullAvgData3[currYear][i]['populationArr'][index])
+              let popSum = Number(this.fullAvgData3[currYear][i]['sum'])
+              let weightedRate = rate * pop / popSum
+              this.fullAvgData3[currYear][i]['avg'] += weightedRate
+            }
+          }
+        }
+
+        // }
       }
 
       //collects info to find which profile appears the most in a County
@@ -479,19 +526,16 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
 
       }
-      console.log("carmen data: ", this.dataCarmen, this.colorCategories, this.avgDataCat1)
-
-      this.columns = Object.keys(groceryData[0])
       this.columns.push('--')
       this.columns.push('nsdoh_profiles')
       this.columns.sort()
 
-      this.isLoading = false
+      // this.isLoading = false
 
       this.sendData()
       this.loadAndInitializeMap()
     } catch (error) {
-      console.error('Error loading CSV data:', error);
+      console.error('Error loading CSV data from server:', error);
     }
   }
 
@@ -513,7 +557,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.useNewMap = index === 1 ? true : false
 
       let mapPath = this.currentZoomLevel >= 9 ? `tiles_no_redline/${map}` : map
-      console.log("map path: ", mapPath)
 
       this.http.get(`./assets/maps/${mapPath}`).subscribe({
         next: (data) => {
@@ -536,8 +579,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   // layerControl
 
   initializesMap(area: any): void {
-
-
     const mapContainer = document.getElementById('map-container');
 
     if (!mapContainer) {
@@ -775,13 +816,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             // let state = d['properties'].STATE_NAME
             // let county = d['properties'].COUNTY
             let id = currentZoom < 9 ? d['properties'].STCOFIPS : d['properties'].FIPS
-            const profile = currentZoom < 9 ? (avgDataCarmen[id] !== undefined ? avgDataCarmen[id]['mostFreq'] : "Profile 9") : valuemapCarmen.get(id)
+            const profile = currentZoom < 9 ? (avgDataCarmen[id] !== undefined ? avgDataCarmen[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
             return {
               pane: pane,
               color: '#2a2a2a',
               opacity: .6,
               weight: 1,
-              // fillColor: 'tomato',
               fillColor: color2(profile),
               fillOpacity: .9,
             };
@@ -1040,10 +1080,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   onYearChange(year) {
     this.selectedYear = year.toString()
-    console.time("Function Execution Time");
-    this.loadAndInitializeMap()
-    console.timeEnd("Function Execution Time");
-
+    // this.loadAndInitializeMap()
+    this.resetVariables()
+    this.loadCSVData()
   }
 
   legendControl

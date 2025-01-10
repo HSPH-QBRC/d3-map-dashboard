@@ -100,7 +100,6 @@ export class SidebarComponent implements OnChanges {
         }
       }
     }
-    console.log("selected: ", this.selectedCol1, this.selectedCol2, this.selectedCol3)
     this.showYears = true
     this.showCols = true
   }
@@ -168,7 +167,6 @@ export class SidebarComponent implements OnChanges {
       let message = 'Currently we are only able to display 3 columns max right now'
       this.onErrorSnackbar(message)
     }
-    console.log("checkbox change: ", index, isCheck, name, this.columns)
     if (index === 0) {
       if (isCheck === true) {
         this.selectedCol1 = name
