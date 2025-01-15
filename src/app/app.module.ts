@@ -11,7 +11,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {MatCardModule} from '@angular/material/card';
 import {MatIconModule} from '@angular/material/icon';
-import { CountyMapComponent } from './county-map/county-map.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -28,7 +27,6 @@ import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-m
   declarations: [
     AppComponent,
     LoadingSpinnerComponent,
-    CountyMapComponent,
     SidebarComponent,
     LeafletMapComponent,
     LeafletMapLambdaApiComponent

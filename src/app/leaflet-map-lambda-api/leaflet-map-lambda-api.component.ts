@@ -212,34 +212,136 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   carmenData = []
 
   offset = 0
+  // fetchData = (category): Promise<void> => {
+  //   return new Promise((resolve, reject) => {
+  //     const fetchNextBatch = () => {
+  //       this.http
+  //         // .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${this.offset}`)
+  //         .get(`https://6vberk19ak.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${this.offset}`)
+  //         .subscribe(
+  //           (data: any) => {
+  //             if (data && data.message !== 'No more rows available.') {
+  //               if (category === 'grocery') {
+  //                 this.groceryData.push(...data);
+  //               } else if (category === 'carmen') {
+  //                 this.carmenData.push(...data)
+  //               }
+  //               this.offset += 1; // Increment offset for the next batch
+  //               fetchNextBatch(); // Fetch the next batch
+  //             } else {
+  //               console.log("All data fetched");
+  //               resolve(); // Resolve the promise when all data is fetched
+  //             }
+  //           },
+  //           (error) => {
+  //             console.error("Error fetching data:", error);
+  //             reject(error); // Reject the promise if an error occurs
+  //           }
+  //         );
+  //     };
+
+  //     fetchNextBatch(); // Start the recursive fetching
+  //   });
+  // };
+  // fetchData = (category): Promise<void> => {
+  //   const maxBatch = 3; // Number of requests to fetch in parallel
+  //   const batchPromises = [];
+
+  //   for (let i = 0; i < maxBatch; i++) {
+  //     const currentOffset = this.offset + i; // Calculate the offset for this batch
+  //     batchPromises.push(
+  //       this.http
+  //         // .get(`https://6vberk19ak.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${currentOffset}`)
+  //         .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${currentOffset}`)
+  //         .toPromise()
+  //     );
+  //   }
+
+  //   return Promise.all(batchPromises)
+  //     .then((results: any[]) => {
+  //       results.forEach((data, index) => {
+  //         if (data && data.message !== 'No more rows available.') {
+  //           if (category === 'grocery') {
+  //             this.groceryData.push(...data);
+  //           } else if (category === 'carmen') {
+  //             this.carmenData.push(...data);
+  //           }
+  //         }
+  //       });
+  //       this.offset += maxBatch; // Increment offset by the number of parallel requests
+  //       console.log("All batches fetched");
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error fetching data:", error);
+  //     });
+  // };
+
   fetchData = (category): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const fetchNextBatch = () => {
-        this.http
-          .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${this.offset}`)
-          .subscribe(
-            (data: any) => {
-              if (data && data.message !== 'No more rows available.') {
-                if (category === 'grocery') {
-                  this.groceryData.push(...data);
-                } else if (category === 'carmen') {
-                  this.carmenData.push(...data)
-                }
-                this.offset += 1; // Increment offset for the next batch
-                fetchNextBatch(); // Fetch the next batch
-              } else {
-                console.log("All data fetched");
-                resolve(); // Resolve the promise when all data is fetched
+      // const batchPromises = []; // Array to hold all batch promises
+      let batchCount = 0; // Keep track of the number of batches
+      let done = false; // Flag to track if all data has been fetched
+
+      // Function to fetch a batch of data
+      const fetchBatch = (offset) => {
+        return this.http
+          .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${offset}`)
+          .toPromise()
+          .then((data: any) => {
+            // Check if there is still data or if it's the last batch
+            if (data && data.message !== 'No more rows available.') {
+              if (category === 'grocery') {
+                this.groceryData.push(...data);
+              } else if (category === 'carmen') {
+                this.carmenData.push(...data);
               }
-            },
-            (error) => {
-              console.error("Error fetching data:", error);
-              reject(error); // Reject the promise if an error occurs
+              batchCount++;
+              return true; // Indicate that data was received
+            } else {
+              done = true; // Mark as done when the backend returns no more data
+              return false; // No more data to process
             }
-          );
+          });
       };
 
-      fetchNextBatch(); // Start the recursive fetching
+      // Function to fetch in parallel, dynamically until all data is fetched
+      const fetchNextBatch = () => {
+        if (done) {
+          // If all data is fetched, resolve the promise
+          console.log("All data fetched");
+          resolve();
+          return;
+        }
+
+        // Fetch a batch of data
+        const batchPromisesCurrent = [];
+        const startOffset = this.offset + batchCount; // Calculate offset dynamically based on current batch count
+        const numberOfParallelReq = 5
+
+        for (let i = 0; i < numberOfParallelReq; i++) { // You can adjust the number of parallel requests here
+          batchPromisesCurrent.push(fetchBatch(startOffset + i));
+        }
+
+        // Wait for the current batch to complete
+        Promise.all(batchPromisesCurrent)
+          .then((results) => {
+            // If we have fetched any data, recursively call fetchNextBatch to continue
+            if (results.some((result) => result === true)) {
+              fetchNextBatch(); // Continue fetching if there was data returned
+            } else {
+              // No more data available, stop
+              done = true;
+              resolve();
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+            reject(error); // Reject the promise if an error occurs
+          });
+      };
+
+      // Start the recursive fetching
+      fetchNextBatch();
     });
   };
 
@@ -262,7 +364,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.isLoading = true
         await this.fetchData('grocery')
         this.isLoading = false
-        console.log("grocery data: ", this.groceryData)
         console.timeEnd('grocery time')
       }
 
