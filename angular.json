@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "test-d3-leaflet": {
+    "d3-map-dashboard": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -20,7 +20,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/test-d3-leaflet",
+            "outputPath": "dist/d3-map-dashboard",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -76,10 +76,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "test-d3-leaflet:build:production"
+              "browserTarget": "d3-map-dashboard:build:production"
             },
             "development": {
-              "browserTarget": "test-d3-leaflet:build:development"
+              "browserTarget": "d3-map-dashboard:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -87,7 +87,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "test-d3-leaflet:build"
+            "browserTarget": "d3-map-dashboard:build"
           }
         },
         "test": {
@@ -112,5 +112,5 @@
       }
     }
   },
-  "defaultProject": "test-d3-leaflet"
+  "defaultProject": "d3-map-dashboard"
 }

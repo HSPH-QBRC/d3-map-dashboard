@@ -212,69 +212,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   carmenData = []
 
   offset = 0
-  // fetchData = (category): Promise<void> => {
-  //   return new Promise((resolve, reject) => {
-  //     const fetchNextBatch = () => {
-  //       this.http
-  //         // .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${this.offset}`)
-  //         .get(`https://6vberk19ak.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${this.offset}`)
-  //         .subscribe(
-  //           (data: any) => {
-  //             if (data && data.message !== 'No more rows available.') {
-  //               if (category === 'grocery') {
-  //                 this.groceryData.push(...data);
-  //               } else if (category === 'carmen') {
-  //                 this.carmenData.push(...data)
-  //               }
-  //               this.offset += 1; // Increment offset for the next batch
-  //               fetchNextBatch(); // Fetch the next batch
-  //             } else {
-  //               console.log("All data fetched");
-  //               resolve(); // Resolve the promise when all data is fetched
-  //             }
-  //           },
-  //           (error) => {
-  //             console.error("Error fetching data:", error);
-  //             reject(error); // Reject the promise if an error occurs
-  //           }
-  //         );
-  //     };
-
-  //     fetchNextBatch(); // Start the recursive fetching
-  //   });
-  // };
-  // fetchData = (category): Promise<void> => {
-  //   const maxBatch = 3; // Number of requests to fetch in parallel
-  //   const batchPromises = [];
-
-  //   for (let i = 0; i < maxBatch; i++) {
-  //     const currentOffset = this.offset + i; // Calculate the offset for this batch
-  //     batchPromises.push(
-  //       this.http
-  //         // .get(`https://6vberk19ak.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${currentOffset}`)
-  //         .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${currentOffset}`)
-  //         .toPromise()
-  //     );
-  //   }
-
-  //   return Promise.all(batchPromises)
-  //     .then((results: any[]) => {
-  //       results.forEach((data, index) => {
-  //         if (data && data.message !== 'No more rows available.') {
-  //           if (category === 'grocery') {
-  //             this.groceryData.push(...data);
-  //           } else if (category === 'carmen') {
-  //             this.carmenData.push(...data);
-  //           }
-  //         }
-  //       });
-  //       this.offset += maxBatch; // Increment offset by the number of parallel requests
-  //       console.log("All batches fetched");
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error fetching data:", error);
-  //     });
-  // };
+  showRedline = false
 
   fetchData = (category): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -356,15 +294,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       // }
 
       if (this.selectedCol1 === 'nsdoh_profiles') {
-        console.time('carmen time')
+        console.time('fetching Carmen data')
         await this.fetchData('carmen')
-        console.timeEnd('carmen time')
+        console.timeEnd('fetching Carmen data')
       } else {
-        console.time('grocery time')
+        console.time('fetching Grocery data')
         this.isLoading = true
         await this.fetchData('grocery')
         this.isLoading = false
-        console.timeEnd('grocery time')
+        console.timeEnd('fetching Grocery data')
       }
 
 
@@ -640,7 +578,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
   }
 
-  // currentCensusTractsMapArr = ['tile_id_21_5.json']
   currentCensusTractsMapArr = []
   fullMapArr = ['svi_2000_us_county_11_25_test.json']
   useNewMap = true
@@ -662,10 +599,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.http.get(`./assets/maps/${mapPath}`).subscribe({
         next: (data) => {
           this.initializesMap(data);
-          // if (!this.legendControl) {
           this.addD3Legend();
-          // }
-
         },
         error: (err) => {
           console.error('Error loading JSON:', err);
@@ -745,7 +679,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         });
       }
     })
-    // .addTo(this.map!);
 
     const openStreetMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -755,22 +688,79 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     const openTopoMapLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'
     });
-    // openTopoMapLayer.addTo(this.map);
 
     const cartoDBLightLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
     });
-    // cartoDBLightLayer.addTo(this.map);
 
     const humanitarianOSMLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
-    // humanitarianOSMLayer.addTo(this.map);
 
     const wikimediaLayer = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://foundation.wikimedia.org/wiki/Maps_Terms_of_Use">Wikimedia Maps</a>'
     });
-    // wikimediaLayer.addTo(this.map);
+
+    // Create the legend element
+    const legend = L.control({ position: 'bottomright' });
+    legend.onAdd = () => {
+      const div = L.DomUtil.create('div', 'legend');
+
+      // Use D3 to append the SVG and its elements
+      const svg = d3.select(div)
+        .append('svg')
+        .attr('id', 'legend-container')
+        .attr('width', 95)
+        .attr('height', 100);
+
+      // Add the title
+      svg.append('text')
+        .attr('class', 'legend-title')
+        .attr('x', 0)
+        .attr('y', 15)
+        .text('Redlining Districts');
+
+      // Define legend data
+      const legendData = [
+        { color: '#76a865', label: 'Best', y: 30 },
+        { color: '#7cb5bd', label: 'Still Desirable', y: 45 },
+        { color: '#ffff00', label: 'Definitely Declining', y: 60 },
+        { color: '#d9838d', label: 'Hazardous', y: 75 },
+        { color: '#000000', label: 'Commercial', y: 90 },
+      ];
+
+      // Add legend entries
+      legendData.forEach((entry) => {
+        svg.append('circle')
+          .attr('class', 'legend-circle')
+          .attr('cx', 10)
+          .attr('cy', entry.y)
+          .attr('r', 4)
+          .attr('fill', entry.color);
+
+        svg.append('text')
+          .attr('class', 'legend-text')
+          .attr('x', 20)
+          .attr('y', entry.y)
+          .attr('alignment-baseline', 'middle')
+          .text(entry.label);
+      });
+
+      return div;
+    };
+
+    // Add event listeners for layer visibility toggling
+    redlineLayer.on('add', () => {
+      this.showRedline = true
+      console.log('Redline Layer is now displayed.', this.showRedline);
+      legend.addTo(this.map);
+    });
+
+    redlineLayer.on('remove', () => {
+      this.showRedline = false
+      console.log('Redline Layer is now hidden.', this.showRedline);
+      legend.remove();
+    });
 
     // Define layer control
     const baseLayers = {
@@ -1461,7 +1451,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .text(`${Math.ceil(this.max2 * 10) / 10}`);
         }
       }
-
 
     }
   }
