@@ -246,7 +246,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       const fetchNextBatch = () => {
         if (done) {
           // If all data is fetched, resolve the promise
-          console.log("All data fetched");
           resolve();
           return;
         }
@@ -565,7 +564,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
 
       }
-      this.columns.push('--')
+      // this.columns.push('--')
       this.columns.push('nsdoh_profiles')
       this.columns.sort()
 
@@ -672,10 +671,24 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               <strong> Commericial:</strong> ${commercial || 'N/A'}<br>
               <strong> Residential:</strong> ${residential || 'N/A'}<br>
             `;
-        layer.bindTooltip(redLineTooltip, {
-          permanent: false,  // Tooltip will appear only on hover
-          direction: 'top',   // Tooltip position relative to the feature
-          opacity: 1          // Make the tooltip fully opaque
+        // layer.bindTooltip(redLineTooltip, {
+        //   permanent: false,  // Tooltip will appear only on hover
+        //   direction: 'top',   // Tooltip position relative to the feature
+        //   opacity: 1          // Make the tooltip fully opaque
+        // });
+
+        layer.on('click', function () {
+          layer.bindTooltip(redLineTooltip, {
+            permanent: false, // Tooltip will disappear when clicking elsewhere
+            direction: 'top', // Tooltip position relative to the layer
+            opacity: 1        // Make the tooltip fully opaque
+          });
+          layer.openTooltip(); // Display the tooltip immediately upon click
+        });
+
+        // Optionally, add a close handler if clicking elsewhere is needed
+        layer.on('mouseout', function () {
+          layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
         });
       }
     })
@@ -752,13 +765,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     // Add event listeners for layer visibility toggling
     redlineLayer.on('add', () => {
       this.showRedline = true
-      console.log('Redline Layer is now displayed.', this.showRedline);
       legend.addTo(this.map);
     });
 
     redlineLayer.on('remove', () => {
       this.showRedline = false
-      console.log('Redline Layer is now hidden.', this.showRedline);
       legend.remove();
     });
 
@@ -904,8 +915,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         } else if (!useBivariate) {
           if (selectedCol1 === 'nsdoh_profiles') {
             const pane = 'tractsPane';
-            // let state = d['properties'].STATE_NAME
-            // let county = d['properties'].COUNTY
             let id = currentZoom < 9 ? d['properties'].STCOFIPS : d['properties'].FIPS
             const profile = currentZoom < 9 ? (avgDataCarmen[id] !== undefined ? avgDataCarmen[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
             return {
@@ -949,11 +958,25 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
-            layer.bindTooltip(nsdohProfileToolTip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
+            // layer.bindTooltip(nsdohProfileToolTip, {
+            //   permanent: false,  // Tooltip will appear only on hover
+            //   direction: 'top',   // Tooltip position relative to the feature
+            //   opacity: 1          // Make the tooltip fully opaque
+            // });
+            layer.on('click', function () {
+              layer.bindTooltip(nsdohProfileToolTip, {
+                permanent: false, // Tooltip will disappear when clicking elsewhere
+                direction: 'top', // Tooltip position relative to the layer
+                opacity: 1        // Make the tooltip fully opaque
+              });
+              layer.openTooltip(); // Display the tooltip immediately upon click
             });
+
+            // Optionally, add a close handler if clicking elsewhere is needed
+            layer.on('mouseout', function () {
+              layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
+            });
+            
           } else {
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
@@ -967,10 +990,23 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${county || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
-            layer.bindTooltip(nsdohProfileToolTip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
+            // layer.bindTooltip(nsdohProfileToolTip, {
+            //   permanent: false,  // Tooltip will appear only on hover
+            //   direction: 'top',   // Tooltip position relative to the feature
+            //   opacity: 1          // Make the tooltip fully opaque
+            // });
+            layer.on('click', function () {
+              layer.bindTooltip(nsdohProfileToolTip, {
+                permanent: false, // Tooltip will disappear when clicking elsewhere
+                direction: 'top', // Tooltip position relative to the layer
+                opacity: 1        // Make the tooltip fully opaque
+              });
+              layer.openTooltip(); // Display the tooltip immediately upon click
+            });
+
+            // Optionally, add a close handler if clicking elsewhere is needed
+            layer.on('mouseout', function () {
+              layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
           }
@@ -992,10 +1028,23 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             if (selectedCol2 !== '--') {
               countyTooltip += `<strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>`;
             }
-            layer.bindTooltip(countyTooltip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
+            // layer.bindTooltip(countyTooltip, {
+            //   permanent: false,  // Tooltip will appear only on hover
+            //   direction: 'top',   // Tooltip position relative to the feature
+            //   opacity: 1          // Make the tooltip fully opaque
+            // });
+            layer.on('click', function () {
+              layer.bindTooltip(countyTooltip, {
+                permanent: false, // Tooltip will disappear when clicking elsewhere
+                direction: 'top', // Tooltip position relative to the layer
+                opacity: 1        // Make the tooltip fully opaque
+              });
+              layer.openTooltip(); // Display the tooltip immediately upon click
+            });
+
+            // Optionally, add a close handler if clicking elsewhere is needed
+            layer.on('mouseout', function () {
+              layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
           } else {
             let fips = feature.properties.FIPS
@@ -1015,10 +1064,24 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> ${selectedCol1}:</strong> ${val1.toFixed(2) || 'N/A'}<br>
                 <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
               `;
-            layer.bindTooltip(censusTractTooltip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
+            // layer.bindTooltip(censusTractTooltip, {
+            //   permanent: false,  // Tooltip will appear only on hover
+            //   direction: 'top',   // Tooltip position relative to the feature
+            //   opacity: 1          // Make the tooltip fully opaque
+            // });
+            // Add click event listener to show the tooltip
+            layer.on('click', function () {
+              layer.bindTooltip(censusTractTooltip, {
+                permanent: false, // Tooltip will disappear when clicking elsewhere
+                direction: 'top', // Tooltip position relative to the layer
+                opacity: 1        // Make the tooltip fully opaque
+              });
+              layer.openTooltip(); // Display the tooltip immediately upon click
+            });
+
+            // Optionally, add a close handler if clicking elsewhere is needed
+            layer.on('mouseout', function () {
+              layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
           }
         }
@@ -1060,10 +1123,24 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
             <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
           `;
-            layer.bindTooltip(countyTooltip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
+            // layer.bindTooltip(countyTooltip, {
+            //   permanent: false,  // Tooltip will appear only on hover
+            //   direction: 'top',   // Tooltip position relative to the feature
+            //   opacity: 1          // Make the tooltip fully opaque
+            // });
+
+            layer.on('click', function () {
+              layer.bindTooltip(countyTooltip, {
+                permanent: false, // Tooltip will disappear when clicking elsewhere
+                direction: 'top', // Tooltip position relative to the layer
+                opacity: 1        // Make the tooltip fully opaque
+              });
+              layer.openTooltip(); // Display the tooltip immediately upon click
+            });
+
+            // Optionally, add a close handler if clicking elsewhere is needed
+            layer.on('mouseout', function () {
+              layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
           } else {
             let fips = feature.properties.FIPS
@@ -1081,12 +1158,28 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               <strong> ${selectedCol1}:</strong> ${valuemap1.get(fips) || 'N/A'}<br>
               <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips) || 'N/A'}<br>
             `;
-            layer.bindTooltip(censusTractTooltip, {
-              permanent: false,
-              direction: 'top',
-              opacity: 1
+            // layer.bindTooltip(censusTractTooltip, {
+            //   permanent: false,
+            //   direction: 'top',
+            //   opacity: 1
+            // });
+            layer.on('click', function () {
+              layer.bindTooltip(censusTractTooltip, {
+                permanent: false, // Tooltip will disappear when clicking elsewhere
+                direction: 'top', // Tooltip position relative to the layer
+                opacity: 1        // Make the tooltip fully opaque
+              });
+              layer.openTooltip(); // Display the tooltip immediately upon click
             });
+    
+            // Optionally, add a close handler if clicking elsewhere is needed
+            layer.on('mouseout', function () {
+              layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
+            });
+
+            
           }
+
         }
       }).addTo(this.map);
       areaLayer2.addTo(this.map);

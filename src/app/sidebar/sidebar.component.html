@@ -14,7 +14,7 @@
         <br>
         <br>
         <mat-form-field class="example-margin" appearance="outline">
-            <mat-label>Enter State Name</mat-label>
+            <mat-label>Zoom To (Enter State Name)</mat-label>
             <input matInput [(ngModel)]="stateName" placeholder="e.g. California" (keydown.enter)="sendData()">
             <button *ngIf="stateName" matSuffix mat-icon-button aria-label="Clear" (click)="stateName=null">
                 <mat-icon>close</mat-icon>
@@ -22,7 +22,7 @@
         </mat-form-field>
         <br>
 
-        <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true">
+        <button mat-button class="btn-toggle align-items-center rounded" [attr.aria-expanded]="true" (click)="showMore('cols')">
             Columns
         </button>
         <br>
@@ -32,8 +32,8 @@
                     style="list-style: none; margin: 4px 0;">
                     <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
                         [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
-                        (change)="onCheckboxChange(i, col.checked, col.name)">
-                        {{ col.name }}
+                        (change)="onCheckboxChange(i, col.checked, col.name)" class="wrap-checkbox">
+                        {{ groceryDataDictionary[col.name] ? groceryDataDictionary[col.name] : col.name}}
                     </mat-checkbox>
                 </li>
             </ul>

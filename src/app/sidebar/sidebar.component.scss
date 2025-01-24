@@ -89,6 +89,22 @@ a.mat-button {
     .mat-radio-label {
         margin-bottom: 5px !important;
     }
+
+    .wrap-checkbox .mat-checkbox-label {
+        white-space: normal; /* Allows text to wrap */
+        word-wrap: break-word; /* Breaks long words if necessary */
+        line-height: 1.2; /* Adjust line height for better readability */
+        text-transform: capitalize;
+        margin-right: 20px;
+        font-size: 12px;
+        opacity: .9;
+    }
+    
+    .btn-toggle:hover {
+        cursor: pointer; /* Changes the mouse pointer to a pointer */
+        background: transparent !important; /* Keeps the original background (no change) */
+        box-shadow: none; /* Ensures no shadow effect is applied */
+    }
 }
 
 .button-container {

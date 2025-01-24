@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild, OnInit } from '@angular/core';
 import { MatSlider } from '@angular/material/slider';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
@@ -8,7 +8,7 @@ import { HttpClient } from '@angular/common/http';
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss']
 })
-export class SidebarComponent implements OnChanges {
+export class SidebarComponent implements OnChanges, OnInit {
   @Input() sidebarData!: { years: string[], columns: string[], maps: string[] };
   @ViewChild('slider') slider: MatSlider;
   @Output() dataToParent = new EventEmitter<any>();
@@ -44,6 +44,14 @@ export class SidebarComponent implements OnChanges {
   showMoreCols = false
 
   useBivariate: boolean = true
+
+  groceryDataDictionary = {}
+
+  ngOnInit(): void {
+    this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {
+      this.groceryDataDictionary = data
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (Object.keys(this.sidebarData['years']).length > 0) {
