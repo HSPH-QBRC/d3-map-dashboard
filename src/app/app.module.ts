@@ -23,6 +23,7 @@ import { LeafletMapComponent } from './leaflet-map/leaflet-map.component';
 import { HttpClientModule } from '@angular/common/http';
 import { MatInputModule } from '@angular/material/input';
 import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-map-lambda-api.component';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -50,7 +51,8 @@ import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-m
     MatRadioModule,
     MatSnackBarModule,
     HttpClientModule,
-    MatInputModule,
+    MatInputModule
+
   ],
   providers: [],
   bootstrap: [AppComponent]

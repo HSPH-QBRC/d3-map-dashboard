@@ -36,7 +36,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   layerControl!: L.Control.Layers;
 
   yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
-  columns = ['tract_fips10', 'year', 'population', 'aland10', 'count_445110', 'count_sales_445110', 'count_emp_445110', 'popden_445110', 'popden_sales_445110', 'popden_emp_445110', 'aden_445110', 'aden_sales_445110', 'aden_emp_445110', 'count_4452', 'count_sales_4452', 'count_emp_4452', 'popden_4452', 'popden_sales_4452', 'popden_emp_4452', 'aden_4452', 'aden_sales_4452', 'aden_emp_4452', 'count_452311', 'count_sales_452311', 'count_emp_452311', 'popden_452311', 'popden_sales_452311', 'popden_emp_452311', 'aden_452311', 'aden_sales_452311', 'aden_emp_452311']
+  columnsA = ['tract_fips10', 'year', 'population', 'aland10', 'count_445110', 'count_sales_445110', 'count_emp_445110', 'popden_445110', 'popden_sales_445110', 'popden_emp_445110', 'aden_445110', 'aden_sales_445110', 'aden_emp_445110', 'count_4452', 'count_sales_4452', 'count_emp_4452', 'popden_4452', 'popden_sales_4452', 'popden_emp_4452', 'aden_4452', 'aden_sales_4452', 'aden_emp_4452', 'count_452311', 'count_sales_452311', 'count_emp_452311', 'popden_452311', 'popden_sales_452311', 'popden_emp_452311', 'aden_452311', 'aden_sales_452311', 'aden_emp_452311']
+  columnsB = ['nsdoh_profiles']
   minYear = 1900
   maxYear = 2099
   showYears = false
@@ -159,7 +160,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   sendData() {
     this.sidebarData = {
       "years": this.yearCols,
-      "columns": this.columns,
+      "columnsA": this.columnsA,
+      "columnsB": this.columnsB,
       "selectedYear": this.selectedYear,
       "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3],
       "stateName": this.stateName
@@ -216,14 +218,24 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   fetchData = (category): Promise<void> => {
     return new Promise((resolve, reject) => {
-      // const batchPromises = []; // Array to hold all batch promises
       let batchCount = 0; // Keep track of the number of batches
       let done = false; // Flag to track if all data has been fetched
 
       // Function to fetch a batch of data
       const fetchBatch = (offset) => {
+        let queryURL = `https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&offset=${offset}`;
+        if (this.selectedCol1 !== "--") {
+          queryURL += `&column1=${this.selectedCol1}`;
+        }
+        if (this.selectedCol2 !== "--") {
+          queryURL += `&column2=${this.selectedCol2}`;
+        }
+        if (this.selectedCol3 !== "--") {
+          queryURL += `&column3=${this.selectedCol3}`;
+        }
+
         return this.http
-          .get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}&offset=${offset}`)
+          .get(queryURL)
           .toPromise()
           .then((data: any) => {
             // Check if there is still data or if it's the last batch
@@ -565,8 +577,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
       }
       // this.columns.push('--')
-      this.columns.push('nsdoh_profiles')
-      this.columns.sort()
+      // this.columnsB.push('nsdoh_profiles')
+      this.columnsA.sort()
+      this.columnsB.sort()
 
       // this.isLoading = false
 
@@ -976,7 +989,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
-            
+
           } else {
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
@@ -1171,13 +1184,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
             });
-    
+
             // Optionally, add a close handler if clicking elsewhere is needed
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-            
+
           }
 
         }
@@ -1364,6 +1377,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           .domain(this.colorCategories)
           .range(d3.schemeSet3);
 
+        svgLegend
+          .append("text")
+          .attr('class', 'legend-title')
+          .attr("x", 0)
+          .attr("y", -5)
+          .text(`NSDOH Profiles`)
+        // .style("font-size", "10px")
+        // .attr("alignment-baseline", "start")
+
         for (let index in this.colorCategories) {
           let cat = this.colorCategories[index]
           let indexNum = Number(index)
@@ -1379,7 +1401,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .attr("x", 20)
             .attr("y", 12 + 15 * indexNum)
             .text(`${cat}`)
-            .style("font-size", "8px")
+            .style("font-size", "10px")
             .attr("alignment-baseline", "middle")
         }
 
@@ -1409,14 +1431,14 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Rectangle for blue gradient
           svgLegend.append("rect")
-            .attr("x", 20)
+            .attr("x", 5)
             .attr("y", legendHeight - 50)
             .attr("width", 100)
             .attr("height", 10)
             .style("fill", "url(#legendGradientBlue)");
 
           svgLegend.append("text")
-            .attr("x", 15)
+            .attr("x", 0)
             .attr("y", legendHeight - 55)
             .attr("text-anchor", "start")
             .attr("font-size", 8)
@@ -1425,7 +1447,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Text labels for blue gradient
           svgLegend.append("text")
-            .attr("x", 15)
+            .attr("x", 0)
             .attr("y", legendHeight - 55 + 25)
             .attr("text-anchor", "start")
             .attr("font-size", 8)
@@ -1460,7 +1482,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Rectangle for yellow gradient
           svgLegend.append("rect")
-            .attr("x", 20)
+            .attr("x", 5)
             .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
             .attr("width", 100)
             .attr("height", 10)
@@ -1468,7 +1490,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Text labels for yellow gradient
           svgLegend.append("text")
-            .attr("x", 15)
+            .attr("x", 0)
             .attr("y", legendHeight - 40 + separation + 10)
             .attr("text-anchor", "start")
             .attr("font-size", 8)
@@ -1477,7 +1499,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
 
           svgLegend.append("text")
-            .attr("x", 15)
+            .attr("x", 0)
             .attr("y", legendHeight - 40 + separation + 25 + 10)
             .attr("text-anchor", "start")
             .attr("font-size", 8)
@@ -1514,7 +1536,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Rectangle for red gradient with additional vertical separation
           svgLegend.append("rect")
-            .attr("x", 20)
+            .attr("x", 5)
             .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
             .attr("width", legendWidth)
             .attr("height", 10)
@@ -1522,7 +1544,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Text labels for red gradient
           svgLegend.append("text")
-            .attr("x", 15)
+            .attr("x", 0)
             .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
             .attr("text-anchor", "start")
             .attr("font-size", 8)
@@ -1530,7 +1552,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
 
           svgLegend.append("text")
-            .attr("x", 15)
+            .attr("x", 0)
             .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
             .attr("text-anchor", "start")
             .attr("font-size", 8)

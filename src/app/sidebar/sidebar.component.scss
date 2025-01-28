@@ -91,9 +91,9 @@ a.mat-button {
     }
 
     .wrap-checkbox .mat-checkbox-label {
-        white-space: normal; /* Allows text to wrap */
-        word-wrap: break-word; /* Breaks long words if necessary */
-        line-height: 1.2; /* Adjust line height for better readability */
+        white-space: normal; 
+        word-wrap: break-word;
+        line-height: 1.2;
         text-transform: capitalize;
         margin-right: 20px;
         font-size: 12px;
@@ -101,9 +101,9 @@ a.mat-button {
     }
     
     .btn-toggle:hover {
-        cursor: pointer; /* Changes the mouse pointer to a pointer */
-        background: transparent !important; /* Keeps the original background (no change) */
-        box-shadow: none; /* Ensures no shadow effect is applied */
+        cursor: pointer;
+        background: transparent !important;
+        box-shadow: none;
     }
 }
 
@@ -127,6 +127,10 @@ a.mat-button {
 .showmore-button:focus {
     outline: none;
 }
+.showmore-paragraph{
+    margin-bottom: 0px;
+    text-align: right;
+}
 
 .title-container {
     margin-top: 30px;
@@ -135,4 +139,8 @@ a.mat-button {
 .dashboard-title {
     font-size: 36px;
     color: rgba(90, 90, 90, 0.9);
+}
+
+.treeButton{
+    line-height: 20px;
 }

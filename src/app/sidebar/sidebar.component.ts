@@ -21,7 +21,8 @@ export class SidebarComponent implements OnChanges, OnInit {
 
   isLoading = true;
   yearCols = [];
-  columns = [];
+  columnsA = [];
+  columnsB = [];
   selectedYear = '2000'
   selectedCol1 = ''
   selectedCol2 = ''
@@ -36,12 +37,14 @@ export class SidebarComponent implements OnChanges, OnInit {
   prevUseBivariate = true
 
   showYears = false
-  showCols = false
+  showColsA = false
+  showColsB = false
 
   minYear = Infinity
   maxYear = -Infinity
 
-  showMoreCols = false
+  showMoreColsA = false
+  showMoreColsB = false
 
   useBivariate: boolean = true
 
@@ -57,7 +60,8 @@ export class SidebarComponent implements OnChanges, OnInit {
     if (Object.keys(this.sidebarData['years']).length > 0) {
       this.isLoading = false
       this.showYears = false
-      this.showCols = false
+      this.showColsA = false
+      this.showColsB = false
 
       this.selectedYear = this.sidebarData['selectedYear']
       this.selectedCol1 = this.sidebarData['selectedCol'][0]
@@ -76,31 +80,52 @@ export class SidebarComponent implements OnChanges, OnInit {
   }
 
   organizeData() {
-    this.columns = []
-    let tempArrCols = []
+    this.columnsA = []
+    this.columnsB = []
+    let tempArrColsA = []
+    let tempArrColsB = []
     for (let category in this.sidebarData) {
-      if (category === 'columns') {
+      if (category === 'columnsA') {
         for (let data of this.sidebarData[category]) {
           let checkboxObj = {
             name: data,
             checked: (data === this.selectedCol1 || data === this.selectedCol2 || data === this.selectedCol3) ? true : false
           }
           if (this.selectedCol1 === data) {
-            tempArrCols[0] = checkboxObj
+            tempArrColsA[0] = checkboxObj
           } else if (this.selectedCol2 === data) {
-            tempArrCols[1] = checkboxObj
+            tempArrColsA[1] = checkboxObj
           }
           else if (this.selectedCol3 === data) {
-            tempArrCols[2] = checkboxObj
+            tempArrColsA[2] = checkboxObj
           } else {
-            this.columns.push(checkboxObj)
+            this.columnsA.push(checkboxObj)
           }
 
         }
-        let combinedArr = [...tempArrCols, ...this.columns]
-        this.columns = combinedArr
-      }
-      else if (category === 'years') {
+        let combinedArr = [...tempArrColsA, ...this.columnsA]
+        this.columnsA = combinedArr
+      } else if (category === 'columnsB') {
+        for (let data of this.sidebarData[category]) {
+          let checkboxObj = {
+            name: data,
+            checked: (data === this.selectedCol1 || data === this.selectedCol2 || data === this.selectedCol3) ? true : false
+          }
+          if (this.selectedCol1 === data) {
+            tempArrColsB[0] = checkboxObj
+          } else if (this.selectedCol2 === data) {
+            tempArrColsB[1] = checkboxObj
+          }
+          else if (this.selectedCol3 === data) {
+            tempArrColsB[2] = checkboxObj
+          } else {
+            this.columnsB.push(checkboxObj)
+          }
+
+        }
+        let combinedArr = [...tempArrColsB, ...this.columnsB]
+        this.columnsB = combinedArr
+      } else if (category === 'years') {
         for (let year of this.sidebarData[category]) {
           let numYear = Number(year)
           this.minYear = Math.min(numYear, this.minYear)
@@ -109,18 +134,19 @@ export class SidebarComponent implements OnChanges, OnInit {
       }
     }
     this.showYears = true
-    this.showCols = true
+    this.showColsA = true
+    this.showColsB = true
   }
 
   sendData() {
     if (this.selectedCol1 === "--") {
       let message = 'Please select at least 1 column.'
       this.onErrorSnackbar(message)
+    } else if ((this.selectedCol1 === "nsdoh_profiles" && this.useBivariate === true)) {
+      let message = 'NSDOH Profiles currently only works on Heatmap Overlays. Please change this to continue.'
+      this.onErrorSnackbar(message)
     } else if ((this.selectedCol1 === "--" || this.selectedCol2 === "--") && this.useBivariate === true) {
       let message = 'In order to display Bivariate plot, you must select 2 columns.'
-      this.onErrorSnackbar(message)
-    } else if ((this.selectedCol1 === "nsdoh_profiles" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--") || this.selectedCol2 === "nsdoh_profiles" || this.selectedCol3 === "nsdoh_profiles") {
-      let message = 'NSDOH Profiles must be the only column selected.'
       this.onErrorSnackbar(message)
     } else {
       const data = {
@@ -131,7 +157,8 @@ export class SidebarComponent implements OnChanges, OnInit {
         useBivariate: this.useBivariate,
         stateName: this.stateName
       }
-      this.showMoreCols = false;
+      this.showMoreColsA = false;
+      this.showMoreColsB = false;
 
       if (this.useBivariate === this.prevUseBivariate && this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.selectedCol3 === this.prevCol3 && this.stateName !== this.prevStateName) {
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
@@ -150,8 +177,10 @@ export class SidebarComponent implements OnChanges, OnInit {
   }
 
   showMore(name) {
-    if (name === 'cols') {
-      this.showMoreCols = !this.showMoreCols
+    if (name === 'colsA') {
+      this.showMoreColsA = !this.showMoreColsA
+    } else if (name === 'colsB') {
+      this.showMoreColsB = !this.showMoreColsB
     }
   }
 
@@ -171,54 +200,79 @@ export class SidebarComponent implements OnChanges, OnInit {
   }
 
   onCheckboxChange(index, isCheck, name) {
-    if (isCheck === true && this.selectedCol1 !== "--" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--") {
+    console.log("oncheckbox: ", index, isCheck, name)
+    if (isCheck && this.selectedCol1 !== "--" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--" && name !== 'nsdoh_profiles') {
       let message = 'Currently we are only able to display 3 columns max right now'
       this.onErrorSnackbar(message)
     }
-    if (index === 0) {
-      if (isCheck === true) {
+
+    if ((name === 'nsdoh_profiles' && isCheck) || (this.selectedCol1 === 'nsdoh_profiles' && name !== 'nsdoh_profiles' && isCheck)) {
+      this.selectedCol1 = name
+      this.selectedCol2 = "--"
+      this.selectedCol3 = "--"
+    }
+    else if (isCheck) {
+      if (this.selectedCol1 === "--") {
         this.selectedCol1 = name
-      } else {
-        if (this.selectedCol2 !== "--") {
-          this.selectedCol1 = this.selectedCol2
-          this.selectedCol2 = this.selectedCol3
-          this.selectedCol3 = "--"
-        } else {
-          this.selectedCol1 = "--"
-        }
-
-      }
-    }
-    else if (index === 1) {
-      if (isCheck === true) {
+      } else if (this.selectedCol2 === "--") {
         this.selectedCol2 = name
-      } else {
-        if (this.selectedCol3 !== "--") {
-          this.selectedCol2 = this.selectedCol3
-          this.selectedCol3 = "--"
-        } else {
-          this.selectedCol2 = "--"
-        }
-
-      }
-    }
-    else if (index === 2) {
-      if (isCheck === true) {
+      } else if (this.selectedCol3 === "--") {
         this.selectedCol3 = name
-      } else {
+      }
+    } else if (!isCheck) {
+      if (index === 0) {
+        this.selectedCol1 = this.selectedCol2
+        this.selectedCol2 = this.selectedCol3
+        this.selectedCol3 = "--"
+      } else if (index === 1) {
+        this.selectedCol2 = this.selectedCol3
+        this.selectedCol3 = "--"
+      } else if (index === 2) {
         this.selectedCol3 = "--"
       }
-    } else {
-      if (isCheck === true) {
-        if (this.selectedCol1 === "--") {
-          this.selectedCol1 = name
-        } else if (this.selectedCol2 === "--") {
-          this.selectedCol2 = name
-        } else if (this.selectedCol3 === "--") {
-          this.selectedCol3 = name
-        }
-      }
     }
+    // else if (index === 0) {
+    //   if (isCheck === true) {
+    //     this.selectedCol1 = name
+    //   } else {
+    //     if (this.selectedCol2 !== "--") {
+    //       this.selectedCol1 = this.selectedCol2
+    //       this.selectedCol2 = this.selectedCol3
+    //       this.selectedCol3 = "--"
+    //     } else {
+    //       this.selectedCol1 = "--"
+    //     }
+    //   }
+    // } else if (index === 1) {
+    //   if (isCheck === true) {
+    //     this.selectedCol2 = name
+    //   } else {
+    //     if (this.selectedCol3 !== "--") {
+    //       this.selectedCol2 = this.selectedCol3
+    //       this.selectedCol3 = "--"
+    //     } else {
+    //       this.selectedCol2 = "--"
+    //     }
+
+    //   }
+    // } else if (index === 2) {
+    //   if (isCheck === true) {
+    //     this.selectedCol3 = name
+    //   } else {
+    //     this.selectedCol3 = "--"
+    //   }
+    // } else {
+    //   if (isCheck === true) {
+    //     if (this.selectedCol1 === "--") {
+    //       this.selectedCol1 = name
+    //     } else if (this.selectedCol2 === "--") {
+    //       this.selectedCol2 = name
+    //     } else if (this.selectedCol3 === "--") {
+    //       this.selectedCol3 = name
+    //     }
+    //   }
+    // }
+    console.log("selected: ", this.selectedCol1, this.selectedCol2, this.selectedCol3)
     this.organizeData()
   }
 
