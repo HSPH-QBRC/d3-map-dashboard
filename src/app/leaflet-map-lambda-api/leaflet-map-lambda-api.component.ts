@@ -623,8 +623,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
   }
 
-  // layerControl
-
   initializesMap(area: any): void {
     const mapContainer = document.getElementById('map-container');
 
@@ -642,16 +640,16 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.map = L.map(mapContainer);
     }
 
-    const dashPattern = new L.StripePattern({
-      weight: 2, // Thickness of stripes
-      color: 'yellow', // Color of stripes
-      spaceColor: 'transparent', // Space between stripes
-      opacity: 1,
-      angle: 45, // Angle of stripes
-    });
+    // const dashPattern = new L.StripePattern({
+    //   weight: 2, // Thickness of stripes
+    //   color: 'yellow', // Color of stripes
+    //   spaceColor: 'transparent', // Space between stripes
+    //   opacity: 1,
+    //   angle: 45, // Angle of stripes
+    // });
 
-    // Add pattern to the map
-    dashPattern.addTo(this.map);
+    // // Add pattern to the map
+    // dashPattern.addTo(this.map);
 
     const redlineLayer = L.geoJSON(this.redlineData, {
       style: function (d) {
@@ -684,11 +682,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               <strong> Commericial:</strong> ${commercial || 'N/A'}<br>
               <strong> Residential:</strong> ${residential || 'N/A'}<br>
             `;
-        // layer.bindTooltip(redLineTooltip, {
-        //   permanent: false,  // Tooltip will appear only on hover
-        //   direction: 'top',   // Tooltip position relative to the feature
-        //   opacity: 1          // Make the tooltip fully opaque
-        // });
 
         layer.on('click', function () {
           layer.bindTooltip(redLineTooltip, {
@@ -965,17 +958,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             let colName = selectedCol1
             let profile = avgDataCarmen[censusTract] !== undefined ? avgDataCarmen[censusTract]['mostFreq'] : "N/A"
 
+
             let nsdohProfileToolTip = `
                 <strong> State:</strong> ${state || 'N/A'}<br>
                 <strong> County:</strong> ${county || 'N/A'}<br>
                 <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
-            // layer.bindTooltip(nsdohProfileToolTip, {
-            //   permanent: false,  // Tooltip will appear only on hover
-            //   direction: 'top',   // Tooltip position relative to the feature
-            //   opacity: 1          // Make the tooltip fully opaque
-            // });
             layer.on('click', function () {
               layer.bindTooltip(nsdohProfileToolTip, {
                 permanent: false, // Tooltip will disappear when clicking elsewhere
@@ -991,7 +980,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             });
 
           } else {
-            let state = feature.properties.STATE_NAME
+            let state = feature.properties.STATE
+            state = state.charAt(0) + state.slice(1).toLowerCase();
             let county = feature.properties.COUNTY
             let censusTract = feature.properties.FIPS
             let colName = selectedCol1
@@ -1003,11 +993,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${county || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
-            // layer.bindTooltip(nsdohProfileToolTip, {
-            //   permanent: false,  // Tooltip will appear only on hover
-            //   direction: 'top',   // Tooltip position relative to the feature
-            //   opacity: 1          // Make the tooltip fully opaque
-            // });
             layer.on('click', function () {
               layer.bindTooltip(nsdohProfileToolTip, {
                 permanent: false, // Tooltip will disappear when clicking elsewhere
@@ -1101,6 +1086,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
     }).addTo(this.map);
     areaLayer.addTo(this.map);
+    const map = this.map
 
     if (!useBivariate && selectedCol2 !== '--') {
       let areaLayer2 = L.geoJSON(area, {
@@ -1111,14 +1097,25 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
 
           let opacity = val2 / max2 + 0.2
+          const dashPattern2 = new L.StripePattern({
+            weight: 2, // Thickness of stripes
+            color: getColor(val2, min2, max2, 'red'), // Color of stripes
+            spaceColor: 'white', // Space between stripes
+            opacity: 1,
+            angle: 45, // Angle of stripes
+          });
+
+          // Add pattern to the map
+          dashPattern2.addTo(map);
           return {
             pane: pane,
             color: '#2a2a2a',
-            opacity: .6,
+            // opacity: .6,
             weight: 1,
-            fillColor: getColor(val2, min1, max1, 'red'),
-            fillOpacity: opacity,
-            fillPattern: dashPattern,
+            // fillColor: getColor(val2, min1, max1, 'red'),
+            // fillColor: 'red',
+            fillOpacity: 1,
+            fillPattern: dashPattern2,
           };
 
         },
@@ -1461,24 +1458,60 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .text(`${Math.ceil(this.max1 * 10) / 10}`);
         }
 
+
         if (this.selectedCol2 !== '--') {
           // Define the second gradient from white to yellow
-          const yellowGradient = legendGroup.append("linearGradient")
-            .attr("id", "legendGradientYellow")
-            .attr("x1", "0%")
-            .attr("y1", "0%")
-            .attr("x2", "100%")
-            .attr("y2", "0%");
+          // const yellowGradient = legendGroup.append("linearGradient")
+          //   .attr("id", "legendGradientYellow")
+          //   .attr("x1", "0%")
+          //   .attr("y1", "0%")
+          //   .attr("x2", "100%")
+          //   .attr("y2", "0%");
 
-          yellowGradient.append("stop")
-            .attr("offset", "0%")
-            .attr("stop-color", "#ffff00")
-            .attr("stop-opacity", 0);  // Transparent yellow
+          // yellowGradient.append("stop")
+          //   .attr("offset", "0%")
+          //   .attr("stop-color", "#ffff00")
+          //   .attr("stop-opacity", 0);  // Transparent yellow
 
-          yellowGradient.append("stop")
-            .attr("offset", "100%")
-            .attr("stop-color", "#ffff00")
-            .attr("stop-opacity", 1);  // Opaque yellow
+          // yellowGradient.append("stop")
+          //   .attr("offset", "100%")
+          //   .attr("stop-color", "#ffff00")
+          //   .attr("stop-opacity", 1);  // Opaque yellow
+
+          const gradient = legendGroup.append("linearGradient")
+            // .append('linearGradient')
+            .attr('id', 'legendGradientStripe')
+            .attr('x1', '0%')
+            .attr('x2', '100%')
+            .attr('y1', '0%')
+            .attr('y2', '0%');
+
+          let reds = [
+            '#fff5f0', // Very light red
+            '#fee0d2', // Light red
+            '#fcbba1', // Pale red
+            '#fc9272', // Soft red
+            '#fb6a4a', // Medium red
+            '#ef3b2c', // Vibrant red
+            '#cb181d', // Dark red
+            '#a50f15', // Very dark red
+            '#67000d', // Deep red
+          ];
+
+          // Apply the red color scale
+          reds.forEach((color, i) => {
+            gradient.append('stop')
+              .attr('offset', `${(i / (reds.length - 1)) * 100}%`)
+              .attr('stop-color', color);
+          });
+
+          // Append a rectangle using the gradient
+          svgLegend.append('rect')
+            .attr('x', 10)
+            .attr('y', 10)
+            .attr('width', 300)
+            .attr('height', 20)
+            .style('fill', 'url(#red-gradient)');
 
           // Rectangle for yellow gradient
           svgLegend.append("rect")
@@ -1486,7 +1519,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
             .attr("width", 100)
             .attr("height", 10)
-            .style("fill", "url(#legendGradientYellow)");
+            .style("fill", "url(#legendGradientStripe)");
 
           // Text labels for yellow gradient
           svgLegend.append("text")
