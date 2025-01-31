@@ -952,6 +952,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       onEachFeature: function (feature, layer) {
         if (selectedCol1 === 'nsdoh_profiles') {
           if (currentZoom < 9) {
+            console.log("going to here from nsdoh")
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
             let censusTract = feature.properties.STCOFIPS
@@ -993,6 +994,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${county || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
+
             layer.on('click', function () {
               layer.bindTooltip(nsdohProfileToolTip, {
                 permanent: false, // Tooltip will disappear when clicking elsewhere
@@ -1198,13 +1200,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.previousZoomLevel = this.map.getZoom();
     this.map.on('zoomend', () => {
       this.currentZoomLevel = this.map.getZoom();
-
-      if (currentZoom >= 9 && currentZoom > this.previousZoomLevel) {
+      const newZoom = this.map.getZoom();
+      if (newZoom >= 9 && currentZoom > this.previousZoomLevel) {
         const bounds = this.map.getBounds();
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         this.loadAndInitializeMap()
-      } else if (currentZoom < 9 && currentZoom < this.previousZoomLevel) {
+      } else if (newZoom < 9) {
         const bounds = this.map.getBounds();
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.loadAndInitializeMap()
