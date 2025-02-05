@@ -47,6 +47,8 @@ export class SidebarComponent implements OnChanges, OnInit {
   showMoreColsB = false
 
   useBivariate: boolean = true
+  useDashOverlay: boolean = false
+  useSpike: boolean = false
 
   groceryDataDictionary = {}
 
@@ -184,8 +186,32 @@ export class SidebarComponent implements OnChanges, OnInit {
     }
   }
 
-  onChangeBivariate() {
-    this.useBivariate = !this.useBivariate
+  onChangeOverlay(type) {
+    if(type === 'bivariate'){
+      this.useBivariate = !this.useBivariate
+      if(this.useBivariate){
+        this.useDashOverlay = false
+        this.useSpike = false
+      }else{
+        this.useSpike = true
+      }
+    }else if(type === 'dash'){
+      this.useDashOverlay = !this.useDashOverlay
+      if(this.useDashOverlay){
+        this.useBivariate = false
+        this.useSpike = false
+      }else{
+        this.useBivariate = true
+      }
+    }else if (type === 'spike'){
+      this.useSpike = !this.useSpike
+      if(this.useSpike){
+        this.useBivariate = false
+        this.useDashOverlay = false
+      }else {
+        this.useBivariate = true
+      }
+    }
 
     const data = {
       years: this.selectedYear.toString(),
@@ -193,6 +219,8 @@ export class SidebarComponent implements OnChanges, OnInit {
       col2: this.selectedCol2,
       col3: this.selectedCol3,
       useBivariate: this.useBivariate,
+      useDashOverlay: this.useDashOverlay,
+      useSpike: this.useSpike,
       stateName: this.stateName
     }
 
@@ -200,7 +228,6 @@ export class SidebarComponent implements OnChanges, OnInit {
   }
 
   onCheckboxChange(index, isCheck, name) {
-    console.log("oncheckbox: ", index, isCheck, name)
     if (isCheck && this.selectedCol1 !== "--" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--" && name !== 'nsdoh_profiles') {
       let message = 'Currently we are only able to display 3 columns max right now'
       this.onErrorSnackbar(message)

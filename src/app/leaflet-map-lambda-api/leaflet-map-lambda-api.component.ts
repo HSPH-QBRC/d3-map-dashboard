@@ -4,6 +4,8 @@ import { HttpClient } from '@angular/common/http';
 import { CsvDataService } from '../csv-data.service';
 import * as d3 from 'd3';
 import 'leaflet.pattern';
+import { ActivatedRoute } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
 interface GroceryData {
   id: string;
@@ -42,7 +44,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   maxYear = 2099
   showYears = false
   // showRedline: boolean = false
-  useBivariate: boolean = true
+  useBivariate: boolean = true;
+  useDashOverlay: boolean = false;
+  useSpike: boolean = false;
 
   selectedYear: string = '2017';
   selectedCol1: string = 'population';
@@ -96,7 +100,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   constructor(
     private http: HttpClient,
-    private csvDataService: CsvDataService
+    private csvDataService: CsvDataService,
+    private route: ActivatedRoute
   ) { }
 
   ngOnChanges() {
@@ -113,6 +118,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.selectedCol3 = this.dataFromSidebar['col3']
       this.selectedState = this.dataFromSidebar['map']
       this.useBivariate = this.dataFromSidebar['useBivariate']
+      this.useDashOverlay = this.dataFromSidebar['useDashOverlay']
+      this.useSpike = this.dataFromSidebar['useSpike']
       this.stateName = this.dataFromSidebar['stateName']
 
       //if columns changed load reset and loadcsvdata
@@ -142,11 +149,25 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
   }
 
-  //bounds: [[west, north], [east, south]]
   tileBounds: any = {}
-  redlineData = []
+  redlineData: any = []
 
   ngOnInit(): void {
+    this.route.queryParams
+      .pipe(filter(params => Object.keys(params).length > 0)) // Ignore empty params
+      .subscribe(params => {
+        this.selectedCol1 = params['col1'] || this.selectedCol1;
+        this.selectedCol2 = params['col2'] || this.selectedCol2;
+        this.stateName = params['state'] || this.stateName;
+        // this.currentBounds = boundsData[this.stateName.toLowerCase()]
+        this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
+          this.currentBounds = boundsData[this.stateName.toLowerCase()]
+          // this.loadAndInitializeMap()
+        });
+
+        this.loadCSVData();
+      });
+
     this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
       this.tileBounds = data
     });
@@ -154,7 +175,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.http.get('./assets/maps/tiles_no_redline/mappinginequality.json').subscribe((geojsonData: any) => {
       this.redlineData = geojsonData
     })
-    this.loadCSVData()
   }
 
   sendData() {
@@ -966,14 +986,16 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
-            layer.on('click', function () {
-              layer.bindTooltip(nsdohProfileToolTip, {
-                permanent: false, // Tooltip will disappear when clicking elsewhere
-                direction: 'top', // Tooltip position relative to the layer
-                opacity: 1        // Make the tooltip fully opaque
+            if (profile !== 'N/A') {
+              layer.on('click', function () {
+                layer.bindTooltip(nsdohProfileToolTip, {
+                  permanent: false, // Tooltip will disappear when clicking elsewhere
+                  direction: 'top', // Tooltip position relative to the layer
+                  opacity: 1        // Make the tooltip fully opaque
+                });
+                layer.openTooltip(); // Display the tooltip immediately upon click
               });
-              layer.openTooltip(); // Display the tooltip immediately upon click
-            });
+            }
 
             // Optionally, add a close handler if clicking elsewhere is needed
             layer.on('mouseout', function () {
@@ -1090,6 +1112,34 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     areaLayer.addTo(this.map);
     const map = this.map
 
+    function addSpike(point: L.Point, value: number, fips: string) {
+      // const overlayPane = d3.select(map.getPanes().overlayPane);
+      // let svg = overlayPane.select("svg");
+
+      // // If no SVG exists, create one
+      // if (svg.empty()) {
+      //   svg = overlayPane.append("svg").attr("class", "leaflet-overlay-svg");
+      // }
+      const svg = d3.select("#map-container").select("svg"); // Select existing Leaflet SVG
+      const spikeHeight = d3.scaleLinear().domain([min2, max2]).range([0, 50]); // Scale spikes
+
+      svg.append("path")
+        .attr("transform", `translate(${point.x}, ${point.y})`) // Move to correct location
+        .attr("d", spike(spikeHeight(value))) // Generate spike shape
+        .attr("fill", "tomato")
+        .attr("stroke", "red")
+        .attr("fill-opacity", 0.5)
+        .attr("stroke-width", 0.5)
+    }
+
+    // Function to generate the spike shape
+    function spike(height: number) {
+      return `M 0 0 L -3 ${-height} L 3 ${-height} Z`; // Triangle spike
+    }
+    // let map2 = this.map
+    let useDashOverlay = this.useDashOverlay
+    let useSpike = this.useSpike
+
     if (!useBivariate && selectedCol2 !== '--') {
       let areaLayer2 = L.geoJSON(area, {
         style: function (d) {
@@ -1098,28 +1148,26 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           const id = d['properties'][fips]
           let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
 
-          let opacity = val2 / max2 + 0.2
-          const dashPattern2 = new L.StripePattern({
-            weight: 2, // Thickness of stripes
-            color: getColor(val2, min2, max2, 'red'), // Color of stripes
-            spaceColor: 'white', // Space between stripes
-            opacity: 1,
-            angle: 45, // Angle of stripes
-          });
-
           // Add pattern to the map
-          dashPattern2.addTo(map);
-          return {
-            pane: pane,
-            color: '#2a2a2a',
-            // opacity: .6,
-            weight: 1,
-            // fillColor: getColor(val2, min1, max1, 'red'),
-            // fillColor: 'red',
-            fillOpacity: 1,
-            fillPattern: dashPattern2,
-          };
+          if (useDashOverlay) {
+            const dashPattern2 = new L.StripePattern({
+              weight: 2, // Thickness of stripes
+              color: getColor(val2, min2, max2, 'red'), // Color of stripes
+              spaceColor: 'white', // Space between stripes
+              opacity: 1,
+              angle: 45, // Angle of stripes
+            });
 
+            dashPattern2.addTo(map);
+
+            return {
+              pane: pane,
+              color: '#2a2a2a',
+              weight: 1,
+              fillOpacity: 1,
+              fillPattern: dashPattern2,
+            };
+          }
         },
         onEachFeature: function (feature, layer) {
           if (currentZoom < 9) {
@@ -1135,11 +1183,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
             <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
           `;
-            // layer.bindTooltip(countyTooltip, {
-            //   permanent: false,  // Tooltip will appear only on hover
-            //   direction: 'top',   // Tooltip position relative to the feature
-            //   opacity: 1          // Make the tooltip fully opaque
-            // });
+            layer.bindTooltip(countyTooltip, {
+              permanent: false,  // Tooltip will appear only on hover
+              direction: 'top',   // Tooltip position relative to the feature
+              opacity: 1          // Make the tooltip fully opaque
+            });
 
             layer.on('click', function () {
               layer.bindTooltip(countyTooltip, {
@@ -1154,6 +1202,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
+
+            if (useSpike) {
+              const latLng = layer.getBounds().getCenter();
+              const point = map.latLngToLayerPoint(latLng);
+              addSpike(point, avgValue2, fips);
+            }
+
           } else {
             let fips = feature.properties.FIPS
             let location = feature.properties.LOCATION
@@ -1162,19 +1217,16 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             const censusTract = parts[0];
             const county = parts[1];
             const state = parts[2];
+            const val1 = Number(valuemap1.get(fips))
+            const val2 = Number(valuemap2.get(fips))
             let censusTractTooltip = `
               <strong> State:</strong> ${state || 'N/A'}<br>
               <strong> County:</strong> ${county || 'N/A'}<br>
               <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
               <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-              <strong> ${selectedCol1}:</strong> ${valuemap1.get(fips) || 'N/A'}<br>
-              <strong> ${selectedCol2}:</strong> ${valuemap2.get(fips) || 'N/A'}<br>
+              <strong> ${selectedCol1}:</strong> ${val1 || 'N/A'}<br>
+              <strong> ${selectedCol2}:</strong> ${val2 || 'N/A'}<br>
             `;
-            // layer.bindTooltip(censusTractTooltip, {
-            //   permanent: false,
-            //   direction: 'top',
-            //   opacity: 1
-            // });
             layer.on('click', function () {
               layer.bindTooltip(censusTractTooltip, {
                 permanent: false, // Tooltip will disappear when clicking elsewhere
@@ -1188,8 +1240,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
-
-
+            
+            if (useSpike) {
+              const latLng = layer.getBounds().getCenter();
+              const point = map.latLngToLayerPoint(latLng);
+              addSpike(point, val2, fips);
+            }
           }
 
         }
@@ -1197,16 +1253,18 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       areaLayer2.addTo(this.map);
     }
 
-    this.previousZoomLevel = this.map.getZoom();
+    this.map.on("zoomstart", () => {
+      this.previousZoomLevel = this.map.getZoom(); // Store previous zoom level at start of zoom
+    });
+
     this.map.on('zoomend', () => {
       this.currentZoomLevel = this.map.getZoom();
-      const newZoom = this.map.getZoom();
-      if (newZoom >= 9 && currentZoom > this.previousZoomLevel) {
+      if (this.currentZoomLevel >= 9 && this.currentZoomLevel > this.previousZoomLevel) {
         const bounds = this.map.getBounds();
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         this.loadAndInitializeMap()
-      } else if (newZoom < 9) {
+      } else if (this.currentZoomLevel < 9) {
         const bounds = this.map.getBounds();
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.loadAndInitializeMap()
@@ -1220,6 +1278,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
+          console.log("load and init map")
           this.loadAndInitializeMap()
         }
       }

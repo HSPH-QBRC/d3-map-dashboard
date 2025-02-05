@@ -5,12 +5,15 @@
     </a>
 
     <mat-accordion class="no-shadow" multi>
-        <mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeBivariate()"
+        <mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeOverlay('bivariate')"
             color="primary">Use
             Bivariate Choropleth</mat-slide-toggle>
-        <mat-slide-toggle class="example-margin" [checked]="!useBivariate" (change)="onChangeBivariate()"
+        <mat-slide-toggle class="example-margin" [checked]="useDashOverlay" (change)="onChangeOverlay('dash')"
             color="primary">Use
             Heatmap Overlays</mat-slide-toggle>
+        <mat-slide-toggle class="example-margin" [checked]="useSpike" (change)="onChangeOverlay('spike')"
+            color="primary">Use
+            Spikes</mat-slide-toggle>
         <br>
         <br>
         <mat-form-field class="example-margin" appearance="outline">

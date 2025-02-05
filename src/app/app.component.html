@@ -4,9 +4,6 @@
         </app-sidebar>
     </div>
     <div class="main-content">
-        <!-- <app-leaflet-map [dataFromSidebar]="dataFromSidebar" [dataFromSidebarStateNameOnly]="dataFromSidebarStateNameOnly"
-        (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map> -->
-   
         <app-leaflet-map-lambda-api [dataFromSidebar]="dataFromSidebar" [dataFromSidebarStateNameOnly]="dataFromSidebarStateNameOnly"
         (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map-lambda-api>
     </div>
