@@ -77,6 +77,10 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.prevCol3 = this.sidebarData['selectedCol'][2]
       this.prevStateName = this.sidebarData['stateName']
 
+      this.useBivariate = this.sidebarData['useBivariate']
+      this.useDashOverlay = this.sidebarData['useDashOverlay']
+      this.useSpike = this.sidebarData['useSpike']
+
       this.organizeData()
     }
   }
@@ -157,6 +161,8 @@ export class SidebarComponent implements OnChanges, OnInit {
         col2: this.selectedCol2,
         col3: this.selectedCol3,
         useBivariate: this.useBivariate,
+        useDashOverlay: this.useDashOverlay,
+        useSpike: this.useSpike,
         stateName: this.stateName
       }
       this.showMoreColsA = false;

@@ -1,7 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import * as L from 'leaflet';
 import { HttpClient } from '@angular/common/http';
-import { CsvDataService } from '../csv-data.service';
+// import { CsvDataService } from '../csv-data.service';
 import * as d3 from 'd3';
 import 'leaflet.pattern';
 import { ActivatedRoute } from '@angular/router';
@@ -100,7 +100,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   constructor(
     private http: HttpClient,
-    private csvDataService: CsvDataService,
+    // private csvDataService: CsvDataService,
     private route: ActivatedRoute
   ) { }
 
@@ -121,6 +121,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.useDashOverlay = this.dataFromSidebar['useDashOverlay']
       this.useSpike = this.dataFromSidebar['useSpike']
       this.stateName = this.dataFromSidebar['stateName']
+      console.log("changes: ", this.useSpike, this.useDashOverlay, this.useBivariate)
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
@@ -129,10 +130,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       } else {
         if (this.prevStateName !== this.stateName) {
           this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
+            console.log("state change happened here ", this.stateName)
+            this.currentZoomLevel = 3
             this.currentBounds = boundsData[this.stateName.toLowerCase()]
             this.loadAndInitializeMap()
           });
-        } else {
+        }
+        else {
+          console.log("map is reloaded")
+          this.useNewMap = true;
           this.loadAndInitializeMap()
         }
       }
@@ -140,6 +146,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     //handles if state name only is changed
     if (this.dataFromSidebarStateNameOnly !== undefined) {
+      console.log("state only change: ", this.dataFromSidebarStateNameOnly)
       this.currentZoomLevel = 3
       this.stateName = this.dataFromSidebarStateNameOnly
       this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
@@ -184,7 +191,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       "columnsB": this.columnsB,
       "selectedYear": this.selectedYear,
       "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3],
-      "stateName": this.stateName
+      "stateName": this.stateName,
+      "useBivariate": this.useBivariate,
+      "useDashOverlay": this.useDashOverlay,
+      "useSpike": this.useSpike
     }
     this.dataToSidebar.emit(this.sidebarData);
 
@@ -220,6 +230,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     if (this.selectedCol1 !== 'nsdoh_profiles') {
       this.groceryData = []
     }
+
+    // this.map.remove();
+    // const mapContainer = document.getElementById('map-container');
+    // this.map = L.map(mapContainer);
 
   }
 
@@ -316,14 +330,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
 
   async loadCSVData(): Promise<void> {
-    // this.isLoading = true
-    // let csvFile = './assets/data/nanda_grocery_tract_2003-2017_01P.csv'
-    // let carmenFile = './assets/data/nsdoh_data.csv'
     try {
-      // if (!this.groceryData) {
-      // this.groceryData = await this.csvDataService.loadCSVData(csvFile);
-      // }
-
       if (this.selectedCol1 === 'nsdoh_profiles') {
         console.time('fetching Carmen data')
         await this.fetchData('carmen')
@@ -335,27 +342,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.isLoading = false
         console.timeEnd('fetching Grocery data')
       }
-
-
-      // if (!this.carmenData) {
-      //   this.carmenData = await this.csvDataService.loadCSVData(carmenFile);
-      // }
       const groceryData = this.groceryData
       const carmenData = this.carmenData
 
-      //get min/max values for Years
-      // if (this.yearCols.length === 0) {
-      //   for (const d of groceryData) {
-      //     if (d['year'] && !this.yearCols.includes(d['year'])) {
-      //       this.yearCols.push(d['year'])
-      //     }
-      //   }
-      //   this.yearCols.sort((a, b) => a - b);
-      //   this.minYear = this.yearCols[0]
-      //   this.maxYear = this.yearCols[this.yearCols.length - 1]
-      //   this.showYears = true
-
-      // }
       this.yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
       this.minYear = 2003
       this.maxYear = 2017
@@ -422,7 +411,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.columnsUsed = 0
       if (this.selectedCol1 !== '--') {
         this.columnsUsed += 1;
-        // for (let currYear of this.yearCols) {
         let currYear = this.selectedYear
         for (let i of this.fullData1[currYear]) {
           let id = i['id'].substring(0, 5);
@@ -465,13 +453,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             }
           }
         }
-
-        // }
       }
 
       if (this.selectedCol2 !== '--') {
         this.columnsUsed += 1;
-        // for (let currYear of this.yearCols) {
         let currYear = this.selectedYear
         for (let i of this.fullData2[currYear]) {
           let id = i['id'].substring(0, 5);
@@ -514,14 +499,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             }
           }
         }
-
-        // }
       }
 
       if (this.selectedCol3 !== '--') {
         this.columnsUsed += 1;
-        // for (let currYear of this.yearCols) {
-        // for (let i of this.data1) {
         let currYear = this.selectedYear
         for (let i of this.fullData3[currYear]) {
           let id = i['id'].substring(0, 5);
@@ -532,7 +513,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             this.fullAvgData3[currYear] = {}
           }
 
-          // if (!this.avgData1[id]) {
           if (!this.fullAvgData3[currYear][id]) {
             this.fullAvgData3[currYear][id] = {
               rateArr: [],
@@ -566,7 +546,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           }
         }
 
-        // }
       }
 
       //collects info to find which profile appears the most in a County
@@ -596,12 +575,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
 
       }
-      // this.columns.push('--')
-      // this.columnsB.push('nsdoh_profiles')
       this.columnsA.sort()
       this.columnsB.sort()
-
-      // this.isLoading = false
 
       this.sendData()
       this.loadAndInitializeMap()
@@ -621,6 +596,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     } else {
       currMap = this.fullMapArr
     }
+    console.log("load and init map: ", currMap, this.currentZoomLevel)
     let index = 0
     for (let map of currMap) {
       index++
@@ -659,17 +635,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     if (this.useNewMap) {
       this.map = L.map(mapContainer);
     }
-
-    // const dashPattern = new L.StripePattern({
-    //   weight: 2, // Thickness of stripes
-    //   color: 'yellow', // Color of stripes
-    //   spaceColor: 'transparent', // Space between stripes
-    //   opacity: 1,
-    //   angle: 45, // Angle of stripes
-    // });
-
-    // // Add pattern to the map
-    // dashPattern.addTo(this.map);
 
     const redlineLayer = L.geoJSON(this.redlineData, {
       style: function (d) {
@@ -849,6 +814,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     let selectedCol3 = this.selectedCol3
 
     let useBivariate = this.useBivariate
+    let useDashOverlay = this.useDashOverlay
+    let useSpike = this.useSpike
+
+    console.log("useSpike: ", useSpike, this.useSpike)
 
     const color2 = d3.scaleOrdinal()
       .domain(this.colorCategories)
@@ -856,17 +825,17 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     let blues = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
 
-    let greens = [
-      '#f7fcf5', // Very light green
-      '#e5f5e0', // Light green
-      '#c7e9c0', // Pale green
-      '#a1d99b', // Soft green
-      '#74c476', // Medium green
-      '#41ab5d', // Vibrant green
-      '#238b45', // Dark green
-      '#006d2c', // Very dark green
-      '#00441b', // Deep green
-    ];
+    // let greens = [
+    //   '#f7fcf5', // Very light green
+    //   '#e5f5e0', // Light green
+    //   '#c7e9c0', // Pale green
+    //   '#a1d99b', // Soft green
+    //   '#74c476', // Medium green
+    //   '#41ab5d', // Vibrant green
+    //   '#238b45', // Dark green
+    //   '#006d2c', // Very dark green
+    //   '#00441b', // Deep green
+    // ];
 
     let reds = [
       '#fff5f0', // Very light red
@@ -895,11 +864,62 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.map.createPane('tractsPane');
     this.map.getPane('tractsPane').style.zIndex = '499';
 
+    // if (useSpike) {
+    //   this.map.createPane('spikePane'); // Create a custom pane
+    //   this.map.getPane('spikePane').style.zIndex = "650"; // Set higher z-index
+    // }
+    // function removePane(paneName) {
+    //   const pane = this.map.getPane(paneName);
+    //   if (pane) {
+    //     this.map.eachLayer(layer => {
+    //       if ((layer as any).options && (layer as any).options.pane === paneName) {
+    //         this.map.removeLayer(layer);
+    //       }
+    //     });
+
+    //     pane.remove();
+    // }
+
+    if (useDashOverlay) {
+      this.map.createPane('dashPane');
+      this.map.getPane('dashPane').style.zIndex = '501';
+    } else {
+      //remove a pane when not in use
+      const pane = this.map.getPane("dashPane");
+      if (pane) {
+        this.map.eachLayer(layer => {
+          if ((layer as any).options && (layer as any).options.pane === "dashPane") {
+            this.map.removeLayer(layer);
+          }
+        });
+
+        pane.remove();
+      }
+    }
+
+    if (useSpike) {
+      this.map.createPane("circlePane");
+      this.map.getPane("circlePane").style.zIndex = "651";
+    } else {
+      //remove a pane when not in use
+      const pane = this.map.getPane("circlePane");
+      if (pane) {
+        this.map.eachLayer(layer => {
+          if ((layer as any).options && (layer as any).options.pane === "circlePane") {
+            this.map.removeLayer(layer);
+          }
+        });
+
+        pane.remove();
+      }
+    }
+
+
     this.map.fitBounds(this.currentBounds);
     if (this.currentZoomLevel >= 9) {
       this.currentZoomLevel = this.map.getZoom()
     }
-
+    console.log("use: ", useBivariate, useDashOverlay, useSpike)
     let areaLayer = L.geoJSON(area, {
       style: function (d) {
         if (useBivariate) {
@@ -938,7 +958,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             fillColor: color,
             fillOpacity: .9
           };
-        } else if (!useBivariate) {
+        } else if (useDashOverlay || useSpike) {
           if (selectedCol1 === 'nsdoh_profiles') {
             const pane = 'tractsPane';
             let id = currentZoom < 9 ? d['properties'].STCOFIPS : d['properties'].FIPS
@@ -956,7 +976,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
             const id = d['properties'][fips]
             let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
-
+            // console.log("tractspane: ", val1, currentZoom, avgData1, valuemap1.get(id))
             return {
               pane: pane,
               color: '#2a2a2a',
@@ -972,7 +992,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       onEachFeature: function (feature, layer) {
         if (selectedCol1 === 'nsdoh_profiles') {
           if (currentZoom < 9) {
-            console.log("going to here from nsdoh")
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
             let censusTract = feature.properties.STCOFIPS
@@ -1050,11 +1069,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             if (selectedCol2 !== '--') {
               countyTooltip += `<strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>`;
             }
-            // layer.bindTooltip(countyTooltip, {
-            //   permanent: false,  // Tooltip will appear only on hover
-            //   direction: 'top',   // Tooltip position relative to the feature
-            //   opacity: 1          // Make the tooltip fully opaque
-            // });
+
             layer.on('click', function () {
               layer.bindTooltip(countyTooltip, {
                 permanent: false, // Tooltip will disappear when clicking elsewhere
@@ -1068,7 +1083,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
-          } else {
+          } else if (currentZoom >= 9) {
             let fips = feature.properties.FIPS
             let location = feature.properties.LOCATION
 
@@ -1109,41 +1124,53 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
       }
     }).addTo(this.map);
-    areaLayer.addTo(this.map);
-    const map = this.map
+    // if(useBivariate){
+    //   areaLayer.addTo(this.map);
+    // }
 
-    function addSpike(point: L.Point, value: number, fips: string) {
-      // const overlayPane = d3.select(map.getPanes().overlayPane);
-      // let svg = overlayPane.select("svg");
+    let map = this.map
 
-      // // If no SVG exists, create one
-      // if (svg.empty()) {
-      //   svg = overlayPane.append("svg").attr("class", "leaflet-overlay-svg");
-      // }
-      const svg = d3.select("#map-container").select("svg"); // Select existing Leaflet SVG
-      const spikeHeight = d3.scaleLinear().domain([min2, max2]).range([0, 50]); // Scale spikes
+    // function addSpike(point: L.Point, value: number) {
+    //   const svg = d3.select("#map-container").select("svg"); // Select existing Leaflet SVG
+    //   const spikeHeight = d3.scaleLinear().domain([min2, max2]).range([0, 50]);
 
-      svg.append("path")
-        .attr("transform", `translate(${point.x}, ${point.y})`) // Move to correct location
-        .attr("d", spike(spikeHeight(value))) // Generate spike shape
-        .attr("fill", "tomato")
-        .attr("stroke", "red")
-        .attr("fill-opacity", 0.5)
-        .attr("stroke-width", 0.5)
+    //   svg.append("path")
+    //     .attr("class", "spike") // Class for easy removal
+    //     .attr("transform", `translate(${point.x}, ${point.y})`)
+    //     .attr("d", spike(spikeHeight(value)))
+    //     .attr("fill", "tomato")
+    //     .attr("stroke", "red")
+    //     .attr("fill-opacity", 0.5)
+    //     .attr("stroke-width", 0.5);
+
+    // }
+
+    // // Function to generate the spike shape
+    // function spike(height: number) {
+    //   return `M 0 0 L -3 ${-height} L 3 ${-height} Z`; // Triangle spike
+    // }
+
+    // const circleLayer = L.layerGroup();
+    function addCircle(latLng: L.LatLng, value: number) {
+      const circle = L.circle(latLng, {
+        color: 'red',
+        fillColor: 'tomato',
+        fillOpacity: .75,
+        radius: scaleRadius(value), // Scale radius based on data
+        pane: "circlePane"
+      }).addTo(map);
+
     }
 
-    // Function to generate the spike shape
-    function spike(height: number) {
-      return `M 0 0 L -3 ${-height} L 3 ${-height} Z`; // Triangle spike
+    function scaleRadius(value: number) {
+      const minValue = 100, maxValue = 2000; // Adjust based on your data
+      return d3.scaleLinear().domain([min2, max2]).range([500, 5000])(value);
     }
-    // let map2 = this.map
-    let useDashOverlay = this.useDashOverlay
-    let useSpike = this.useSpike
 
     if (!useBivariate && selectedCol2 !== '--') {
       let areaLayer2 = L.geoJSON(area, {
         style: function (d) {
-          const pane = 'tractsPane';
+          // const pane = 'tractsPane';
           const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
           const id = d['properties'][fips]
           let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
@@ -1161,7 +1188,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             dashPattern2.addTo(map);
 
             return {
-              pane: pane,
+              pane: 'dashPane',
               color: '#2a2a2a',
               weight: 1,
               fillOpacity: 1,
@@ -1205,11 +1232,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
             if (useSpike) {
               const latLng = layer.getBounds().getCenter();
-              const point = map.latLngToLayerPoint(latLng);
-              addSpike(point, avgValue2, fips);
+              addCircle(latLng, avgValue2);
             }
 
-          } else {
+          } else if (currentZoom >= 9) {
             let fips = feature.properties.FIPS
             let location = feature.properties.LOCATION
 
@@ -1240,17 +1266,18 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
-            
+
             if (useSpike) {
               const latLng = layer.getBounds().getCenter();
-              const point = map.latLngToLayerPoint(latLng);
-              addSpike(point, val2, fips);
+              addCircle(latLng, val2);
             }
           }
-
         }
       }).addTo(this.map);
-      areaLayer2.addTo(this.map);
+      // if (useSpike || useDashOverlay) {
+      //   areaLayer2.addTo(this.map);
+      // }
+
     }
 
     this.map.on("zoomstart", () => {
@@ -1263,12 +1290,18 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         const bounds = this.map.getBounds();
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
+        this.useNewMap = true
         this.loadAndInitializeMap()
       } else if (this.currentZoomLevel < 9) {
         const bounds = this.map.getBounds();
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.loadAndInitializeMap()
       }
+      else {
+        // this.useNewMap = true
+        this.loadAndInitializeMap()
+      }
+
     });
 
     this.map.on('moveend', () => {

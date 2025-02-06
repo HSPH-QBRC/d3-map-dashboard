@@ -84,4 +84,9 @@
     .legend-text {
         font-size: 8px;
     }
+
+    .spike {
+        z-index: 999 !important;
+        pointer-events: none; /* Ensures spikes don't interfere with map clicks */
+      }
 }
