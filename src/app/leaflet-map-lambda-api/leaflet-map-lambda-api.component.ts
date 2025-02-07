@@ -121,7 +121,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.useDashOverlay = this.dataFromSidebar['useDashOverlay']
       this.useSpike = this.dataFromSidebar['useSpike']
       this.stateName = this.dataFromSidebar['stateName']
-      console.log("changes: ", this.useSpike, this.useDashOverlay, this.useBivariate)
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
@@ -130,14 +129,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       } else {
         if (this.prevStateName !== this.stateName) {
           this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-            console.log("state change happened here ", this.stateName)
             this.currentZoomLevel = 3
             this.currentBounds = boundsData[this.stateName.toLowerCase()]
             this.loadAndInitializeMap()
           });
         }
         else {
-          console.log("map is reloaded")
           this.useNewMap = true;
           this.loadAndInitializeMap()
         }
@@ -146,7 +143,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     //handles if state name only is changed
     if (this.dataFromSidebarStateNameOnly !== undefined) {
-      console.log("state only change: ", this.dataFromSidebarStateNameOnly)
       this.currentZoomLevel = 3
       this.stateName = this.dataFromSidebarStateNameOnly
       this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
@@ -166,10 +162,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.selectedCol1 = params['col1'] || this.selectedCol1;
         this.selectedCol2 = params['col2'] || this.selectedCol2;
         this.stateName = params['state'] || this.stateName;
-        // this.currentBounds = boundsData[this.stateName.toLowerCase()]
+        this.selectedYear = params['year'] || this.selectedYear;
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
           this.currentBounds = boundsData[this.stateName.toLowerCase()]
-          // this.loadAndInitializeMap()
         });
 
         this.loadCSVData();
@@ -588,6 +583,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   currentCensusTractsMapArr = []
   fullMapArr = ['svi_2000_us_county_11_25_test.json']
   useNewMap = true
+  clickVal1
+  clickVal2
 
   loadAndInitializeMap(): void {
     let currMap = []
@@ -596,7 +593,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     } else {
       currMap = this.fullMapArr
     }
-    console.log("load and init map: ", currMap, this.currentZoomLevel)
     let index = 0
     for (let map of currMap) {
       index++
@@ -817,8 +813,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     let useDashOverlay = this.useDashOverlay
     let useSpike = this.useSpike
 
-    console.log("useSpike: ", useSpike, this.useSpike)
-
     const color2 = d3.scaleOrdinal()
       .domain(this.colorCategories)
       .range(d3.schemeSet3);
@@ -919,7 +913,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     if (this.currentZoomLevel >= 9) {
       this.currentZoomLevel = this.map.getZoom()
     }
-    console.log("use: ", useBivariate, useDashOverlay, useSpike)
     let areaLayer = L.geoJSON(area, {
       style: function (d) {
         if (useBivariate) {
@@ -976,7 +969,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
             const id = d['properties'][fips]
             let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
-            // console.log("tractspane: ", val1, currentZoom, avgData1, valuemap1.get(id))
             return {
               pane: pane,
               color: '#2a2a2a',
@@ -1036,20 +1028,21 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
 
-            layer.on('click', function () {
-              layer.bindTooltip(nsdohProfileToolTip, {
-                permanent: false, // Tooltip will disappear when clicking elsewhere
-                direction: 'top', // Tooltip position relative to the layer
-                opacity: 1        // Make the tooltip fully opaque
+            if (profile !== undefined) {
+              layer.on('click', function () {
+                layer.bindTooltip(nsdohProfileToolTip, {
+                  permanent: false, // Tooltip will disappear when clicking elsewhere
+                  direction: 'top', // Tooltip position relative to the layer
+                  opacity: 1        // Make the tooltip fully opaque
+                });
+                layer.openTooltip(); // Display the tooltip immediately upon click
               });
-              layer.openTooltip(); // Display the tooltip immediately upon click
-            });
 
-            // Optionally, add a close handler if clicking elsewhere is needed
-            layer.on('mouseout', function () {
-              layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
-            });
-
+              // Optionally, add a close handler if clicking elsewhere is needed
+              layer.on('mouseout', function () {
+                layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
+              });
+            }
           }
         } else {
           if (currentZoom < 9) {
@@ -1077,6 +1070,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 opacity: 1        // Make the tooltip fully opaque
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
+
+              addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container2');
             });
 
             // Optionally, add a close handler if clicking elsewhere is needed
@@ -1101,11 +1096,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> ${selectedCol1}:</strong> ${val1.toFixed(2) || 'N/A'}<br>
                 <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
               `;
-            // layer.bindTooltip(censusTractTooltip, {
-            //   permanent: false,  // Tooltip will appear only on hover
-            //   direction: 'top',   // Tooltip position relative to the feature
-            //   opacity: 1          // Make the tooltip fully opaque
-            // });
             // Add click event listener to show the tooltip
             layer.on('click', function () {
               layer.bindTooltip(censusTractTooltip, {
@@ -1114,6 +1104,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 opacity: 1        // Make the tooltip fully opaque
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
+
+              addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
             });
 
             // Optionally, add a close handler if clicking elsewhere is needed
@@ -1163,8 +1155,37 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
 
     function scaleRadius(value: number) {
-      const minValue = 100, maxValue = 2000; // Adjust based on your data
+      // const minValue = 100, maxValue = 2000; // Adjust based on your data
       return d3.scaleLinear().domain([min2, max2]).range([500, 5000])(value);
+    }
+
+    function addPlacementMarkerLegend(val1, val2, container){
+      let container2 = `${container} svg`
+      const svgLegend = d3.select(container2)
+
+      // Check if the legend exists before modifying it
+      if (!svgLegend.empty()) {
+        // Remove any previously added black circle
+        svgLegend.selectAll("circle").remove();
+
+        let legendWidth = 100
+        let legendHeight = 75
+        let separation = 20
+        
+        svgLegend.append("circle")
+          .attr("cx", (val1 / (max1 - min1)) * legendWidth)  // Middle of the rectangle 
+          .attr("cy", legendHeight - 45)  // Middle of the rectangle (y + height/2)
+          .attr("r", 3)  // Radius of the dot
+          .attr("fill", "black");  // Black color
+
+        svgLegend.append("circle")
+          .attr("cx", (val2 / (max2 - min2)) * legendWidth)  // Middle of the rectangle 
+          .attr("cy", legendHeight - 35 + separation + 15)  // Middle of the rectangle (y + height/2)
+          .attr("r", 3)  // Radius of the dot
+          .attr("fill", "black");  // Black color
+      } else {
+        console.warn("Legend SVG not found");
+      }
     }
 
     if (!useBivariate && selectedCol2 !== '--') {
@@ -1210,19 +1231,18 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
             <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
           `;
-            layer.bindTooltip(countyTooltip, {
-              permanent: false,  // Tooltip will appear only on hover
-              direction: 'top',   // Tooltip position relative to the feature
-              opacity: 1          // Make the tooltip fully opaque
-            });
 
             layer.on('click', function () {
+              this.clickVal1 = avgValue1
+              this.clickVal2 = avgValue2
               layer.bindTooltip(countyTooltip, {
                 permanent: false, // Tooltip will disappear when clicking elsewhere
                 direction: 'top', // Tooltip position relative to the layer
                 opacity: 1        // Make the tooltip fully opaque
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
+
+              addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container2');
             });
 
             // Optionally, add a close handler if clicking elsewhere is needed
@@ -1260,7 +1280,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 opacity: 1        // Make the tooltip fully opaque
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
+
+              addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
             });
+
+            
 
             // Optionally, add a close handler if clicking elsewhere is needed
             layer.on('mouseout', function () {
@@ -1311,7 +1335,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
-          console.log("load and init map")
           this.loadAndInitializeMap()
         }
       }
@@ -1522,9 +1545,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Rectangle for blue gradient
           svgLegend.append("rect")
+            .attr("class", "legend-gradient")
             .attr("x", 5)
             .attr("y", legendHeight - 50)
-            .attr("width", 100)
+            .attr("width", legendWidth)
             .attr("height", 10)
             .style("fill", "url(#legendGradientBlue)");
 
@@ -1538,6 +1562,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Text labels for blue gradient
           svgLegend.append("text")
+            .attr("class", "legend-min")
             .attr("x", 0)
             .attr("y", legendHeight - 55 + 25)
             .attr("text-anchor", "start")
@@ -1545,7 +1570,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .text(`${Math.floor(this.min1 * 10) / 10}`);
 
           svgLegend.append("text")
-            .attr("x", 100)
+            .attr("class", "legend-max")
+            .attr("x", legendWidth)
             .attr("y", legendHeight - 55 + 25)
             .attr("text-anchor", "end")
             .attr("font-size", 8)
