@@ -26,7 +26,7 @@ import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-m
 import { RouterModule, Routes } from '@angular/router';
 
 const routes: Routes = [
-  { path: 'example', component: AppComponent } // Define your route
+  { path: 'data', component: AppComponent } // Define your route
 ];
 
 @NgModule({

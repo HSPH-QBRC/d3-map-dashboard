@@ -86,5 +86,38 @@
     .spike {
         z-index: 999 !important;
         pointer-events: none; /* Ensures spikes don't interfere with map clicks */
-      }
+    }
+
+    .leaflet-control-custom {
+        background: white;
+        border: 2px solid gray;
+        border-radius: 4px;
+        padding: 5px;
+        font-size: 18px;
+        text-align: center;
+    }
+    .leaflet-control-custom:hover {
+        background: lightgray;
+        cursor: pointer;
+    }
+
+    .leaflet-control-reset {
+        width: 30px; /* Matches Leaflet buttons */
+        height: 30px; /* Matches Leaflet buttons */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px; /* Reduce font size for the icon */
+        line-height: 0; /* Helps center the icon */
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        border-radius: 2px; /* Matches Leaflet buttons */
+        background-color: white;
+        padding: 0; /* Removes extra spacing */
+        margin-top: 0px;
+    }
+
+    .leaflet-control-reset:hover {
+        background-color: #f4f4f4; /* Slightly darker background */
+    }
 }

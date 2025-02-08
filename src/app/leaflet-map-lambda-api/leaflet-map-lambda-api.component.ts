@@ -778,6 +778,25 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     this.layerControl = L.control.layers(baseLayers, overlays).addTo(this.map);
 
+    //add reset zoom button
+    const resetZoomControl = L.control({ position: 'topleft' });
+
+    const defaultBounds = [
+      [24.396308, -125.000000], // Southwest (bottom-left)
+      [49.384358, -66.934570]  // Northeast (top-right)
+    ];
+
+    resetZoomControl.onAdd = function (map) {
+      const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-reset');
+      div.innerHTML = '<i class="fa-solid fa-earth-americas"></i>';
+      div.onclick = function () {
+        map.fitBounds(defaultBounds);
+      };
+      return div;
+    };
+
+    resetZoomControl.addTo(this.map);
+
 
     let min1 = this.min1
     let max1 = this.max1
@@ -1159,7 +1178,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       return d3.scaleLinear().domain([min2, max2]).range([500, 5000])(value);
     }
 
-    function addPlacementMarkerLegend(val1, val2, container){
+    function addPlacementMarkerLegend(val1, val2, container) {
       let container2 = `${container} svg`
       const svgLegend = d3.select(container2)
 
@@ -1171,7 +1190,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let legendWidth = 100
         let legendHeight = 75
         let separation = 20
-        
+
         svgLegend.append("circle")
           .attr("cx", (val1 / (max1 - min1)) * legendWidth)  // Middle of the rectangle 
           .attr("cy", legendHeight - 45)  // Middle of the rectangle (y + height/2)
@@ -1284,7 +1303,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
             });
 
-            
+
 
             // Optionally, add a close handler if clicking elsewhere is needed
             layer.on('mouseout', function () {
