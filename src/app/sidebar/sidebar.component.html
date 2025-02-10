@@ -5,7 +5,7 @@
     </a>
 
     <mat-accordion class="no-shadow" multi>
-        <mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeOverlay('bivariate')"
+        <!-- <mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeOverlay('bivariate')"
             color="primary">Use
             Bivariate Choropleth</mat-slide-toggle>
         <mat-slide-toggle class="example-margin" [checked]="useDashOverlay" (change)="onChangeOverlay('dash')"
@@ -13,8 +13,16 @@
             Heatmap Overlays</mat-slide-toggle>
         <mat-slide-toggle class="example-margin" [checked]="useSpike" (change)="onChangeOverlay('spike')"
             color="primary">Use
-            Spikes</mat-slide-toggle>
-        <br>
+            Spikes</mat-slide-toggle> -->
+
+        <label id="radio-group-label">Map Overlay: </label>
+        <mat-radio-group aria-labelledby="example-radio-group-label" class="example-radio-group"
+            [(ngModel)]="selectedOverlay" (change)="onChangeOverlay()">
+            <mat-radio-button *ngFor="let overlay of overlays;" class="example-radio-button"
+                [value]="overlay">
+                {{ overlay }}
+            </mat-radio-button>
+        </mat-radio-group>
         <br>
         <mat-form-field class="example-margin" appearance="outline">
             <mat-label>Zoom To (Enter State Name)</mat-label>

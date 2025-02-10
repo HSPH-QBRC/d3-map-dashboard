@@ -35,6 +35,7 @@ export class SidebarComponent implements OnChanges, OnInit {
   prevCol3 = ''
   prevStateName = ''
   prevUseBivariate = true
+  // prevSelectedOverlay = ''
 
   showYears = false
   showColsA = false
@@ -46,11 +47,14 @@ export class SidebarComponent implements OnChanges, OnInit {
   showMoreColsA = false
   showMoreColsB = false
 
-  useBivariate: boolean = true
-  useDashOverlay: boolean = false
-  useSpike: boolean = false
+  // useBivariate: boolean = true
+  // useDashOverlay: boolean = false
+  // useSpike: boolean = false
 
   groceryDataDictionary = {}
+
+  selectedOverlay = "Bivariate Choropleth"
+  overlays = ["Bivariate Choropleth", "Heatmap Overlays", "Spikes", "Circles"]
 
   ngOnInit(): void {
     this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {
@@ -76,10 +80,13 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.prevCol2 = this.sidebarData['selectedCol'][1]
       this.prevCol3 = this.sidebarData['selectedCol'][2]
       this.prevStateName = this.sidebarData['stateName']
+      // this.prevSelectedOverlay = this.sidebarData['selectedOverlay']
 
-      this.useBivariate = this.sidebarData['useBivariate']
-      this.useDashOverlay = this.sidebarData['useDashOverlay']
-      this.useSpike = this.sidebarData['useSpike']
+      // this.useBivariate = this.sidebarData['useBivariate']
+      // this.useDashOverlay = this.sidebarData['useDashOverlay']
+      // this.useSpike = this.sidebarData['useSpike']
+
+      this.selectedOverlay = this.sidebarData['selectedOverlay']
 
       this.organizeData()
     }
@@ -148,10 +155,10 @@ export class SidebarComponent implements OnChanges, OnInit {
     if (this.selectedCol1 === "--") {
       let message = 'Please select at least 1 column.'
       this.onErrorSnackbar(message)
-    } else if ((this.selectedCol1 === "nsdoh_profiles" && this.useBivariate === true)) {
+    } else if ((this.selectedCol1 === "nsdoh_profiles" && this.selectedOverlay === "Bivariate Choropleth")) {
       let message = 'NSDOH Profiles currently only works on Heatmap Overlays. Please change this to continue.'
       this.onErrorSnackbar(message)
-    } else if ((this.selectedCol1 === "--" || this.selectedCol2 === "--") && this.useBivariate === true) {
+    } else if ((this.selectedCol1 === "--" || this.selectedCol2 === "--") && this.selectedOverlay === "Bivariate Choropleth") {
       let message = 'In order to display Bivariate plot, you must select 2 columns.'
       this.onErrorSnackbar(message)
     } else {
@@ -160,15 +167,16 @@ export class SidebarComponent implements OnChanges, OnInit {
         col1: this.selectedCol1,
         col2: this.selectedCol2,
         col3: this.selectedCol3,
-        useBivariate: this.useBivariate,
-        useDashOverlay: this.useDashOverlay,
-        useSpike: this.useSpike,
-        stateName: this.stateName
+        // useBivariate: this.useBivariate,
+        // useDashOverlay: this.useDashOverlay,
+        // useSpike: this.useSpike,
+        stateName: this.stateName,
+        selectedOverlay:  this.selectedOverlay
       }
       this.showMoreColsA = false;
       this.showMoreColsB = false;
 
-      if (this.useBivariate === this.prevUseBivariate && this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.selectedCol3 === this.prevCol3 && this.stateName !== this.prevStateName) {
+      if (this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.selectedCol3 === this.prevCol3 && this.stateName !== this.prevStateName) {
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
           if (boundsData[this.stateName]) {
             this.dataToParentStateNameOnly.emit(this.stateName)
@@ -192,42 +200,43 @@ export class SidebarComponent implements OnChanges, OnInit {
     }
   }
 
-  onChangeOverlay(type) {
-    if(type === 'bivariate'){
-      this.useBivariate = !this.useBivariate
-      if(this.useBivariate){
-        this.useDashOverlay = false
-        this.useSpike = false
-      }else{
-        this.useSpike = true
-      }
-    }else if(type === 'dash'){
-      this.useDashOverlay = !this.useDashOverlay
-      if(this.useDashOverlay){
-        this.useBivariate = false
-        this.useSpike = false
-      }else{
-        this.useBivariate = true
-      }
-    }else if (type === 'spike'){
-      this.useSpike = !this.useSpike
-      if(this.useSpike){
-        this.useBivariate = false
-        this.useDashOverlay = false
-      }else {
-        this.useBivariate = true
-      }
-    }
+  onChangeOverlay() {
+    // if(type === 'bivariate'){
+    //   this.useBivariate = !this.useBivariate
+    //   if(this.useBivariate){
+    //     this.useDashOverlay = false
+    //     this.useSpike = false
+    //   }else{
+    //     this.useSpike = true
+    //   }
+    // }else if(type === 'dash'){
+    //   this.useDashOverlay = !this.useDashOverlay
+    //   if(this.useDashOverlay){
+    //     this.useBivariate = false
+    //     this.useSpike = false
+    //   }else{
+    //     this.useBivariate = true
+    //   }
+    // }else if (type === 'spike'){
+    //   this.useSpike = !this.useSpike
+    //   if(this.useSpike){
+    //     this.useBivariate = false
+    //     this.useDashOverlay = false
+    //   }else {
+    //     this.useBivariate = true
+    //   }
+    // }
 
     const data = {
       years: this.selectedYear.toString(),
       col1: this.selectedCol1,
       col2: this.selectedCol2,
       col3: this.selectedCol3,
-      useBivariate: this.useBivariate,
-      useDashOverlay: this.useDashOverlay,
-      useSpike: this.useSpike,
-      stateName: this.stateName
+      // useBivariate: this.useBivariate,
+      // useDashOverlay: this.useDashOverlay,
+      // useSpike: this.useSpike,
+      stateName: this.stateName,
+      selectedOverlay: this.selectedOverlay
     }
 
     this.dataToParent.emit(data);

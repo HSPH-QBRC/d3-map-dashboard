@@ -44,9 +44,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   maxYear = 2099
   showYears = false
   // showRedline: boolean = false
-  useBivariate: boolean = true;
-  useDashOverlay: boolean = false;
-  useSpike: boolean = false;
+  // useBivariate: boolean = true;
+  // useDashOverlay: boolean = false;
+  // useSpike: boolean = false;
+  selectedOverlay = 'Bivariate Choropleth'
 
   selectedYear: string = '2017';
   selectedCol1: string = 'population';
@@ -117,10 +118,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.selectedCol2 = this.dataFromSidebar['col2']
       this.selectedCol3 = this.dataFromSidebar['col3']
       this.selectedState = this.dataFromSidebar['map']
-      this.useBivariate = this.dataFromSidebar['useBivariate']
-      this.useDashOverlay = this.dataFromSidebar['useDashOverlay']
-      this.useSpike = this.dataFromSidebar['useSpike']
+      // this.useBivariate = this.dataFromSidebar['useBivariate']
+      // this.useDashOverlay = this.dataFromSidebar['useDashOverlay']
+      // this.useSpike = this.dataFromSidebar['useSpike']
       this.stateName = this.dataFromSidebar['stateName']
+      this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
+      console.log("selected overlay from leaflet: ", this.selectedOverlay)
+
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
@@ -187,9 +191,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       "selectedYear": this.selectedYear,
       "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3],
       "stateName": this.stateName,
-      "useBivariate": this.useBivariate,
-      "useDashOverlay": this.useDashOverlay,
-      "useSpike": this.useSpike
+      // "useBivariate": this.useBivariate,
+      // "useDashOverlay": this.useDashOverlay,
+      // "useSpike": this.useSpike,
+      "selectedOverlay": this.selectedOverlay
     }
     this.dataToSidebar.emit(this.sidebarData);
 
@@ -828,9 +833,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     let selectedCol2 = this.selectedCol2
     let selectedCol3 = this.selectedCol3
 
-    let useBivariate = this.useBivariate
-    let useDashOverlay = this.useDashOverlay
-    let useSpike = this.useSpike
+    // let useBivariate = this.useBivariate
+    // let useDashOverlay = this.useDashOverlay
+    // let useSpike = this.useSpike
+    let selectedOverlay = this.selectedOverlay
 
     const color2 = d3.scaleOrdinal()
       .domain(this.colorCategories)
@@ -893,7 +899,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     //     pane.remove();
     // }
 
-    if (useDashOverlay) {
+    if (selectedOverlay === "Heatmap Overlays") {
       this.map.createPane('dashPane');
       this.map.getPane('dashPane').style.zIndex = '501';
     } else {
@@ -910,7 +916,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
     }
 
-    if (useSpike) {
+    if (selectedOverlay === "Spikes") {
       this.map.createPane("circlePane");
       this.map.getPane("circlePane").style.zIndex = "651";
     } else {
@@ -934,7 +940,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
     let areaLayer = L.geoJSON(area, {
       style: function (d) {
-        if (useBivariate) {
+        if (selectedOverlay === "Bivariate Choropleth") {
           const pane = 'tractsPane';
           const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
           const id = d['properties'][fips]
@@ -970,7 +976,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             fillColor: color,
             fillOpacity: .9
           };
-        } else if (useDashOverlay || useSpike) {
+        } else if (selectedOverlay === "Heatmap Overlays" || selectedOverlay === "Spikes") {
           if (selectedCol1 === 'nsdoh_profiles') {
             const pane = 'tractsPane';
             let id = currentZoom < 9 ? d['properties'].STCOFIPS : d['properties'].FIPS
@@ -1135,9 +1141,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
       }
     }).addTo(this.map);
-    // if(useBivariate){
-    //   areaLayer.addTo(this.map);
-    // }
 
     let map = this.map
 
@@ -1207,7 +1210,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
     }
 
-    if (!useBivariate && selectedCol2 !== '--') {
+    if (selectedOverlay !== "Bivariate Choropleth" && selectedCol2 !== '--') {
       let areaLayer2 = L.geoJSON(area, {
         style: function (d) {
           // const pane = 'tractsPane';
@@ -1216,7 +1219,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
 
           // Add pattern to the map
-          if (useDashOverlay) {
+          if (selectedOverlay === "Heatmap Overlays") {
             const dashPattern2 = new L.StripePattern({
               weight: 2, // Thickness of stripes
               color: getColor(val2, min2, max2, 'red'), // Color of stripes
@@ -1269,7 +1272,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-            if (useSpike) {
+            if (selectedOverlay === "Spikes") {
               const latLng = layer.getBounds().getCenter();
               addCircle(latLng, avgValue2);
             }
@@ -1310,16 +1313,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-            if (useSpike) {
+            if (selectedOverlay === "Spikes") {
               const latLng = layer.getBounds().getCenter();
               addCircle(latLng, val2);
             }
           }
         }
       }).addTo(this.map);
-      // if (useSpike || useDashOverlay) {
-      //   areaLayer2.addTo(this.map);
-      // }
 
     }
 
@@ -1424,7 +1424,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.legendControl = L.control({ position: 'bottomright' });
 
     this.legendControl.onAdd = () => {
-      const div = this.useBivariate ? L.DomUtil.create('div', 'd3-legend-container') : L.DomUtil.create('div', 'd3-legend-container2')
+      const div = this.selectedOverlay === "Bivariate Choropleth" ? L.DomUtil.create('div', 'd3-legend-container') : L.DomUtil.create('div', 'd3-legend-container2')
       this.createD3Legend(div);
 
       return div;
@@ -1441,9 +1441,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       .append("svg")
       .attr("width", 80)
       .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? 120 : 80)
-      .attr("viewBox", this.useBivariate ? bivariateViewBox : heatmapViewBox)
+      .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : heatmapViewBox)
 
-    if (this.useBivariate) {
+    if (this.selectedOverlay === "Bivariate Choropleth") {
       // Create the grid for the legend
       const k = 24; // size of each cell in the grid 
       const n = 3 // Grid size for the legend

@@ -91,15 +91,15 @@ a.mat-button {
     }
 
     .wrap-checkbox .mat-checkbox-label {
-        white-space: normal; 
+        white-space: normal;
         word-wrap: break-word;
         line-height: 1.2;
         text-transform: capitalize;
         margin-right: 20px;
         font-size: 12px;
-        opacity: .9;
+        opacity: 0.9;
     }
-    
+
     .btn-toggle:hover {
         cursor: pointer;
         background: transparent !important;
@@ -127,7 +127,7 @@ a.mat-button {
 .showmore-button:focus {
     outline: none;
 }
-.showmore-paragraph{
+.showmore-paragraph {
     margin-bottom: 0px;
     text-align: right;
 }
@@ -141,6 +141,17 @@ a.mat-button {
     color: rgba(90, 90, 90, 0.9);
 }
 
-.treeButton{
+.treeButton {
     line-height: 20px;
+}
+
+.example-radio-group {
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+    align-items: flex-start;
+}
+
+#radio-group-label {
+    font-weight: bold !important;
 }
