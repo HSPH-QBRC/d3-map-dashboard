@@ -54,7 +54,7 @@ export class SidebarComponent implements OnChanges, OnInit {
   groceryDataDictionary = {}
 
   selectedOverlay = "Bivariate Choropleth"
-  overlays = ["Bivariate Choropleth", "Heatmap Overlays", "Spikes", "Circles"]
+  overlays = ["Bivariate Choropleth", "Heatmap Overlays", "Circles", "Spikes"]
 
   ngOnInit(): void {
     this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {

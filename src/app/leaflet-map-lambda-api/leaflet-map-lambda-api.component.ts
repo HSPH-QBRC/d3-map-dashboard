@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, } from '@angular/core';
 import * as L from 'leaflet';
 import { HttpClient } from '@angular/common/http';
 // import { CsvDataService } from '../csv-data.service';
@@ -6,6 +6,8 @@ import * as d3 from 'd3';
 import 'leaflet.pattern';
 import { ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
+import { startWith } from 'rxjs/operators';
 
 interface GroceryData {
   id: string;
@@ -123,8 +125,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       // this.useSpike = this.dataFromSidebar['useSpike']
       this.stateName = this.dataFromSidebar['stateName']
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
-      console.log("selected overlay from leaflet: ", this.selectedOverlay)
-
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
@@ -139,6 +139,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           });
         }
         else {
+          //when overlay type changes
           this.useNewMap = true;
           this.loadAndInitializeMap()
         }
@@ -158,11 +159,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   tileBounds: any = {}
   redlineData: any = []
+  paramsFound = false;
 
   ngOnInit(): void {
     this.route.queryParams
       .pipe(filter(params => Object.keys(params).length > 0)) // Ignore empty params
       .subscribe(params => {
+        this.paramsFound = true
         this.selectedCol1 = params['col1'] || this.selectedCol1;
         this.selectedCol2 = params['col2'] || this.selectedCol2;
         this.stateName = params['state'] || this.stateName;
@@ -174,6 +177,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.loadCSVData();
       });
 
+    setTimeout(() => {
+      if (!this.paramsFound) {
+        this.loadCSVData();
+      }
+    }, 500)
+
     this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
       this.tileBounds = data
     });
@@ -181,6 +190,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.http.get('./assets/maps/tiles_no_redline/mappinginequality.json').subscribe((geojsonData: any) => {
       this.redlineData = geojsonData
     })
+
+
+
+
   }
 
   sendData() {
@@ -916,7 +929,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
     }
 
-    if (selectedOverlay === "Spikes") {
+    if (selectedOverlay === "Circles") {
       this.map.createPane("circlePane");
       this.map.getPane("circlePane").style.zIndex = "651";
     } else {
@@ -925,6 +938,23 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       if (pane) {
         this.map.eachLayer(layer => {
           if ((layer as any).options && (layer as any).options.pane === "circlePane") {
+            this.map.removeLayer(layer);
+          }
+        });
+
+        pane.remove();
+      }
+    }
+
+    if (selectedOverlay === "Spikes") {
+      this.map.createPane("spikePane");
+      this.map.getPane("spikePane").style.zIndex = "653";
+    } else {
+      //remove a pane when not in use
+      const pane = this.map.getPane("spikePane");
+      if (pane) {
+        this.map.eachLayer(layer => {
+          if ((layer as any).options && (layer as any).options.pane === "spikePane") {
             this.map.removeLayer(layer);
           }
         });
@@ -976,7 +1006,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             fillColor: color,
             fillOpacity: .9
           };
-        } else if (selectedOverlay === "Heatmap Overlays" || selectedOverlay === "Spikes") {
+        } else if (selectedOverlay === "Heatmap Overlays" || selectedOverlay === "Circles" || selectedOverlay === "Spikes") {
           if (selectedCol1 === 'nsdoh_profiles') {
             const pane = 'tractsPane';
             let id = currentZoom < 9 ? d['properties'].STCOFIPS : d['properties'].FIPS
@@ -1144,27 +1174,29 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     let map = this.map
 
-    // function addSpike(point: L.Point, value: number) {
-    //   const svg = d3.select("#map-container").select("svg"); // Select existing Leaflet SVG
-    //   const spikeHeight = d3.scaleLinear().domain([min2, max2]).range([0, 50]);
+    function addSpike(latLng: L.LatLng, value: number) {
+      const height = value /(max2 - min2)
+      
+      const spikeHeight = scaleRadius(value) * 0.0005 * height; // Convert to map units (degrees)
+      const spikeWidth = spikeHeight / 10; // Adjust width relative to height
+    
+      // Define the three points of the triangle (base and tip)
+      const triangleCoords = [
+        [latLng.lat, latLng.lng - spikeWidth / 2], // Left base
+        [latLng.lat, latLng.lng + spikeWidth / 2], // Right base
+        [latLng.lat + spikeHeight, latLng.lng] // Pointed top
+      ];
+    
+      // Create the triangle using a Leaflet polygon
+      const triangle = L.polygon(triangleCoords, {
+        color: 'red',
+        fillColor: 'tomato',
+        fillOpacity: 0.75,
+        weight: 1,
+        pane: "spikePane"
+      }).addTo(map);
+    }
 
-    //   svg.append("path")
-    //     .attr("class", "spike") // Class for easy removal
-    //     .attr("transform", `translate(${point.x}, ${point.y})`)
-    //     .attr("d", spike(spikeHeight(value)))
-    //     .attr("fill", "tomato")
-    //     .attr("stroke", "red")
-    //     .attr("fill-opacity", 0.5)
-    //     .attr("stroke-width", 0.5);
-
-    // }
-
-    // // Function to generate the spike shape
-    // function spike(height: number) {
-    //   return `M 0 0 L -3 ${-height} L 3 ${-height} Z`; // Triangle spike
-    // }
-
-    // const circleLayer = L.layerGroup();
     function addCircle(latLng: L.LatLng, value: number) {
       const circle = L.circle(latLng, {
         color: 'red',
@@ -1272,9 +1304,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-            if (selectedOverlay === "Spikes") {
+            if (selectedOverlay === "Circles") {
               const latLng = layer.getBounds().getCenter();
               addCircle(latLng, avgValue2);
+            } else if (selectedOverlay === "Spikes") {
+              const latLng = layer.getBounds().getCenter();
+              addSpike(latLng, avgValue2);
             }
 
           } else if (currentZoom >= 9) {
@@ -1313,9 +1348,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-            if (selectedOverlay === "Spikes") {
+            if (selectedOverlay === "Circles") {
               const latLng = layer.getBounds().getCenter();
               addCircle(latLng, val2);
+            } else if (selectedOverlay === "Spikes") {
+              const latLng = layer.getBounds().getCenter();
+              addSpike(latLng, val2);
             }
           }
         }
