@@ -56,7 +56,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   // selectedCol1: string = 'nsdoh_profiles'
   // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
-  selectedCol3: string = '--';
+  // selectedCol3: string = '--';
   selectedState = 'USA 2000 Mainland (County)';
   // statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   // fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
@@ -97,7 +97,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   prevSelectedYear
   prevSelectedCol1
   prevSelectedCol2
-  prevSelectedCol3
+  // prevSelectedCol3
   prevSelectedState
   prevStateName
 
@@ -111,23 +111,18 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.prevSelectedYear = this.selectedYear
     this.prevSelectedCol1 = this.selectedCol1
     this.prevSelectedCol2 = this.selectedCol2
-    this.prevSelectedCol3 = this.selectedCol3
     this.prevStateName = this.stateName
 
     if (this.dataFromSidebar !== undefined) {
       this.selectedYear = this.dataFromSidebar['years']
       this.selectedCol1 = this.dataFromSidebar['col1']
       this.selectedCol2 = this.dataFromSidebar['col2']
-      this.selectedCol3 = this.dataFromSidebar['col3']
       this.selectedState = this.dataFromSidebar['map']
-      // this.useBivariate = this.dataFromSidebar['useBivariate']
-      // this.useDashOverlay = this.dataFromSidebar['useDashOverlay']
-      // this.useSpike = this.dataFromSidebar['useSpike']
       this.stateName = this.dataFromSidebar['stateName']
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
 
       //if columns changed load reset and loadcsvdata
-      if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
+      if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2) {
         this.resetVariables()
         this.loadCSVData()
       } else {
@@ -191,9 +186,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.redlineData = geojsonData
     })
 
-
-
-
   }
 
   sendData() {
@@ -202,11 +194,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       "columnsA": this.columnsA,
       "columnsB": this.columnsB,
       "selectedYear": this.selectedYear,
-      "selectedCol": [this.selectedCol1, this.selectedCol2, this.selectedCol3],
+      "selectedCol": [this.selectedCol1, this.selectedCol2],
       "stateName": this.stateName,
-      // "useBivariate": this.useBivariate,
-      // "useDashOverlay": this.useDashOverlay,
-      // "useSpike": this.useSpike,
       "selectedOverlay": this.selectedOverlay
     }
     this.dataToSidebar.emit(this.sidebarData);
@@ -276,9 +265,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
         if (this.selectedCol2 !== "--") {
           queryURL += `&column2=${this.selectedCol2}`;
-        }
-        if (this.selectedCol3 !== "--") {
-          queryURL += `&column3=${this.selectedCol3}`;
         }
 
         return this.http
@@ -386,7 +372,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
         let rate1 = Math.log(Number(d[this.selectedCol1]) + 1);
         let rate2 = Math.log(Number(d[this.selectedCol2]) + 1);
-        let rate3 = Math.log(Number(d[this.selectedCol3]) + 1);
+        // let rate3 = Math.log(Number(d[this.selectedCol3]) + 1);
         let population = d['population'] !== undefined ? Number(d['population']) : 0
 
         if (!isNaN(rate1) && rate1 !== null && rate1 !== undefined && rate1 !== -1 && rate1 !== -Infinity) {
@@ -406,16 +392,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           this.fullData2[currYear].push({
             id: d['tract_fips10'],
             rate: rate2,
-            population: population
-          } as GroceryData);
-        }
-
-        if (!isNaN(rate3) && rate3 !== null && rate3 !== undefined && rate3 !== -1 && rate3 !== -Infinity) {
-          this.min3 = Math.min(this.min3, rate3)
-          this.max3 = Math.max(this.max3, rate3)
-          this.fullData3[currYear].push({
-            id: d['tract_fips10'],
-            rate: rate3,
             population: population
           } as GroceryData);
         }
@@ -514,53 +490,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
       }
 
-      if (this.selectedCol3 !== '--') {
-        this.columnsUsed += 1;
-        let currYear = this.selectedYear
-        for (let i of this.fullData3[currYear]) {
-          let id = i['id'].substring(0, 5);
-          let rate = i['rate']
-          let pop = i['population']
-
-          if (!this.fullAvgData3[currYear]) {
-            this.fullAvgData3[currYear] = {}
-          }
-
-          if (!this.fullAvgData3[currYear][id]) {
-            this.fullAvgData3[currYear][id] = {
-              rateArr: [],
-              populationArr: []
-            }
-          }
-          this.fullAvgData3[currYear][id].rateArr.push(rate)
-          this.fullAvgData3[currYear][id].populationArr.push(pop)
-        }
-
-        for (let i in this.fullAvgData3[currYear]) {
-          if (this.fullAvgData3[currYear][i]['rateArr'].length !== 0) {
-            this.fullAvgData3[currYear][i]['sum'] = this.fullAvgData3[currYear][i]['populationArr'].reduce((accumulator, currentValue) => accumulator + currentValue, 0)
-          } else {
-            this.fullAvgData3[currYear][i]['sum'] = 0
-          }
-        }
-
-        for (let i in this.fullAvgData3[currYear]) {
-          if (this.fullAvgData3[currYear][i]['rateArr'].length !== 0) {
-            if (this.fullAvgData3[currYear][i]['avg'] === undefined) {
-              this.fullAvgData3[currYear][i]['avg'] = 0
-            }
-            for (let index in this.fullAvgData3[currYear][i]['rateArr']) {
-              let rate = Number(this.fullAvgData3[currYear][i]['rateArr'][index])
-              let pop = Number(this.fullAvgData3[currYear][i]['populationArr'][index])
-              let popSum = Number(this.fullAvgData3[currYear][i]['sum'])
-              let weightedRate = rate * pop / popSum
-              this.fullAvgData3[currYear][i]['avg'] += weightedRate
-            }
-          }
-        }
-
-      }
-
       //collects info to find which profile appears the most in a County
       if (this.selectedCol1 === 'nsdoh_profiles') {
         for (let i of this.dataCarmen) {
@@ -588,6 +517,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
 
       }
+
       this.columnsA.sort()
       this.columnsB.sort()
 
@@ -837,14 +767,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     const valuemap1 = new Map(this.fullData1[this.selectedYear].map(d => [d.id, d.rate]));
     const valuemap2 = new Map(this.fullData2[this.selectedYear].map(d => [d.id, d.rate]));
-    const valuemap3 = new Map(this.fullData3[this.selectedYear].map(d => [d.id, d.rate]));
     const valuemapCarmen = new Map(this.dataCarmen.map(d => [d.id, d.rate]));
 
     let colors = this.colors
     let currentZoom = this.currentZoomLevel
     let selectedCol1 = this.selectedCol1
     let selectedCol2 = this.selectedCol2
-    let selectedCol3 = this.selectedCol3
+    // let selectedCol3 = this.selectedCol3
 
     // let useBivariate = this.useBivariate
     // let useDashOverlay = this.useDashOverlay
@@ -895,22 +824,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     this.map.createPane('tractsPane');
     this.map.getPane('tractsPane').style.zIndex = '499';
-
-    // if (useSpike) {
-    //   this.map.createPane('spikePane'); // Create a custom pane
-    //   this.map.getPane('spikePane').style.zIndex = "650"; // Set higher z-index
-    // }
-    // function removePane(paneName) {
-    //   const pane = this.map.getPane(paneName);
-    //   if (pane) {
-    //     this.map.eachLayer(layer => {
-    //       if ((layer as any).options && (layer as any).options.pane === paneName) {
-    //         this.map.removeLayer(layer);
-    //       }
-    //     });
-
-    //     pane.remove();
-    // }
 
     if (selectedOverlay === "Heatmap Overlays") {
       this.map.createPane('dashPane');
@@ -1038,6 +951,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       },
       onEachFeature: function (feature, layer) {
         if (selectedCol1 === 'nsdoh_profiles') {
+
           if (currentZoom < 9) {
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
@@ -1126,7 +1040,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
 
-              addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container2');
+              if (selectedOverlay === 'Bivariate Choropleth') {
+                addPlacementMarkerLegendBivariate(avgValue1, avgValue2, '.d3-legend-container');
+              } else {
+                addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container2');
+              }
+
             });
 
             // Optionally, add a close handler if clicking elsewhere is needed
@@ -1175,18 +1094,18 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     let map = this.map
 
     function addSpike(latLng: L.LatLng, value: number) {
-      const height = value /(max2 - min2)
-      
+      const height = value / (max2 - min2)
+
       const spikeHeight = scaleRadius(value) * 0.0005 * height; // Convert to map units (degrees)
       const spikeWidth = spikeHeight / 10; // Adjust width relative to height
-    
+
       // Define the three points of the triangle (base and tip)
       const triangleCoords = [
         [latLng.lat, latLng.lng - spikeWidth / 2], // Left base
         [latLng.lat, latLng.lng + spikeWidth / 2], // Right base
         [latLng.lat + spikeHeight, latLng.lng] // Pointed top
       ];
-    
+
       // Create the triangle using a Leaflet polygon
       const triangle = L.polygon(triangleCoords, {
         color: 'red',
@@ -1226,17 +1145,72 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let legendHeight = 75
         let separation = 20
 
-        svgLegend.append("circle")
-          .attr("cx", (val1 / (max1 - min1)) * legendWidth)  // Middle of the rectangle 
-          .attr("cy", legendHeight - 45)  // Middle of the rectangle (y + height/2)
-          .attr("r", 3)  // Radius of the dot
-          .attr("fill", "black");  // Black color
+        const circleRadius = 3; // Define circle radius
+        const minX = circleRadius; // Ensures the circle isn't clipped on the left
+        const maxX = legendWidth - circleRadius; // Ensures the circle isn't clipped on the right
+
+        // Calculate raw x-position based on value scaling
+        let rawX1 = (val1 / (max1 - min1)) * legendWidth;
+        let rawX2 = (val2 / (max2 - min2)) * legendWidth;
+
+        // Ensure the value stays within the allowed range
+        let clampedX1 = Math.max(minX, rawX1); // Prevents going too far left
+        clampedX1 = Math.min(maxX, clampedX1); // Prevents going too far right
+
+        // Ensure the value stays within the allowed range
+        let clampedX2 = Math.max(minX, rawX2); // Prevents going too far left
+        clampedX2 = Math.min(maxX, clampedX2); // Prevents going too far right
 
         svgLegend.append("circle")
-          .attr("cx", (val2 / (max2 - min2)) * legendWidth)  // Middle of the rectangle 
+          .attr("cx", clampedX1)  // Middle of the rectangle 
+          .attr("cy", legendHeight - 45)  // Middle of the rectangle (y + height/2)
+          .attr("r", circleRadius)  // Radius of the dot
+          .attr("fill", "black")  // Black color
+          .attr("opacity", 0.7)
+
+        svgLegend.append("circle")
+          .attr("cx", clampedX2)  // Middle of the rectangle 
           .attr("cy", legendHeight - 35 + separation + 15)  // Middle of the rectangle (y + height/2)
-          .attr("r", 3)  // Radius of the dot
-          .attr("fill", "black");  // Black color
+          .attr("r", circleRadius)  // Radius of the dot
+          .attr("fill", "black")  // Black color
+          .attr("opacity", 0.7)
+      } else {
+        console.warn("Legend SVG not found");
+      }
+    }
+
+    function addPlacementMarkerLegendBivariate(val1, val2, container) {
+      let container2 = `${container} svg`
+      const svgLegend = d3.select(container2)
+
+      // Check if the legend exists before modifying it
+      if (!svgLegend.empty()) {
+        // Remove any previously added black circle
+        svgLegend.selectAll("circle").remove();
+
+        const squareSize = 24;
+        // Normalize values between 0 and 1
+        const normalize = (value: number, min: number, max: number) => (value - min) / (max - min);
+
+        const value1 = normalize(val1, min1, max1);
+        const value2 = normalize(val2, min2, max2);
+
+        // Function to determine placement based on value
+        const getPlacement = (value: number): number => {
+          if (value < 0.33) return squareSize / 2;
+          if (value < 0.66) return squareSize / 2 + squareSize;
+          return squareSize / 2 + squareSize * 2;
+        };
+
+        const xPlacement = getPlacement(value1);
+        const yPlacement = getPlacement(1 - value2);
+
+        svgLegend.append("circle")
+          .attr("cx", xPlacement)  // Middle of the rectangle 
+          .attr("cy", yPlacement)  // Middle of the rectangle (y + height/2)
+          .attr("r", 7)  // Radius of the dot
+          .attr("fill", "black")
+          .attr("opacity", 0.7)
       } else {
         console.warn("Legend SVG not found");
       }
@@ -1276,7 +1250,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
             let fips = feature.properties.STCOFIPS
-            let avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
+            let avgValue1 = 0
+            if (selectedCol1 !== 'nsdoh_profiles') {
+              avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
+            }
+
             let avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
             let countyTooltip = `
             <strong> State:</strong> ${state || 'N/A'}<br>
@@ -1304,13 +1282,17 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-            if (selectedOverlay === "Circles") {
-              const latLng = layer.getBounds().getCenter();
-              addCircle(latLng, avgValue2);
-            } else if (selectedOverlay === "Spikes") {
-              const latLng = layer.getBounds().getCenter();
-              addSpike(latLng, avgValue2);
+            let profile = avgDataCarmen[fips] !== undefined ? avgDataCarmen[fips]['mostFreq'] : "N/A";
+            if (profile !== 'N/A') {
+              if (selectedOverlay === "Circles") {
+                const latLng = layer.getBounds().getCenter();
+                addCircle(latLng, avgValue2);
+              } else if (selectedOverlay === "Spikes") {
+                const latLng = layer.getBounds().getCenter();
+                addSpike(latLng, avgValue2);
+              }
             }
+
 
           } else if (currentZoom >= 9) {
             let fips = feature.properties.FIPS
@@ -1327,8 +1309,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               <strong> County:</strong> ${county || 'N/A'}<br>
               <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
               <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-              <strong> ${selectedCol1}:</strong> ${val1 || 'N/A'}<br>
-              <strong> ${selectedCol2}:</strong> ${val2 || 'N/A'}<br>
+              <strong> ${selectedCol1}:</strong> ${val1.toFixed(2) || 'N/A'}<br>
+              <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
             `;
             layer.on('click', function () {
               layer.bindTooltip(censusTractTooltip, {
@@ -1347,13 +1329,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
-
-            if (selectedOverlay === "Circles") {
-              const latLng = layer.getBounds().getCenter();
-              addCircle(latLng, val2);
-            } else if (selectedOverlay === "Spikes") {
-              const latLng = layer.getBounds().getCenter();
-              addSpike(latLng, val2);
+            let profile = valuemapCarmen.get(fips)
+            if (profile) {
+              if (selectedOverlay === "Circles") {
+                const latLng = layer.getBounds().getCenter();
+                addCircle(latLng, val2);
+              } else if (selectedOverlay === "Spikes") {
+                const latLng = layer.getBounds().getCenter();
+                addSpike(latLng, val2);
+              }
             }
           }
         }
@@ -1637,24 +1621,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
 
         if (this.selectedCol2 !== '--') {
-          // Define the second gradient from white to yellow
-          // const yellowGradient = legendGroup.append("linearGradient")
-          //   .attr("id", "legendGradientYellow")
-          //   .attr("x1", "0%")
-          //   .attr("y1", "0%")
-          //   .attr("x2", "100%")
-          //   .attr("y2", "0%");
-
-          // yellowGradient.append("stop")
-          //   .attr("offset", "0%")
-          //   .attr("stop-color", "#ffff00")
-          //   .attr("stop-opacity", 0);  // Transparent yellow
-
-          // yellowGradient.append("stop")
-          //   .attr("offset", "100%")
-          //   .attr("stop-color", "#ffff00")
-          //   .attr("stop-opacity", 1);  // Opaque yellow
-
           const gradient = legendGroup.append("linearGradient")
             // .append('linearGradient')
             .attr('id', 'legendGradientStripe')
@@ -1725,56 +1691,56 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .text(`${Math.ceil(this.max2 * 10) / 10}`);
         }
 
-        if (this.selectedCol3 !== '--') {
-          // Define the red gradient with transparency
-          const redGradient = legendGroup.append("linearGradient")
-            .attr("id", "legendGradientRed")
-            .attr("x1", "0%")
-            .attr("y1", "0%")
-            .attr("x2", "100%")
-            .attr("y2", "0%");
+        // if (this.selectedCol3 !== '--') {
+        //   // Define the red gradient with transparency
+        //   const redGradient = legendGroup.append("linearGradient")
+        //     .attr("id", "legendGradientRed")
+        //     .attr("x1", "0%")
+        //     .attr("y1", "0%")
+        //     .attr("x2", "100%")
+        //     .attr("y2", "0%");
 
-          redGradient.append("stop")
-            .attr("offset", "0%")
-            .attr("stop-color", "#ff0000")
-            .attr("stop-opacity", 0);
+        //   redGradient.append("stop")
+        //     .attr("offset", "0%")
+        //     .attr("stop-color", "#ff0000")
+        //     .attr("stop-opacity", 0);
 
-          redGradient.append("stop")
-            .attr("offset", "100%")
-            .attr("stop-color", "#ff0000")
-            .attr("stop-opacity", 1);
+        //   redGradient.append("stop")
+        //     .attr("offset", "100%")
+        //     .attr("stop-color", "#ff0000")
+        //     .attr("stop-opacity", 1);
 
-          // Rectangle for red gradient with additional vertical separation
-          svgLegend.append("rect")
-            .attr("x", 5)
-            .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
-            .attr("width", legendWidth)
-            .attr("height", 10)
-            .style("fill", "url(#legendGradientRed)");
+        //   // Rectangle for red gradient with additional vertical separation
+        //   svgLegend.append("rect")
+        //     .attr("x", 5)
+        //     .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
+        //     .attr("width", legendWidth)
+        //     .attr("height", 10)
+        //     .style("fill", "url(#legendGradientRed)");
 
-          // Text labels for red gradient
-          svgLegend.append("text")
-            .attr("x", 0)
-            .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
-            .attr("text-anchor", "start")
-            .attr("font-size", 8)
-            .attr("font-weight", "bold")
-            .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
+        //   // Text labels for red gradient
+        //   svgLegend.append("text")
+        //     .attr("x", 0)
+        //     .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
+        //     .attr("text-anchor", "start")
+        //     .attr("font-size", 8)
+        //     .attr("font-weight", "bold")
+        //     .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
 
-          svgLegend.append("text")
-            .attr("x", 0)
-            .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
-            .attr("text-anchor", "start")
-            .attr("font-size", 8)
-            .text(`${Math.floor(this.min2 * 10) / 10}`);
+        //   svgLegend.append("text")
+        //     .attr("x", 0)
+        //     .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+        //     .attr("text-anchor", "start")
+        //     .attr("font-size", 8)
+        //     .text(`${Math.floor(this.min2 * 10) / 10}`);
 
-          svgLegend.append("text")
-            .attr("x", 100)
-            .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
-            .attr("text-anchor", "end")
-            .attr("font-size", 8)
-            .text(`${Math.ceil(this.max2 * 10) / 10}`);
-        }
+        //   svgLegend.append("text")
+        //     .attr("x", 100)
+        //     .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
+        //     .attr("text-anchor", "end")
+        //     .attr("font-size", 8)
+        //     .text(`${Math.ceil(this.max2 * 10) / 10}`);
+        // }
       }
 
     }

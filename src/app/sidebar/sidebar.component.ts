@@ -26,16 +26,13 @@ export class SidebarComponent implements OnChanges, OnInit {
   selectedYear = '2000'
   selectedCol1 = ''
   selectedCol2 = ''
-  selectedCol3 = ''
   stateName = ''
 
   prevYear = '2000'
   prevCol1 = ''
   prevCol2 = ''
-  prevCol3 = ''
   prevStateName = ''
   prevUseBivariate = true
-  // prevSelectedOverlay = ''
 
   showYears = false
   showColsA = false
@@ -46,10 +43,6 @@ export class SidebarComponent implements OnChanges, OnInit {
 
   showMoreColsA = false
   showMoreColsB = false
-
-  // useBivariate: boolean = true
-  // useDashOverlay: boolean = false
-  // useSpike: boolean = false
 
   groceryDataDictionary = {}
 
@@ -72,19 +65,12 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.selectedYear = this.sidebarData['selectedYear']
       this.selectedCol1 = this.sidebarData['selectedCol'][0]
       this.selectedCol2 = this.sidebarData['selectedCol'][1]
-      this.selectedCol3 = this.sidebarData['selectedCol'][2]
       this.stateName = this.sidebarData['stateName']
 
       this.prevYear = this.sidebarData['selectedYear']
       this.prevCol1 = this.sidebarData['selectedCol'][0]
       this.prevCol2 = this.sidebarData['selectedCol'][1]
-      this.prevCol3 = this.sidebarData['selectedCol'][2]
       this.prevStateName = this.sidebarData['stateName']
-      // this.prevSelectedOverlay = this.sidebarData['selectedOverlay']
-
-      // this.useBivariate = this.sidebarData['useBivariate']
-      // this.useDashOverlay = this.sidebarData['useDashOverlay']
-      // this.useSpike = this.sidebarData['useSpike']
 
       this.selectedOverlay = this.sidebarData['selectedOverlay']
 
@@ -102,35 +88,33 @@ export class SidebarComponent implements OnChanges, OnInit {
         for (let data of this.sidebarData[category]) {
           let checkboxObj = {
             name: data,
-            checked: (data === this.selectedCol1 || data === this.selectedCol2 || data === this.selectedCol3) ? true : false
+            checked: (data === this.selectedCol1 || data === this.selectedCol2) ? true : false
           }
+
           if (this.selectedCol1 === data) {
             tempArrColsA[0] = checkboxObj
           } else if (this.selectedCol2 === data) {
-            tempArrColsA[1] = checkboxObj
-          }
-          else if (this.selectedCol3 === data) {
-            tempArrColsA[2] = checkboxObj
+            if (this.selectedCol1 === 'nsdoh_profiles') {
+              tempArrColsA[0] = checkboxObj
+            } else {
+              tempArrColsA[1] = checkboxObj
+            }
+
           } else {
             this.columnsA.push(checkboxObj)
           }
-
         }
         let combinedArr = [...tempArrColsA, ...this.columnsA]
         this.columnsA = combinedArr
-      } else if (category === 'columnsB') {
+      }
+      else if (category === 'columnsB') {
         for (let data of this.sidebarData[category]) {
           let checkboxObj = {
             name: data,
-            checked: (data === this.selectedCol1 || data === this.selectedCol2 || data === this.selectedCol3) ? true : false
+            checked: (data === this.selectedCol1 || data === this.selectedCol2) ? true : false
           }
-          if (this.selectedCol1 === data) {
+          if (this.selectedCol1 === data || this.selectedCol2 === data) {
             tempArrColsB[0] = checkboxObj
-          } else if (this.selectedCol2 === data) {
-            tempArrColsB[1] = checkboxObj
-          }
-          else if (this.selectedCol3 === data) {
-            tempArrColsB[2] = checkboxObj
           } else {
             this.columnsB.push(checkboxObj)
           }
@@ -138,11 +122,28 @@ export class SidebarComponent implements OnChanges, OnInit {
         }
         let combinedArr = [...tempArrColsB, ...this.columnsB]
         this.columnsB = combinedArr
-      } else if (category === 'years') {
+      }
+      else if (category === 'years') {
         for (let year of this.sidebarData[category]) {
           let numYear = Number(year)
           this.minYear = Math.min(numYear, this.minYear)
           this.maxYear = Math.max(numYear, this.maxYear)
+        }
+      }
+    }
+
+    if (this.selectedCol1 === 'nsdoh_profiles' || this.selectedCol2 === 'nsdoh_profiles') {
+      if (this.selectedOverlay === 'Bivariate Choropleth') {
+        if (this.selectedCol2 === 'nsdoh_profiles') {
+          let temp = this.selectedCol1
+          this.selectedCol1 = this.selectedCol2
+          this.selectedCol2 = temp
+        }
+
+        if (this.selectedCol2 !== '--') {
+          this.selectedOverlay = 'Circles'
+        } else {
+          this.selectedOverlay = 'Heatmap Overlays'
         }
       }
     }
@@ -155,10 +156,8 @@ export class SidebarComponent implements OnChanges, OnInit {
     if (this.selectedCol1 === "--") {
       let message = 'Please select at least 1 column.'
       this.onErrorSnackbar(message)
-    } else if ((this.selectedCol1 === "nsdoh_profiles" && this.selectedOverlay === "Bivariate Choropleth")) {
-      let message = 'NSDOH Profiles currently only works on Heatmap Overlays. Please change this to continue.'
-      this.onErrorSnackbar(message)
-    } else if ((this.selectedCol1 === "--" || this.selectedCol2 === "--") && this.selectedOverlay === "Bivariate Choropleth") {
+    }
+    else if ((this.selectedCol1 === "--" || this.selectedCol2 === "--") && this.selectedOverlay === "Bivariate Choropleth") {
       let message = 'In order to display Bivariate plot, you must select 2 columns.'
       this.onErrorSnackbar(message)
     } else {
@@ -166,17 +165,13 @@ export class SidebarComponent implements OnChanges, OnInit {
         years: this.selectedYear.toString(),
         col1: this.selectedCol1,
         col2: this.selectedCol2,
-        col3: this.selectedCol3,
-        // useBivariate: this.useBivariate,
-        // useDashOverlay: this.useDashOverlay,
-        // useSpike: this.useSpike,
         stateName: this.stateName,
-        selectedOverlay:  this.selectedOverlay
+        selectedOverlay: this.selectedOverlay
       }
       this.showMoreColsA = false;
       this.showMoreColsB = false;
 
-      if (this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.selectedCol3 === this.prevCol3 && this.stateName !== this.prevStateName) {
+      if (this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.stateName !== this.prevStateName) {
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
           if (boundsData[this.stateName]) {
             this.dataToParentStateNameOnly.emit(this.stateName)
@@ -201,40 +196,11 @@ export class SidebarComponent implements OnChanges, OnInit {
   }
 
   onChangeOverlay() {
-    // if(type === 'bivariate'){
-    //   this.useBivariate = !this.useBivariate
-    //   if(this.useBivariate){
-    //     this.useDashOverlay = false
-    //     this.useSpike = false
-    //   }else{
-    //     this.useSpike = true
-    //   }
-    // }else if(type === 'dash'){
-    //   this.useDashOverlay = !this.useDashOverlay
-    //   if(this.useDashOverlay){
-    //     this.useBivariate = false
-    //     this.useSpike = false
-    //   }else{
-    //     this.useBivariate = true
-    //   }
-    // }else if (type === 'spike'){
-    //   this.useSpike = !this.useSpike
-    //   if(this.useSpike){
-    //     this.useBivariate = false
-    //     this.useDashOverlay = false
-    //   }else {
-    //     this.useBivariate = true
-    //   }
-    // }
 
     const data = {
       years: this.selectedYear.toString(),
       col1: this.selectedCol1,
       col2: this.selectedCol2,
-      col3: this.selectedCol3,
-      // useBivariate: this.useBivariate,
-      // useDashOverlay: this.useDashOverlay,
-      // useSpike: this.useSpike,
       stateName: this.stateName,
       selectedOverlay: this.selectedOverlay
     }
@@ -243,78 +209,25 @@ export class SidebarComponent implements OnChanges, OnInit {
   }
 
   onCheckboxChange(index, isCheck, name) {
-    if (isCheck && this.selectedCol1 !== "--" && this.selectedCol2 !== "--" && this.selectedCol3 !== "--" && name !== 'nsdoh_profiles') {
-      let message = 'Currently we are only able to display 3 columns max right now'
+    if (isCheck && this.selectedCol1 !== "--" && this.selectedCol2 !== "--") {
+      let message = 'Currently we are only able to display 2 columns max right now'
       this.onErrorSnackbar(message)
     }
 
-    if ((name === 'nsdoh_profiles' && isCheck) || (this.selectedCol1 === 'nsdoh_profiles' && name !== 'nsdoh_profiles' && isCheck)) {
-      this.selectedCol1 = name
-      this.selectedCol2 = "--"
-      this.selectedCol3 = "--"
-    }
-    else if (isCheck) {
+    if (isCheck) {
       if (this.selectedCol1 === "--") {
         this.selectedCol1 = name
       } else if (this.selectedCol2 === "--") {
         this.selectedCol2 = name
-      } else if (this.selectedCol3 === "--") {
-        this.selectedCol3 = name
       }
     } else if (!isCheck) {
       if (index === 0) {
         this.selectedCol1 = this.selectedCol2
-        this.selectedCol2 = this.selectedCol3
-        this.selectedCol3 = "--"
+        this.selectedCol2 = '--'
       } else if (index === 1) {
-        this.selectedCol2 = this.selectedCol3
-        this.selectedCol3 = "--"
-      } else if (index === 2) {
-        this.selectedCol3 = "--"
+        this.selectedCol2 = '--'
       }
     }
-    // else if (index === 0) {
-    //   if (isCheck === true) {
-    //     this.selectedCol1 = name
-    //   } else {
-    //     if (this.selectedCol2 !== "--") {
-    //       this.selectedCol1 = this.selectedCol2
-    //       this.selectedCol2 = this.selectedCol3
-    //       this.selectedCol3 = "--"
-    //     } else {
-    //       this.selectedCol1 = "--"
-    //     }
-    //   }
-    // } else if (index === 1) {
-    //   if (isCheck === true) {
-    //     this.selectedCol2 = name
-    //   } else {
-    //     if (this.selectedCol3 !== "--") {
-    //       this.selectedCol2 = this.selectedCol3
-    //       this.selectedCol3 = "--"
-    //     } else {
-    //       this.selectedCol2 = "--"
-    //     }
-
-    //   }
-    // } else if (index === 2) {
-    //   if (isCheck === true) {
-    //     this.selectedCol3 = name
-    //   } else {
-    //     this.selectedCol3 = "--"
-    //   }
-    // } else {
-    //   if (isCheck === true) {
-    //     if (this.selectedCol1 === "--") {
-    //       this.selectedCol1 = name
-    //     } else if (this.selectedCol2 === "--") {
-    //       this.selectedCol2 = name
-    //     } else if (this.selectedCol3 === "--") {
-    //       this.selectedCol3 = name
-    //     }
-    //   }
-    // }
-    console.log("selected: ", this.selectedCol1, this.selectedCol2, this.selectedCol3)
     this.organizeData()
   }
 
