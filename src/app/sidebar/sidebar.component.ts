@@ -134,19 +134,16 @@ export class SidebarComponent implements OnChanges, OnInit {
 
     if (this.selectedCol1 === 'nsdoh_profiles' || this.selectedCol2 === 'nsdoh_profiles') {
       if (this.selectedOverlay === 'Bivariate Choropleth') {
-        if (this.selectedCol2 === 'nsdoh_profiles') {
-          let temp = this.selectedCol1
-          this.selectedCol1 = this.selectedCol2
-          this.selectedCol2 = temp
-        }
+        this.selectedOverlay = this.selectedCol2 !== '--' ? 'Circles' : 'Heatmap Overlays';
+      }
 
-        if (this.selectedCol2 !== '--') {
-          this.selectedOverlay = 'Circles'
-        } else {
-          this.selectedOverlay = 'Heatmap Overlays'
-        }
+      if (this.selectedCol2 === 'nsdoh_profiles') {
+        let temp = this.selectedCol1
+        this.selectedCol1 = this.selectedCol2
+        this.selectedCol2 = temp
       }
     }
+
     this.showYears = true
     this.showColsA = true
     this.showColsB = true

@@ -60,6 +60,14 @@
         border: solid 1px grey;
     }
 
+    .d3-legend-container3 {
+        background: white;
+        transform-origin: center;
+        padding: 0px 5px 5px 5px;
+        border-radius: 5px;
+        border: solid 1px grey;
+    }
+
     #legend-container {
         position: absolute;
         bottom: 10px;
@@ -120,4 +128,8 @@
     .leaflet-control-reset:hover {
         background-color: #f4f4f4; /* Slightly darker background */
     }
+
+    .leaflet-tooltip {
+        z-index: 1000 !important;
+      }
 }

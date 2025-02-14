@@ -734,6 +734,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       [49.384358, -66.934570]  // Northeast (top-right)
     ];
 
+
+    if (resetZoomControl) {
+      this.map.removeControl(resetZoomControl);
+    }
     resetZoomControl.onAdd = function (map) {
       const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-reset');
       div.innerHTML = '<i class="fa-solid fa-earth-americas"></i>';
@@ -863,6 +867,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.map.createPane("spikePane");
       this.map.getPane("spikePane").style.zIndex = "653";
     } else {
+
       //remove a pane when not in use
       const pane = this.map.getPane("spikePane");
       if (pane) {
@@ -873,6 +878,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         });
 
         pane.remove();
+
       }
     }
 
@@ -966,6 +972,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
+
+            let avgValue2 = avgData2[censusTract] && avgData2[censusTract]['avg'] ? avgData2[censusTract]['avg'] : 0
             if (profile !== 'N/A') {
               layer.on('click', function () {
                 layer.bindTooltip(nsdohProfileToolTip, {
@@ -974,6 +982,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                   opacity: 1        // Make the tooltip fully opaque
                 });
                 layer.openTooltip(); // Display the tooltip immediately upon click
+                if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay !== 'Bivariate Choropleth') {
+                  addPlacementMarkerLegend(avgValue2, avgValue2, '.d3-legend-container3');
+                }
+
               });
             }
 
@@ -997,6 +1009,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
 
+            const val2 = Number(valuemap2.get(censusTract))
+
             if (profile !== undefined) {
               layer.on('click', function () {
                 layer.bindTooltip(nsdohProfileToolTip, {
@@ -1005,6 +1019,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                   opacity: 1        // Make the tooltip fully opaque
                 });
                 layer.openTooltip(); // Display the tooltip immediately upon click
+                if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay !== 'Bivariate Choropleth') {
+                  addPlacementMarkerLegend(val2, val2, '.d3-legend-container3');
+                }
+
               });
 
               // Optionally, add a close handler if clicking elsewhere is needed
@@ -1079,7 +1097,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
 
-              addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
+              if (selectedOverlay === 'Bivariate Choropleth') {
+                addPlacementMarkerLegendBivariate(val1, val2, '.d3-legend-container');
+              } else {
+                addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
+              }
+
             });
 
             // Optionally, add a close handler if clicking elsewhere is needed
@@ -1093,10 +1116,14 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     let map = this.map
 
-    function addSpike(latLng: L.LatLng, value: number) {
-      const height = value / (max2 - min2)
+    const currBounds = map.getBounds();
 
-      const spikeHeight = scaleRadius(value) * 0.0005 * height; // Convert to map units (degrees)
+    function addSpike(latLng: L.LatLng, value: number, zoom: number) {
+      const height = value / (max2 - min2)
+      const scaleValue = d3.scaleLinear().domain([min2, max2]).range([.1, 3])(value);
+      const spikeHeight = (scaleValue * height) / currentZoom
+
+      // const spikeHeight = scaleRadius(value) * 0.0005 * height; // Convert to map units (degrees)
       const spikeWidth = spikeHeight / 10; // Adjust width relative to height
 
       // Define the three points of the triangle (base and tip)
@@ -1117,20 +1144,21 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
 
     function addCircle(latLng: L.LatLng, value: number) {
+      const scaleRadius = d3.scaleLinear().domain([min2, max2]).range([10, 2000])(value)
       const circle = L.circle(latLng, {
         color: 'red',
         fillColor: 'tomato',
         fillOpacity: .75,
-        radius: scaleRadius(value), // Scale radius based on data
+        radius: scaleRadius, // Scale radius based on data
         pane: "circlePane"
       }).addTo(map);
 
     }
 
-    function scaleRadius(value: number) {
-      // const minValue = 100, maxValue = 2000; // Adjust based on your data
-      return d3.scaleLinear().domain([min2, max2]).range([500, 5000])(value);
-    }
+    // function scaleRadius(value: number) {
+    //   // const minValue = 100, maxValue = 2000; // Adjust based on your data
+    //   return d3.scaleLinear().domain([min2, max2]).range([0, 5000])(value);
+    // }
 
     function addPlacementMarkerLegend(val1, val2, container) {
       let container2 = `${container} svg`
@@ -1283,13 +1311,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             });
 
             let profile = avgDataCarmen[fips] !== undefined ? avgDataCarmen[fips]['mostFreq'] : "N/A";
-            if (profile !== 'N/A') {
-              if (selectedOverlay === "Circles") {
-                const latLng = layer.getBounds().getCenter();
-                addCircle(latLng, avgValue2);
-              } else if (selectedOverlay === "Spikes") {
-                const latLng = layer.getBounds().getCenter();
-                addSpike(latLng, avgValue2);
+
+            if ((selectedCol1 === 'nsdoh_profiles' && profile !== 'N/A') || selectedCol1 !== 'nsdoh_profiles') {
+              const latLng = layer.getBounds().getCenter();
+              if (currBounds.contains(latLng)) {
+                if (selectedOverlay === "Circles") {
+                  addCircle(latLng, avgValue2);
+                } else if (selectedOverlay === "Spikes") {
+                  addSpike(latLng, avgValue2, currentZoom);
+                }
               }
             }
 
@@ -1323,22 +1353,23 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
             });
 
-
+            if ((selectedCol1 === 'nsdoh_profiles' && valuemapCarmen.get(fips) !== undefined) || selectedCol1 !== 'nsdoh_profiles') {
+              const latLng = layer.getBounds().getCenter();
+              if (currBounds.contains(latLng)) {
+                if (selectedOverlay === "Circles") {
+                  addCircle(latLng, val2);
+                } else if (selectedOverlay === "Spikes") {
+                  addSpike(latLng, val2, currentZoom);
+                }
+              }
+             
+            }
 
             // Optionally, add a close handler if clicking elsewhere is needed
             layer.on('mouseout', function () {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
-            let profile = valuemapCarmen.get(fips)
-            if (profile) {
-              if (selectedOverlay === "Circles") {
-                const latLng = layer.getBounds().getCenter();
-                addCircle(latLng, val2);
-              } else if (selectedOverlay === "Spikes") {
-                const latLng = layer.getBounds().getCenter();
-                addSpike(latLng, val2);
-              }
-            }
+
           }
         }
       }).addTo(this.map);
@@ -1363,7 +1394,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.loadAndInitializeMap()
       }
       else {
-        // this.useNewMap = true
+        this.useNewMap = true
         this.loadAndInitializeMap()
       }
 
@@ -1376,8 +1407,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
+          console.log("move end, ", this.currentZoomLevel, prevMapArr, this.currentCensusTractsMapArr)
           this.loadAndInitializeMap()
         }
+      }else{
+        const bounds = this.map.getBounds();
+        this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
+        this.loadAndInitializeMap()
       }
     });
 
@@ -1438,32 +1474,51 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   }
 
   legendControl
+  legendControl2
 
   addD3Legend(): void {
     if (this.legendControl) {
       this.map.removeControl(this.legendControl);
     }
+    if (this.legendControl2) {
+      this.map.removeControl(this.legendControl2);
+    }
+
     this.legendControl = L.control({ position: 'bottomright' });
 
     this.legendControl.onAdd = () => {
       const div = this.selectedOverlay === "Bivariate Choropleth" ? L.DomUtil.create('div', 'd3-legend-container') : L.DomUtil.create('div', 'd3-legend-container2')
-      this.createD3Legend(div);
+      this.createD3Legend(div, '1');
 
       return div;
     };
 
     this.legendControl.addTo(this.map);
+
+    if (this.selectedCol1 === 'nsdoh_profiles' && this.selectedCol2 !== '--') {
+      this.legendControl2 = L.control({ position: 'bottomright' });
+
+      this.legendControl2.onAdd = () => {
+        const div = L.DomUtil.create('div', 'd3-legend-container3')
+        this.createD3Legend(div, '2');
+
+        return div;
+      };
+
+      this.legendControl2.addTo(this.map);
+    }
   }
 
-  createD3Legend(container: HTMLElement): void {
+  createD3Legend(container: HTMLElement, legendNumber: string): void {
     let bivariateViewBox = [-15, -15, 100, 100]
     let heatmapViewBox = [0, 0, 100, 100]
+    let nsdoh_mix = [0, 40, 100, 50]
     const svgLegend = d3
       .select(container)
       .append("svg")
       .attr("width", 80)
-      .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? 120 : 80)
-      .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : heatmapViewBox)
+      .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? (legendNumber === '2' ? 40 : 120) : 80)
+      .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '2' ? nsdoh_mix : heatmapViewBox))
 
     if (this.selectedOverlay === "Bivariate Choropleth") {
       // Create the grid for the legend
@@ -1527,7 +1582,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         .attr('text-anchor', 'middle')
         .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
     } else {
-      if (this.selectedCol1 === 'nsdoh_profiles') {
+      if (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '1') {
         const color2 = d3.scaleOrdinal()
           .domain(this.colorCategories)
           .range(d3.schemeSet3);
@@ -1538,8 +1593,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           .attr("x", 0)
           .attr("y", -5)
           .text(`NSDOH Profiles`)
-        // .style("font-size", "10px")
-        // .attr("alignment-baseline", "start")
 
         for (let index in this.colorCategories) {
           let cat = this.colorCategories[index]
@@ -1560,12 +1613,89 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .attr("alignment-baseline", "middle")
         }
 
+      } else if (legendNumber === '2') {
+        if ((this.selectedOverlay === 'Circles' || this.selectedOverlay === 'Spikes')) {
+          let legendWidth = 100
+          let legendHeight = 75
+          let separation = 20
+          const legendGroup = svgLegend.append('g')
+            .attr('font-family', 'sans-serif')
+            .attr('font-size', 10)
+          if (this.selectedCol2 !== '--') {
+            const gradient = legendGroup.append("linearGradient")
+              // .append('linearGradient')
+              .attr('id', 'legendGradientStripe')
+              .attr('x1', '0%')
+              .attr('x2', '100%')
+              .attr('y1', '0%')
+              .attr('y2', '0%');
 
+            let reds = [
+              '#fff5f0', // Very light red
+              '#fee0d2', // Light red
+              '#fcbba1', // Pale red
+              '#fc9272', // Soft red
+              '#fb6a4a', // Medium red
+              '#ef3b2c', // Vibrant red
+              '#cb181d', // Dark red
+              '#a50f15', // Very dark red
+              '#67000d', // Deep red
+            ];
+
+            // Apply the red color scale
+            reds.forEach((color, i) => {
+              gradient.append('stop')
+                .attr('offset', `${(i / (reds.length - 1)) * 100}%`)
+                .attr('stop-color', color);
+            });
+
+            // Append a rectangle using the gradient
+            svgLegend.append('rect')
+              .attr('x', 10)
+              .attr('y', 10)
+              .attr('width', 300)
+              .attr('height', 20)
+              .style('fill', 'url(#red-gradient)');
+
+            // Rectangle for yellow gradient
+            svgLegend.append("rect")
+              .attr("x", 5)
+              .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
+              .attr("width", 100)
+              .attr("height", 10)
+              .style("fill", "url(#legendGradientStripe)");
+
+            // Text labels for yellow gradient
+            svgLegend.append("text")
+              .attr("x", 0)
+              .attr("y", legendHeight - 40 + separation + 10)
+              .attr("text-anchor", "start")
+              .attr("font-size", 8)
+              .attr("font-weight", "bold")
+              // .text("Column 2:");
+              .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
+
+            svgLegend.append("text")
+              .attr("x", 0)
+              .attr("y", legendHeight - 40 + separation + 25 + 10)
+              .attr("text-anchor", "start")
+              .attr("font-size", 8)
+              // .text("Low");
+              .text(`${Math.floor(this.min2 * 10) / 10}`);
+
+            svgLegend.append("text")
+              .attr("x", 100)
+              .attr("y", legendHeight - 40 + separation + 25 + 10)
+              .attr("text-anchor", "end")
+              .attr("font-size", 8)
+              // .text("High");
+              .text(`${Math.ceil(this.max2 * 10) / 10}`);
+          }
+        }
       } else {
         let legendWidth = 100
         let legendHeight = 75
         let separation = 20
-        // const defsLegend = svgLegend.append("defs");
         const legendGroup = svgLegend.append('g')
           .attr('font-family', 'sans-serif')
           .attr('font-size', 10)
@@ -1691,56 +1821,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .text(`${Math.ceil(this.max2 * 10) / 10}`);
         }
 
-        // if (this.selectedCol3 !== '--') {
-        //   // Define the red gradient with transparency
-        //   const redGradient = legendGroup.append("linearGradient")
-        //     .attr("id", "legendGradientRed")
-        //     .attr("x1", "0%")
-        //     .attr("y1", "0%")
-        //     .attr("x2", "100%")
-        //     .attr("y2", "0%");
 
-        //   redGradient.append("stop")
-        //     .attr("offset", "0%")
-        //     .attr("stop-color", "#ff0000")
-        //     .attr("stop-opacity", 0);
-
-        //   redGradient.append("stop")
-        //     .attr("offset", "100%")
-        //     .attr("stop-color", "#ff0000")
-        //     .attr("stop-opacity", 1);
-
-        //   // Rectangle for red gradient with additional vertical separation
-        //   svgLegend.append("rect")
-        //     .attr("x", 5)
-        //     .attr("y", (legendHeight - 35) * 2 + separation - 5 + 10 * 2)  // Adjust position for red gradient
-        //     .attr("width", legendWidth)
-        //     .attr("height", 10)
-        //     .style("fill", "url(#legendGradientRed)");
-
-        //   // Text labels for red gradient
-        //   svgLegend.append("text")
-        //     .attr("x", 0)
-        //     .attr("y", (legendHeight - 40) * 2 + separation + 10 * 2)
-        //     .attr("text-anchor", "start")
-        //     .attr("font-size", 8)
-        //     .attr("font-weight", "bold")
-        //     .text(this.selectedCol3 !== '--' ? `${this.selectedCol3.charAt(0).toUpperCase()}${this.selectedCol3.slice(1)}` : 'Column 3');
-
-        //   svgLegend.append("text")
-        //     .attr("x", 0)
-        //     .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
-        //     .attr("text-anchor", "start")
-        //     .attr("font-size", 8)
-        //     .text(`${Math.floor(this.min2 * 10) / 10}`);
-
-        //   svgLegend.append("text")
-        //     .attr("x", 100)
-        //     .attr("y", (legendHeight - 40) * 2 + separation + 25 + 10 * 2)
-        //     .attr("text-anchor", "end")
-        //     .attr("font-size", 8)
-        //     .text(`${Math.ceil(this.max2 * 10) / 10}`);
-        // }
       }
 
     }
