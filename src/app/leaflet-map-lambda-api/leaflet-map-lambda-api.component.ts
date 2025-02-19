@@ -955,7 +955,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       },
       onEachFeature: function (feature, layer) {
         if (selectedCol1 === 'nsdoh_profiles') {
-
           if (currentZoom < 9) {
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
@@ -983,7 +982,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay !== 'Bivariate Choropleth') {
                   addPlacementMarkerLegend(avgValue2, avgValue2, '.d3-legend-container3');
                 }
-
               });
             }
 
@@ -1141,13 +1139,33 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }).addTo(map);
     }
 
+    // let circleMaxSizeScale = {
+    //   "4": 48000,
+    //   "5": 24000,
+    //   "6": 12000,
+    //   "7": 6000,
+    //   "8": 3000,
+    //   "9": 1500,
+    //   "10": 800,
+    //   "11": 400,
+    //   "12": 200
+    // }
+
+    //this equation comes from trial and error to see what values matches the legend size
+    function getCircleMaxSize(zoomLevel) {
+      return 768000 * Math.pow(2, -zoomLevel);
+    }
+
+    const zoom = map.getZoom()
     function addCircle(latLng: L.LatLng, value: number) {
-      const scaleRadius = d3.scaleLinear().domain([min2, max2]).range([10, 2000])(value)
+      const scaleRadius = d3.scaleLinear().domain([min2, max2]).range([10, getCircleMaxSize(zoom)])(value)
       const circle = L.circle(latLng, {
-        color: 'red',
+        color: 'tomato',
         fillColor: 'tomato',
-        fillOpacity: .75,
-        radius: scaleRadius, // Scale radius based on data
+        fillOpacity: .5,
+        opacity: 0.65,
+        // radius: scaleRadius, 
+        radius: scaleRadius,
         pane: "circlePane"
       }).addTo(map);
 
@@ -1165,7 +1183,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       // Check if the legend exists before modifying it
       if (!svgLegend.empty()) {
         // Remove any previously added black circle
-        svgLegend.selectAll("circle").remove();
+        svgLegend.selectAll(".placementCircle").remove();
 
         let legendWidth = 100
         let legendHeight = 75
@@ -1187,19 +1205,40 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let clampedX2 = Math.max(minX, rawX2); // Prevents going too far left
         clampedX2 = Math.min(maxX, clampedX2); // Prevents going too far right
 
-        svgLegend.append("circle")
-          .attr("cx", clampedX1)  // Middle of the rectangle 
-          .attr("cy", legendHeight - 45)  // Middle of the rectangle (y + height/2)
-          .attr("r", circleRadius)  // Radius of the dot
-          .attr("fill", "black")  // Black color
-          .attr("opacity", 0.7)
+        if (selectedCol1 !== 'nsdoh_profiles') {
+          svgLegend.append("circle")
+            .attr("class", "placementCircle")
+            .attr("cx", clampedX1)  // Middle of the rectangle 
+            .attr("cy", legendHeight - 45)  // Middle of the rectangle (y + height/2)
+            .attr("r", circleRadius)  // Radius of the dot
+            .attr("fill", "black")  // Black color
+            .attr("opacity", 0.7)
+        }
 
-        svgLegend.append("circle")
-          .attr("cx", clampedX2)  // Middle of the rectangle 
-          .attr("cy", legendHeight - 35 + separation + 15)  // Middle of the rectangle (y + height/2)
-          .attr("r", circleRadius)  // Radius of the dot
-          .attr("fill", "black")  // Black color
-          .attr("opacity", 0.7)
+        if (selectedOverlay !== "Circles" && selectedOverlay !== "Spikes") {
+          svgLegend.append("circle")
+            .attr("class", "placementCircle")
+            .attr("cx", clampedX2)  // Middle of the rectangle 
+            .attr("cy", legendHeight - 35 + separation + 15)  // Middle of the rectangle (y + height/2)
+            .attr("r", circleRadius)  // Radius of the dot
+            .attr("fill", "black")  // Black color
+            .attr("opacity", 0.7)
+        } else if (selectedOverlay === "Circles") {
+          let circleVal = val2 / (max2 - min2)
+          let circleIndex = Math.min(Math.floor(circleVal * 5), 4);
+          const circleSizes = [1, 3, 5, 7, 9];
+          const xSpacingValues = [5, 15, 30, 50, 75];
+          svgLegend.append("circle")
+            .attr("class", "placementCircle")
+            .attr("cx", xSpacingValues[circleIndex])
+            .attr("cy", legendHeight - 35 + separation + 20)
+            .attr("r", circleSizes[circleIndex])
+            .attr("fill", "tomato")
+            .attr("stroke", "black")
+            .attr("stroke-width", 2);
+
+        }
+
       } else {
         console.warn("Legend SVG not found");
       }
@@ -1300,7 +1339,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
 
-              addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container2');
+              if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay === 'Heatmap Overlays') {
+                addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container3');
+              } else {
+                addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container2');
+              }
+
             });
 
             // Optionally, add a close handler if clicking elsewhere is needed
@@ -1348,7 +1392,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
 
-              addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
+              // addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
+              if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay === 'Heatmap Overlays') {
+                addPlacementMarkerLegend(val1, val2, '.d3-legend-container3');
+              } else {
+                addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
+              }
             });
 
             if ((selectedCol1 === 'nsdoh_profiles' && valuemapCarmen.get(fips) !== undefined) || selectedCol1 !== 'nsdoh_profiles') {
@@ -1582,6 +1631,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
     } else {
       if (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '1') {
+        //NSDOH profiles legend
         const color2 = d3.scaleOrdinal()
           .domain(this.colorCategories)
           .range(d3.schemeSet3);
@@ -1612,7 +1662,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .attr("alignment-baseline", "middle")
         }
 
-      } else if (legendNumber === '2') {
+      } else if (legendNumber === '2' && this.selectedCol1 !== 'nsdoh_profiles') {
         if ((this.selectedOverlay === 'Circles' || this.selectedOverlay === 'Spikes' || (this.selectedOverlay === 'Heatmap Overlays' && this.selectedCol1 === 'nsdoh_profiles'))) {
           let legendWidth = 100
           let legendHeight = 75
@@ -1698,7 +1748,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         const legendGroup = svgLegend.append('g')
           .attr('font-family', 'sans-serif')
           .attr('font-size', 10)
-        if (this.selectedCol1 !== '--') {
+        if (this.selectedCol1 !== '--' && (this.selectedCol1 !== 'nsdoh_profiles')) {
           const blueGradient = legendGroup.append("linearGradient")
             .attr("id", "legendGradientBlue")
             .attr("x1", "0%")
@@ -1821,15 +1871,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               .text(`${Math.ceil(this.max2 * 10) / 10}`);
           } else if (this.selectedOverlay === 'Circles') {
             const legendGroup = svgLegend.append("g")
-              .attr("transform", "translate(5, 50)");
+              .attr("transform", "translate(0, 50)");
 
-            const circleSizes = [1, 3, 6, 9, 12];  // Adjust sizes as needed
-            const values = [5, 15, 30, 50, 75];  // Adjust based on min/max data range
-
-            const circleSpacing = 25; // Horizontal spacing between circles
+            const circleSizes = [1, 3, 5, 7, 9];
+            const xSpacingValues = [5, 15, 30, 50, 75];
+            const diff = (this.max2 - this.min2) / 4
+            const circleValues = [this.min2, this.max2]
 
             legendGroup.append("text")
-              .attr("x", -5)
+              .attr("x", 0)
               .attr("y", 15)
               .attr("text-anchor", "start")
               .attr("font-size", 8)
@@ -1837,24 +1887,28 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               .text(`${this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2'}`)
 
             circleSizes.forEach((size, i) => {
-              console.log("circle sizes: ", size, i)
-              // Append circles
               legendGroup.append("circle")
-                .attr("cx", values[i]) // Position circles horizontally
-                .attr("cy", 30)  // Keep circles vertically aligned
-                .attr("r", size)  // Set circle radius
-                .attr("fill", "tomato")  // No fill, just stroke
+                .attr("cx", xSpacingValues[i])
+                .attr("cy", 30)
+                .attr("r", size)
+                .attr("fill", "tomato")
                 .attr("stroke", "red")
                 .attr("stroke-width", 1);
-
-              // Append text labels underneath
-              legendGroup.append("text")
-                .attr("x", values[i])
-                .attr("y", 50) // Position below circles
-                .attr("text-anchor", "middle") // Center text under each circle
-                .attr("font-size", 8)
-                .text(`${circleSizes[i]}`); // Format values
             });
+
+            legendGroup.append("text")
+              .attr("x", xSpacingValues[0])
+              .attr("y", 50)
+              .attr("text-anchor", "middle")
+              .attr("font-size", 8)
+              .text(`${circleValues[0]}`);
+
+            legendGroup.append("text")
+              .attr("x", xSpacingValues[4])
+              .attr("y", 50)
+              .attr("text-anchor", "middle")
+              .attr("font-size", 8)
+              .text(`${circleValues[1].toFixed(1)}`);
           }
 
         }
