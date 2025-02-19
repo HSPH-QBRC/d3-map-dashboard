@@ -38,6 +38,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   private dataCarmen: CarmenData[] = [];
 
   layerControl!: L.Control.Layers;
+  resetZoomControl!: L.Control.Layers;
 
   yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
   columnsA = ['tract_fips10', 'year', 'population', 'aland10', 'count_445110', 'count_sales_445110', 'count_emp_445110', 'popden_445110', 'popden_sales_445110', 'popden_emp_445110', 'aden_445110', 'aden_sales_445110', 'aden_emp_445110', 'count_4452', 'count_sales_4452', 'count_emp_4452', 'popden_4452', 'popden_sales_4452', 'popden_emp_4452', 'aden_4452', 'aden_sales_4452', 'aden_emp_4452', 'count_452311', 'count_sales_452311', 'count_emp_452311', 'popden_452311', 'popden_sales_452311', 'popden_emp_452311', 'aden_452311', 'aden_sales_452311', 'aden_emp_452311']
@@ -57,7 +58,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
   // selectedCol3: string = '--';
-  selectedState = 'USA 2000 Mainland (County)';
+  selectedMap = 'USA 2000 Mainland (County)';
   // statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
   // fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
 
@@ -98,7 +99,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   prevSelectedCol1
   prevSelectedCol2
   // prevSelectedCol3
-  prevSelectedState
+  // prevSelectedState
   prevStateName
 
   constructor(
@@ -117,7 +118,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.selectedYear = this.dataFromSidebar['years']
       this.selectedCol1 = this.dataFromSidebar['col1']
       this.selectedCol2 = this.dataFromSidebar['col2']
-      this.selectedState = this.dataFromSidebar['map']
+      this.selectedMap = this.dataFromSidebar['map']
       this.stateName = this.dataFromSidebar['stateName']
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
 
@@ -722,32 +723,45 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     };
     if (this.layerControl) {
       this.map.removeControl(this.layerControl);
+      delete this.layerControl
     }
 
     this.layerControl = L.control.layers(baseLayers, overlays).addTo(this.map);
 
-    //add reset zoom button
-    const resetZoomControl = L.control({ position: 'topleft' });
+    if (this.resetZoomControl) {
+      this.map.removeControl(this.resetZoomControl);
+      // this.resetZoomControl = undefined
+      delete this.resetZoomControl;
+    }
 
     const defaultBounds = [
       [24.396308, -125.000000], // Southwest (bottom-left)
       [49.384358, -66.934570]  // Northeast (top-right)
     ];
 
+    if (!this.resetZoomControl) {
+      //add reset zoom button
+      this.resetZoomControl = L.control({ position: 'topleft' });
 
-    if (resetZoomControl) {
-      this.map.removeControl(resetZoomControl);
-    }
-    resetZoomControl.onAdd = function (map) {
-      const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-reset');
-      div.innerHTML = '<i class="fa-solid fa-earth-americas"></i>';
-      div.onclick = function () {
-        map.fitBounds(defaultBounds);
+      this.resetZoomControl.onAdd = (map) => {
+        const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-reset');
+        div.innerHTML = '<i class="fa-solid fa-earth-americas"></i>';
+        div.onclick = () => {
+          this.stateName = 'United States of America'
+          this.currentZoomLevel = 4
+          this.currentBounds = [
+            [24.396308, -125.0],
+            [49.384358, -66.93457],
+          ];
+          this.sendData()
+          map.fitBounds(defaultBounds);
+        };
+        return div;
       };
-      return div;
-    };
 
-    resetZoomControl.addTo(this.map);
+      this.resetZoomControl.addTo(this.map);
+    }
+
 
 
     let min1 = this.min1
@@ -777,11 +791,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     let currentZoom = this.currentZoomLevel
     let selectedCol1 = this.selectedCol1
     let selectedCol2 = this.selectedCol2
-    // let selectedCol3 = this.selectedCol3
 
-    // let useBivariate = this.useBivariate
-    // let useDashOverlay = this.useDashOverlay
-    // let useSpike = this.useSpike
     let selectedOverlay = this.selectedOverlay
 
     const color2 = d3.scaleOrdinal()
@@ -789,18 +799,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       .range(d3.schemeSet3);
 
     let blues = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
-
-    // let greens = [
-    //   '#f7fcf5', // Very light green
-    //   '#e5f5e0', // Light green
-    //   '#c7e9c0', // Pale green
-    //   '#a1d99b', // Soft green
-    //   '#74c476', // Medium green
-    //   '#41ab5d', // Vibrant green
-    //   '#238b45', // Dark green
-    //   '#006d2c', // Very dark green
-    //   '#00441b', // Deep green
-    // ];
 
     let reds = [
       '#fff5f0', // Very light red
@@ -1362,7 +1360,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                   addSpike(latLng, val2, currentZoom);
                 }
               }
-             
+
             }
 
             // Optionally, add a close handler if clicking elsewhere is needed
@@ -1407,10 +1405,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
-          console.log("move end, ", this.currentZoomLevel, prevMapArr, this.currentCensusTractsMapArr)
           this.loadAndInitializeMap()
         }
-      }else{
+      } else {
         const bounds = this.map.getBounds();
         this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
         this.loadAndInitializeMap()
@@ -1479,9 +1476,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   addD3Legend(): void {
     if (this.legendControl) {
       this.map.removeControl(this.legendControl);
+      delete this.legendControl
     }
     if (this.legendControl2) {
       this.map.removeControl(this.legendControl2);
+      delete this.legendControl2
     }
 
     this.legendControl = L.control({ position: 'bottomright' });
@@ -1614,7 +1613,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
 
       } else if (legendNumber === '2') {
-        if ((this.selectedOverlay === 'Circles' || this.selectedOverlay === 'Spikes')) {
+        if ((this.selectedOverlay === 'Circles' || this.selectedOverlay === 'Spikes' || (this.selectedOverlay === 'Heatmap Overlays' && this.selectedCol1 === 'nsdoh_profiles'))) {
           let legendWidth = 100
           let legendHeight = 75
           let separation = 20
@@ -1751,77 +1750,114 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
 
         if (this.selectedCol2 !== '--') {
-          const gradient = legendGroup.append("linearGradient")
-            // .append('linearGradient')
-            .attr('id', 'legendGradientStripe')
-            .attr('x1', '0%')
-            .attr('x2', '100%')
-            .attr('y1', '0%')
-            .attr('y2', '0%');
+          if (this.selectedOverlay !== 'Circles' && this.selectedOverlay !== 'Spikes') {
+            const gradient = legendGroup.append("linearGradient")
+              // .append('linearGradient')
+              .attr('id', 'legendGradientStripe')
+              .attr('x1', '0%')
+              .attr('x2', '100%')
+              .attr('y1', '0%')
+              .attr('y2', '0%');
 
-          let reds = [
-            '#fff5f0', // Very light red
-            '#fee0d2', // Light red
-            '#fcbba1', // Pale red
-            '#fc9272', // Soft red
-            '#fb6a4a', // Medium red
-            '#ef3b2c', // Vibrant red
-            '#cb181d', // Dark red
-            '#a50f15', // Very dark red
-            '#67000d', // Deep red
-          ];
+            let reds = [
+              '#fff5f0', // Very light red
+              '#fee0d2', // Light red
+              '#fcbba1', // Pale red
+              '#fc9272', // Soft red
+              '#fb6a4a', // Medium red
+              '#ef3b2c', // Vibrant red
+              '#cb181d', // Dark red
+              '#a50f15', // Very dark red
+              '#67000d', // Deep red
+            ];
 
-          // Apply the red color scale
-          reds.forEach((color, i) => {
-            gradient.append('stop')
-              .attr('offset', `${(i / (reds.length - 1)) * 100}%`)
-              .attr('stop-color', color);
-          });
+            // Apply the red color scale
+            reds.forEach((color, i) => {
+              gradient.append('stop')
+                .attr('offset', `${(i / (reds.length - 1)) * 100}%`)
+                .attr('stop-color', color);
+            });
 
-          // Append a rectangle using the gradient
-          svgLegend.append('rect')
-            .attr('x', 10)
-            .attr('y', 10)
-            .attr('width', 300)
-            .attr('height', 20)
-            .style('fill', 'url(#red-gradient)');
+            // Append a rectangle using the gradient
+            svgLegend.append('rect')
+              .attr('x', 10)
+              .attr('y', 10)
+              .attr('width', 300)
+              .attr('height', 20)
+              .style('fill', 'url(#red-gradient)');
 
-          // Rectangle for yellow gradient
-          svgLegend.append("rect")
-            .attr("x", 5)
-            .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
-            .attr("width", 100)
-            .attr("height", 10)
-            .style("fill", "url(#legendGradientStripe)");
+            // Rectangle for yellow gradient
+            svgLegend.append("rect")
+              .attr("x", 5)
+              .attr("y", legendHeight - 35 + separation + 10)  // Position this rectangle below the first one
+              .attr("width", 100)
+              .attr("height", 10)
+              .style("fill", "url(#legendGradientStripe)");
 
-          // Text labels for yellow gradient
-          svgLegend.append("text")
-            .attr("x", 0)
-            .attr("y", legendHeight - 40 + separation + 10)
-            .attr("text-anchor", "start")
-            .attr("font-size", 8)
-            .attr("font-weight", "bold")
-            // .text("Column 2:");
-            .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
+            // Text labels for yellow gradient
+            svgLegend.append("text")
+              .attr("x", 0)
+              .attr("y", legendHeight - 40 + separation + 10)
+              .attr("text-anchor", "start")
+              .attr("font-size", 8)
+              .attr("font-weight", "bold")
+              // .text("Column 2:");
+              .text(this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2');
 
-          svgLegend.append("text")
-            .attr("x", 0)
-            .attr("y", legendHeight - 40 + separation + 25 + 10)
-            .attr("text-anchor", "start")
-            .attr("font-size", 8)
-            // .text("Low");
-            .text(`${Math.floor(this.min2 * 10) / 10}`);
+            svgLegend.append("text")
+              .attr("x", 0)
+              .attr("y", legendHeight - 40 + separation + 25 + 10)
+              .attr("text-anchor", "start")
+              .attr("font-size", 8)
+              // .text("Low");
+              .text(`${Math.floor(this.min2 * 10) / 10}`);
 
-          svgLegend.append("text")
-            .attr("x", 100)
-            .attr("y", legendHeight - 40 + separation + 25 + 10)
-            .attr("text-anchor", "end")
-            .attr("font-size", 8)
-            // .text("High");
-            .text(`${Math.ceil(this.max2 * 10) / 10}`);
+            svgLegend.append("text")
+              .attr("x", 100)
+              .attr("y", legendHeight - 40 + separation + 25 + 10)
+              .attr("text-anchor", "end")
+              .attr("font-size", 8)
+              // .text("High");
+              .text(`${Math.ceil(this.max2 * 10) / 10}`);
+          } else if (this.selectedOverlay === 'Circles') {
+            const legendGroup = svgLegend.append("g")
+              .attr("transform", "translate(5, 50)");
+
+            const circleSizes = [1, 3, 6, 9, 12];  // Adjust sizes as needed
+            const values = [5, 15, 30, 50, 75];  // Adjust based on min/max data range
+
+            const circleSpacing = 25; // Horizontal spacing between circles
+
+            legendGroup.append("text")
+              .attr("x", -5)
+              .attr("y", 15)
+              .attr("text-anchor", "start")
+              .attr("font-size", 8)
+              .attr("font-weight", "bold")
+              .text(`${this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2'}`)
+
+            circleSizes.forEach((size, i) => {
+              console.log("circle sizes: ", size, i)
+              // Append circles
+              legendGroup.append("circle")
+                .attr("cx", values[i]) // Position circles horizontally
+                .attr("cy", 30)  // Keep circles vertically aligned
+                .attr("r", size)  // Set circle radius
+                .attr("fill", "tomato")  // No fill, just stroke
+                .attr("stroke", "red")
+                .attr("stroke-width", 1);
+
+              // Append text labels underneath
+              legendGroup.append("text")
+                .attr("x", values[i])
+                .attr("y", 50) // Position below circles
+                .attr("text-anchor", "middle") // Center text under each circle
+                .attr("font-size", 8)
+                .text(`${circleSizes[i]}`); // Format values
+            });
+          }
+
         }
-
-
       }
 
     }

@@ -75,6 +75,7 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.selectedOverlay = this.sidebarData['selectedOverlay']
 
       this.organizeData()
+      console.log("state from sidebar", this.stateName)
     }
   }
 
