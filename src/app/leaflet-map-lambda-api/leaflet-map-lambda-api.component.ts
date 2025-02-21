@@ -163,12 +163,16 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       .subscribe(params => {
         this.paramsFound = true
         this.selectedCol1 = params['col1'] || this.selectedCol1;
-        this.selectedCol2 = params['col2'] || this.selectedCol2;
+        this.selectedCol2 = params['col1'] && !params['col2'] ? '--' : (params['col2'] || this.selectedCol2)
         this.stateName = params['state'] || this.stateName;
         this.selectedYear = params['year'] || this.selectedYear;
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
           this.currentBounds = boundsData[this.stateName.toLowerCase()]
         });
+
+        if (params['col1'] && !params['col2']) {
+          this.selectedOverlay = 'Heatmap Overlays'
+        }
 
         this.loadCSVData();
       });
@@ -358,7 +362,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           rate: rate
         })
       }
-
       for (const d of groceryData) {
         let currYear = this.selectedYear
         if (!this.fullData1[currYear]) {
@@ -846,7 +849,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     if (selectedOverlay === "Circles") {
       this.map.createPane("circlePane");
-      this.map.getPane("circlePane").style.zIndex = "651";
+      this.map.getPane("circlePane").style.zIndex = "551";
     } else {
       //remove a pane when not in use
       const pane = this.map.getPane("circlePane");
@@ -863,7 +866,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     if (selectedOverlay === "Spikes") {
       this.map.createPane("spikePane");
-      this.map.getPane("spikePane").style.zIndex = "653";
+      this.map.getPane("spikePane").style.zIndex = "553";
     } else {
 
       //remove a pane when not in use
@@ -1114,18 +1117,28 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     const currBounds = map.getBounds();
 
-    function addSpike(latLng: L.LatLng, value: number, zoom: number) {
-      const height = value / (max2 - min2)
-      const scaleValue = d3.scaleLinear().domain([min2, max2]).range([.1, 3])(value);
-      const spikeHeight = (scaleValue * height) / currentZoom
+    let spikeZoomAdj = {
+      "5": 3 / 4,
+      "6": 3 / 8,
+      "7": 3 / 16,
+      "8": 3 / 32
+    }
+    function getSpikeZoomAdj(zoom) {
+      // return 2 - 0.4 * (zoom - 5);
+      return 3 / Math.pow(2, zoom - 3);
+    }
+
+    function addSpike(latLng: L.LatLng, value: number) {
+      const scaleValue = d3.scaleLinear().domain([min2, max2]).range([0, getSpikeZoomAdj(zoom) * 2])(value);
+      const spikeHeight = scaleValue
 
       // const spikeHeight = scaleRadius(value) * 0.0005 * height; // Convert to map units (degrees)
-      const spikeWidth = spikeHeight / 10; // Adjust width relative to height
+      const spikeWidth = spikeHeight / 5; // Adjust width relative to height
 
       // Define the three points of the triangle (base and tip)
       const triangleCoords = [
-        [latLng.lat, latLng.lng - spikeWidth / 2], // Left base
-        [latLng.lat, latLng.lng + spikeWidth / 2], // Right base
+        [latLng.lat, latLng.lng - spikeWidth], // Left base
+        [latLng.lat, latLng.lng + spikeWidth], // Right base
         [latLng.lat + spikeHeight, latLng.lng] // Pointed top
       ];
 
@@ -1137,19 +1150,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         weight: 1,
         pane: "spikePane"
       }).addTo(map);
+
+
     }
 
-    // let circleMaxSizeScale = {
-    //   "4": 48000,
-    //   "5": 24000,
-    //   "6": 12000,
-    //   "7": 6000,
-    //   "8": 3000,
-    //   "9": 1500,
-    //   "10": 800,
-    //   "11": 400,
-    //   "12": 200
-    // }
 
     //this equation comes from trial and error to see what values matches the legend size
     function getCircleMaxSize(zoomLevel) {
@@ -1158,13 +1162,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     const zoom = map.getZoom()
     function addCircle(latLng: L.LatLng, value: number) {
-      const scaleRadius = d3.scaleLinear().domain([min2, max2]).range([10, getCircleMaxSize(zoom)])(value)
+      const scaleRadius = d3.scaleLinear().domain([min2, max2]).range([0, getCircleMaxSize(zoom)])(value)
       const circle = L.circle(latLng, {
         color: 'tomato',
         fillColor: 'tomato',
         fillOpacity: .5,
         opacity: 0.65,
-        // radius: scaleRadius, 
         radius: scaleRadius,
         pane: "circlePane"
       }).addTo(map);
@@ -1184,6 +1187,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       if (!svgLegend.empty()) {
         // Remove any previously added black circle
         svgLegend.selectAll(".placementCircle").remove();
+        svgLegend.selectAll(".placementSpike").remove();
 
         let legendWidth = 100
         let legendHeight = 75
@@ -1226,7 +1230,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         } else if (selectedOverlay === "Circles") {
           let circleVal = val2 / (max2 - min2)
           let circleIndex = Math.min(Math.floor(circleVal * 5), 4);
-          const circleSizes = [1, 3, 5, 7, 9];
+          const circleSizes = [0.1, 3, 5, 7, 9];
           const xSpacingValues = [5, 15, 30, 50, 75];
           svgLegend.append("circle")
             .attr("class", "placementCircle")
@@ -1237,6 +1241,27 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .attr("stroke", "black")
             .attr("stroke-width", 2);
 
+        } else if (selectedOverlay === "Spikes") {
+          const spikeHeights = [1, 5, 10, 15, 20];
+          const xSpacingValues = [5, 22, 42, 67, 95];
+          let spikeVal = val2 / (max2 - min2)
+          let spikeIndex = Math.min(Math.floor(spikeVal * 5), 4);
+          const spikeWidth = spikeHeights[spikeIndex] / 5;
+          const x = xSpacingValues[spikeIndex];  // x position for this spike in the legend
+          const yBaseline = 85;         // Baseline y coordinate
+          const triangleCoords = [
+            { x: x - spikeWidth, y: yBaseline },  // Left base point
+            { x: x + spikeWidth, y: yBaseline },  // Right base point
+            { x: x, y: yBaseline - spikeHeights[spikeIndex] }   // Tip of the spike
+          ];
+
+          // Append a polygon representing the spike
+          svgLegend.append("polygon")
+            .attr("class", "placementSpike")
+            .attr("points", triangleCoords.map(d => `${d.x},${d.y}`).join(" "))
+            .attr("fill", "black")
+            .attr("stroke", "black")
+            .attr("stroke-width", 1);
         }
 
       } else {
@@ -1360,7 +1385,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 if (selectedOverlay === "Circles") {
                   addCircle(latLng, avgValue2);
                 } else if (selectedOverlay === "Spikes") {
-                  addSpike(latLng, avgValue2, currentZoom);
+                  addSpike(latLng, avgValue2);
                 }
               }
             }
@@ -1406,7 +1431,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 if (selectedOverlay === "Circles") {
                   addCircle(latLng, val2);
                 } else if (selectedOverlay === "Spikes") {
-                  addSpike(latLng, val2, currentZoom);
+                  addSpike(latLng, val2);
                 }
               }
 
@@ -1873,7 +1898,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             const legendGroup = svgLegend.append("g")
               .attr("transform", "translate(0, 50)");
 
-            const circleSizes = [1, 3, 5, 7, 9];
+            const circleSizes = [0.1, 3, 5, 7, 9];
             const xSpacingValues = [5, 15, 30, 50, 75];
             const diff = (this.max2 - this.min2) / 4
             const circleValues = [this.min2, this.max2]
@@ -1909,8 +1934,56 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               .attr("text-anchor", "middle")
               .attr("font-size", 8)
               .text(`${circleValues[1].toFixed(1)}`);
-          }
+          } else if (this.selectedOverlay === 'Spikes') {
+            const legendGroup = svgLegend.append("g")
+              .attr("transform", "translate(0, 35)");
 
+            legendGroup.append("text")
+              .attr("x", 0)
+              .attr("y", 25)
+              .attr("text-anchor", "start")
+              .attr("font-size", 8)
+              .attr("font-weight", "bold")
+              .text(`${this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2'}`);
+
+            const spikeHeights = [1, 5, 10, 15, 20];
+            const xSpacingValues = [5, 22, 42, 67, 95];
+            const spikeValues = [this.min2, this.max2]; // Min & Max values
+
+            spikeHeights.forEach((h, i) => {
+              const spikeWidth = h / 5;
+              const x = xSpacingValues[i];  // x position for this spike in the legend
+              const yBaseline = 50;         // Baseline y coordinate
+              const triangleCoords = [
+                { x: x - spikeWidth, y: yBaseline },  // Left base point
+                { x: x + spikeWidth, y: yBaseline },  // Right base point
+                { x: x, y: yBaseline - h }   // Tip of the spike
+              ];
+
+              // Append a polygon representing the spike
+              legendGroup.append("polygon")
+                .attr("points", triangleCoords.map(d => `${d.x},${d.y}`).join(" "))
+                .attr("fill", "tomato")
+                .attr("stroke", "red")
+                .attr("stroke-width", 1);
+            });
+
+            // // Min Value Label
+            legendGroup.append("text")
+              .attr("x", xSpacingValues[0] + 2)
+              .attr("y", 65)
+              .attr("text-anchor", "middle")
+              .attr("font-size", 8)
+              .text(`${spikeValues[0].toFixed(1)}`);
+
+            // Max Value Label
+            legendGroup.append("text")
+              .attr("x", xSpacingValues[4])
+              .attr("y", 65)
+              .attr("text-anchor", "middle")
+              .attr("font-size", 8)
+              .text(`${spikeValues[1].toFixed(1)}`);
+          }
         }
       }
 
