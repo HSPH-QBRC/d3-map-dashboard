@@ -1,13 +1,13 @@
 import { Component, OnInit, Input, Output, EventEmitter, } from '@angular/core';
 import * as L from 'leaflet';
 import { HttpClient } from '@angular/common/http';
-// import { CsvDataService } from '../csv-data.service';
 import * as d3 from 'd3';
 import 'leaflet.pattern';
 import { ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { first } from 'rxjs/operators';
-import { startWith } from 'rxjs/operators';
+import 'leaflet-easyprint';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Clipboard } from '@angular/cdk/clipboard';
 
 interface GroceryData {
   id: string;
@@ -32,9 +32,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
 
   private map: L.Map | undefined;
-  private data1: GroceryData[] = [];
-  private data2: GroceryData[] = [];
-  private data3: GroceryData[] = [];
+  // private data1: GroceryData[] = [];
+  // private data2: GroceryData[] = [];
+  // private data3: GroceryData[] = [];
   private dataCarmen: CarmenData[] = [];
 
   layerControl!: L.Control.Layers;
@@ -98,14 +98,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   prevSelectedYear
   prevSelectedCol1
   prevSelectedCol2
-  // prevSelectedCol3
-  // prevSelectedState
   prevStateName
 
   constructor(
     private http: HttpClient,
-    // private csvDataService: CsvDataService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private snackBar: MatSnackBar,
+    private clipboard: Clipboard
   ) { }
 
   ngOnChanges() {
@@ -151,6 +150,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.loadAndInitializeMap()
       });
     }
+
   }
 
   tileBounds: any = {}
@@ -170,8 +170,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           this.currentBounds = boundsData[this.stateName.toLowerCase()]
         });
 
+
         if (params['col1'] && !params['col2']) {
-          this.selectedOverlay = 'Heatmap Overlays'
+          this.selectedOverlay = 'Circles'
         }
 
         this.loadCSVData();
@@ -207,6 +208,53 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   }
 
+  downloadMap() {
+    this.isLoading = true
+    const printer = L.easyPrint({
+      title: 'Download Map',
+      filename: 'leaflet-map',
+      exportOnly: true, // Hides the print dialog
+      sizeModes: ['A4Landscape']
+    }).addTo(this.map);
+
+    // Automatically trigger the download after the plugin is added
+    setTimeout(() => {
+      printer.printMap('CurrentSize', 'leaflet-map');
+      this.isLoading = false;
+    }, 200); // Delay to ensure the plugin initializes properly
+  }
+
+  shareLink() {
+    let baseUrl = 'http://map-dashboard-app.s3-website.us-east-2.amazonaws.com/data';
+    let params = new URLSearchParams();
+
+    if (this.selectedCol1 !== '--') {
+      params.append('col1', this.selectedCol1);
+    }
+    if (this.selectedCol2 !== '--') {
+      params.append('col2', this.selectedCol2);
+    }
+    if (this.stateName !== '--') {
+      params.append('state', this.stateName);
+    }
+    if (this.selectedYear !== '--') {
+      params.append('year', this.selectedYear);
+    }
+
+    let message = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+
+    this.onErrorSnackbar('Copied to clipboard: ' + message)
+    this.clipboard.copy(message);
+  }
+
+  onErrorSnackbar(message): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'left',
+      verticalPosition: 'bottom',
+    });
+  }
+
   resetVariables() {
     this.min1 = Infinity;
     this.max1 = -Infinity;
@@ -215,9 +263,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.min3 = Infinity;
     this.max3 = -Infinity;
 
-    this.data1 = [];
-    this.data2 = [];
-    this.data3 = [];
+    // this.data1 = [];
+    // this.data2 = [];
+    // this.data3 = [];
     this.dataCarmen = [];
 
     this.avgData1 = {};
@@ -257,7 +305,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   offset = 0
   showRedline = false
 
-  fetchData = (category): Promise<void> => {
+  fetchData = (category, col1, col2): Promise<void> => {
     return new Promise((resolve, reject) => {
       let batchCount = 0; // Keep track of the number of batches
       let done = false; // Flag to track if all data has been fetched
@@ -265,11 +313,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       // Function to fetch a batch of data
       const fetchBatch = (offset) => {
         let queryURL = `https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&offset=${offset}`;
-        if (this.selectedCol1 !== "--") {
-          queryURL += `&column1=${this.selectedCol1}`;
+        if (col1 !== "--") {
+          queryURL += `&column1=${col1}`;
         }
-        if (this.selectedCol2 !== "--") {
-          queryURL += `&column2=${this.selectedCol2}`;
+        if (col2 !== "--") {
+          queryURL += `&column2=${col2}`;
         }
 
         return this.http
@@ -280,8 +328,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             if (data && data.message !== 'No more rows available.') {
               if (category === 'grocery') {
                 this.groceryData.push(...data);
+                // this.groceryData = [...this.groceryData, ...data];
               } else if (category === 'carmen') {
                 this.carmenData.push(...data);
+                // this.carmenData = [...this.carmenData, ...data];
               }
               batchCount++;
               return true; // Indicate that data was received
@@ -337,12 +387,24 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     try {
       if (this.selectedCol1 === 'nsdoh_profiles') {
         console.time('fetching Carmen data')
-        await this.fetchData('carmen')
+        this.isLoading = true
+        await this.fetchData('carmen', this.selectedCol1, this.selectedCol2)
+        this.isLoading = false
         console.timeEnd('fetching Carmen data')
+
+        if (this.selectedCol2 !== '--') {
+          console.time('fetching Grocery data')
+          this.isLoading = true
+          await this.fetchData('grocery', this.selectedCol2, '--')
+          this.isLoading = false
+          console.timeEnd('fetching Grocery data')
+        }
+
+        this.selectedOverlay = 'Circles'
       } else {
         console.time('fetching Grocery data')
         this.isLoading = true
-        await this.fetchData('grocery')
+        await this.fetchData('grocery', this.selectedCol1, this.selectedCol2)
         this.isLoading = false
         console.timeEnd('fetching Grocery data')
       }
@@ -402,9 +464,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
 
       this.columnsUsed = 0
-      if (this.selectedCol1 !== '--') {
+      if (this.selectedCol1 !== '--' && this.selectedCol1 !== 'nsdoh_profiles') {
         this.columnsUsed += 1;
         let currYear = this.selectedYear
+
+        // let fullData1 = this.fullData1[currYear]
         for (let i of this.fullData1[currYear]) {
           let id = i['id'].substring(0, 5);
           let rate = i['rate']
@@ -449,6 +513,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
 
       if (this.selectedCol2 !== '--') {
+
         this.columnsUsed += 1;
         let currYear = this.selectedYear
         for (let i of this.fullData2[currYear]) {
@@ -493,6 +558,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           }
         }
       }
+
+
 
       //collects info to find which profile appears the most in a County
       if (this.selectedCol1 === 'nsdoh_profiles') {
@@ -556,6 +623,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         next: (data) => {
           this.initializesMap(data);
           this.addD3Legend();
+
         },
         error: (err) => {
           console.error('Error loading JSON:', err);
@@ -583,6 +651,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     if (this.useNewMap) {
       this.map = L.map(mapContainer);
     }
+
 
     const redlineLayer = L.geoJSON(this.redlineData, {
       style: function (d) {
@@ -724,6 +793,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     const overlays = {
       'Redlining Districts': redlineLayer
     };
+
     if (this.layerControl) {
       this.map.removeControl(this.layerControl);
       delete this.layerControl
@@ -765,8 +835,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.resetZoomControl.addTo(this.map);
     }
 
-
-
     let min1 = this.min1
     let max1 = this.max1
     let min2 = this.min2
@@ -786,8 +854,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     let avgData2 = this.fullAvgData2[this.selectedYear]
     let avgDataCarmen = this.avgDataCat1
 
-    const valuemap1 = new Map(this.fullData1[this.selectedYear].map(d => [d.id, d.rate]));
-    const valuemap2 = new Map(this.fullData2[this.selectedYear].map(d => [d.id, d.rate]));
+    const valuemap1 = this.selectedCol1 !== 'nsdoh_profiles' ? new Map(this.fullData1[this.selectedYear].map(d => [d.id, d.rate])) : undefined;
+    const valuemap2 = this.selectedCol2 !== '--' ? new Map(this.fullData2[this.selectedYear].map(d => [d.id, d.rate])) : undefined;
     const valuemapCarmen = new Map(this.dataCarmen.map(d => [d.id, d.rate]));
 
     let colors = this.colors
@@ -972,8 +1040,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
+            let avgValue2 = avgDataCarmen[censusTract] && avgDataCarmen[censusTract]['mostFreq'] ? avgDataCarmen[censusTract]['mostFreq'] : 0
 
-            let avgValue2 = avgData2[censusTract] && avgData2[censusTract]['avg'] ? avgData2[censusTract]['avg'] : 0
             if (profile !== 'N/A') {
               layer.on('click', function () {
                 layer.bindTooltip(nsdohProfileToolTip, {
@@ -1133,7 +1201,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       const spikeHeight = scaleValue
 
       // const spikeHeight = scaleRadius(value) * 0.0005 * height; // Convert to map units (degrees)
-      const spikeWidth = spikeHeight / 5; // Adjust width relative to height
+      // const spikeWidth = spikeHeight / 5; // Adjust width relative to height
+      const spikeWidth = getSpikeZoomAdj(zoom) / 8
 
       // Define the three points of the triangle (base and tip)
       const triangleCoords = [
@@ -1346,6 +1415,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             }
 
             let avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
+
             let countyTooltip = `
             <strong> State:</strong> ${state || 'N/A'}<br>
             <strong> County:</strong> ${county || 'N/A'}<br>

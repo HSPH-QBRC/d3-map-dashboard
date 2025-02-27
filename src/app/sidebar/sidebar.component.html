@@ -1,20 +1,10 @@
-<!-- <app-loading-spinner *ngIf="isLoading"></app-loading-spinner> -->
+
 <div class="p-3" style="width: 280px; height: 100vh; background-color: #f9f9f9; border-radius: 8px;">
     <a mat-button routerLink="/" class="title-container">
         <span class="mat-h5 font-weight-semibold dashboard-title">DASHBOARD</span>
     </a>
 
     <mat-accordion class="no-shadow" multi>
-        <!-- <mat-slide-toggle class="example-margin" [checked]="useBivariate" (change)="onChangeOverlay('bivariate')"
-            color="primary">Use
-            Bivariate Choropleth</mat-slide-toggle>
-        <mat-slide-toggle class="example-margin" [checked]="useDashOverlay" (change)="onChangeOverlay('dash')"
-            color="primary">Use
-            Heatmap Overlays</mat-slide-toggle>
-        <mat-slide-toggle class="example-margin" [checked]="useSpike" (change)="onChangeOverlay('spike')"
-            color="primary">Use
-            Spikes</mat-slide-toggle> -->
-
         <label id="radio-group-label">Map Overlay: </label>
         <mat-radio-group aria-labelledby="example-radio-group-label" class="example-radio-group"
             [(ngModel)]="selectedOverlay" (change)="onChangeOverlay()">
@@ -25,7 +15,7 @@
         </mat-radio-group>
         <br>
         <mat-form-field class="example-margin" appearance="outline">
-            <mat-label>Zoom To (Enter State Name)</mat-label>
+            <mat-label>Focus</mat-label>
             <input matInput [(ngModel)]="stateName" placeholder="e.g. California" (keydown.enter)="sendData()">
             <button *ngIf="stateName" matSuffix mat-icon-button aria-label="Clear" (click)="stateName=null">
                 <mat-icon>close</mat-icon>
@@ -37,7 +27,6 @@
             (click)="showMore('cols')">
             Projects
         </button>
-        <!-- <br> -->
         <div style="padding-left: 16px">
             <button mat-button class="btn-toggle align-items-center rounded treeButton" [attr.aria-expanded]="true"
                 (click)="showMore('colsA')">
@@ -88,4 +77,10 @@
             Update
         </button>
     </div>
+    <button mat-raised-button color="accent" (click)="downloadImage()" class="download-button">
+        Download Image <mat-icon class="download-icon">image</mat-icon>
+    </button>
+    <button mat-raised-button color="accent" (click)="shareLink()" class="download-button">
+        Share <mat-icon class="download-icon">link</mat-icon>
+    </button>
 </div>

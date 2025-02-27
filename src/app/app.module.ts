@@ -24,6 +24,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { MatInputModule } from '@angular/material/input';
 import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-map-lambda-api.component';
 import { RouterModule, Routes } from '@angular/router';
+import { ClipboardModule } from '@angular/cdk/clipboard';
 
 const routes: Routes = [
   { path: 'data', component: AppComponent } // Define your route
@@ -57,7 +58,8 @@ const routes: Routes = [
     MatSnackBarModule,
     HttpClientModule,
     MatInputModule,
-    RouterModule.forRoot(routes)
+    RouterModule.forRoot(routes),
+    ClipboardModule
   ],
   providers: [],
   bootstrap: [AppComponent]

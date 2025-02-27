@@ -1,10 +1,12 @@
 <div class="layout-container">
     <div class="sidebar">
-        <app-sidebar [sidebarData]="sidebarData" (dataToParent)="onSidebarDataReceived($event)" (dataToParentStateNameOnly)="onSidebarDataReceivedStateNameOnly($event)">
+        <app-sidebar [sidebarData]="sidebarData" (dataToParent)="onSidebarDataReceived($event)" 
+        (dataToParentStateNameOnly)="onSidebarDataReceivedStateNameOnly($event)" 
+        (downloadImageEmitter)="downloadImage()" (shareLinkEmitter)="shareLink()">
         </app-sidebar>
     </div>
     <div class="main-content">
         <app-leaflet-map-lambda-api [dataFromSidebar]="dataFromSidebar" [dataFromSidebarStateNameOnly]="dataFromSidebarStateNameOnly"
-        (dataToSidebar)="onCountyMapDataReceived($event)"></app-leaflet-map-lambda-api>
+        (dataToSidebar)="onCountyMapDataReceived($event)" ></app-leaflet-map-lambda-api>
     </div>
 </div>

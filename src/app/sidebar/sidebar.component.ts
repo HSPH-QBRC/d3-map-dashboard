@@ -13,6 +13,8 @@ export class SidebarComponent implements OnChanges, OnInit {
   @ViewChild('slider') slider: MatSlider;
   @Output() dataToParent = new EventEmitter<any>();
   @Output() dataToParentStateNameOnly = new EventEmitter<any>();
+  @Output() downloadImageEmitter = new EventEmitter<any>();
+  @Output() shareLinkEmitter = new EventEmitter<any>();
 
   constructor(
     private snackBar: MatSnackBar,
@@ -75,7 +77,6 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.selectedOverlay = this.sidebarData['selectedOverlay']
 
       this.organizeData()
-      console.log("state from sidebar", this.stateName)
     }
   }
 
@@ -235,5 +236,13 @@ export class SidebarComponent implements OnChanges, OnInit {
       horizontalPosition: 'left',
       verticalPosition: 'bottom',
     });
+  }
+
+  downloadImage(){
+    this.downloadImageEmitter.emit()
+  }
+
+  shareLink(){
+    this.shareLinkEmitter.emit()
   }
 }

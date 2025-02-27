@@ -155,3 +155,17 @@ a.mat-button {
 #radio-group-label {
     font-weight: bold !important;
 }
+
+.download-button {
+    // font-size: 10px;
+    margin: 2px;
+    font-size: 10px; /* Smaller font */
+    padding: 0px 2px; /* Reduce padding */
+    min-width: auto; /* Remove default min-width */
+}
+
+.download-icon {
+    font-size: 20px;
+    // font-size: 16px; /* Reduce icon size */
+    // margin-right: 4px;
+}

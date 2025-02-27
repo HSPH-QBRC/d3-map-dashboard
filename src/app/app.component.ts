@@ -1,4 +1,5 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, Input, ViewChild } from '@angular/core';
+import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-map-lambda-api.component'
 
 @Component({
   selector: 'app-root',
@@ -7,23 +8,23 @@ import { Component, Output, EventEmitter } from '@angular/core';
 })
 
 export class AppComponent {
-  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], selectedYear: string, selectedCol: string[], useBivariate: boolean, stateName: string}>();
-
+  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], selectedYear: string, selectedCol: string[], useBivariate: boolean, stateName: string }>();
+  @Output() downloadImageEmitter = new EventEmitter<any>();
+  @Output() shareLinkEmitter = new EventEmitter<any>();
   dataFromSidebar: any;
   dataFromSidebarStateNameOnly: any;
+  @ViewChild(LeafletMapLambdaApiComponent) leafletMap!: LeafletMapLambdaApiComponent;
+
 
   showYears = true
 
   sidebarData = {
     "years": [],
     "columns": [],
-    // "maps": [],
     "selectedYear": '',
-    // "selectedMap": '',
     "selectedCol": [],
     useBivariate: false,
     "stateName": ''
-    // showRedline: false,
   };
 
   onCountyMapDataReceived(data) {
@@ -37,6 +38,16 @@ export class AppComponent {
 
   onSidebarDataReceivedStateNameOnly(data: any) {
     this.dataFromSidebarStateNameOnly = data;
+  }
+
+  downloadImage() {
+    // console.log("in app")
+    // this.downloadImageEmitter.emit('hello')
+    this.leafletMap.downloadMap()
+  }
+
+  shareLink() {
+    this.leafletMap.shareLink()
   }
 
 }
