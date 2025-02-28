@@ -2,6 +2,8 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewC
 import { MatSlider } from '@angular/material/slider';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
+import { MatChipInputEvent } from '@angular/material/chips';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
 
 @Component({
   selector: 'app-sidebar',
@@ -13,7 +15,7 @@ export class SidebarComponent implements OnChanges, OnInit {
   @ViewChild('slider') slider: MatSlider;
   @Output() dataToParent = new EventEmitter<any>();
   @Output() dataToParentStateNameOnly = new EventEmitter<any>();
-  @Output() downloadImageEmitter = new EventEmitter<any>();
+  // @Output() downloadImageEmitter = new EventEmitter<any>();
   @Output() shareLinkEmitter = new EventEmitter<any>();
 
   constructor(
@@ -28,12 +30,12 @@ export class SidebarComponent implements OnChanges, OnInit {
   selectedYear = '2000'
   selectedCol1 = ''
   selectedCol2 = ''
-  stateName = ''
+  stateName = []
 
   prevYear = '2000'
   prevCol1 = ''
   prevCol2 = ''
-  prevStateName = ''
+  prevStateName = []
   prevUseBivariate = true
 
   showYears = false
@@ -68,6 +70,10 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.selectedCol1 = this.sidebarData['selectedCol'][0]
       this.selectedCol2 = this.sidebarData['selectedCol'][1]
       this.stateName = this.sidebarData['stateName']
+      // if(!this.selectedFocusStates.includes(this.sidebarData['stateName'])){
+      //   this.selectedFocusStates.push(this.sidebarData['stateName'])
+      // }
+      // console.log("selected focus: ", this.selectedFocusStates, this.sidebarData['stateName'])
 
       this.prevYear = this.sidebarData['selectedYear']
       this.prevCol1 = this.sidebarData['selectedCol'][0]
@@ -172,7 +178,9 @@ export class SidebarComponent implements OnChanges, OnInit {
 
       if (this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.stateName !== this.prevStateName) {
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-          if (boundsData[this.stateName]) {
+          
+          if (boundsData[this.stateName[0]]) {
+            console.log("statename only fromsidebar: ", this.stateName)
             this.dataToParentStateNameOnly.emit(this.stateName)
           } else {
             let message = 'Could not find this location. Did you spell the State name correctly?'
@@ -238,11 +246,34 @@ export class SidebarComponent implements OnChanges, OnInit {
     });
   }
 
-  downloadImage(){
-    this.downloadImageEmitter.emit()
-  }
+  // downloadImage(){
+  //   this.downloadImageEmitter.emit()
+  // }
 
   shareLink(){
     this.shareLinkEmitter.emit()
+  }
+
+  separatorKeysCodes: number[] = [ENTER];
+  // selectedFocusStates: string[] = [];
+
+  addState(event: MatChipInputEvent): void {
+    const value = (event.value || '').trim();
+
+    if (value) {
+      this.stateName.push(value);
+    }
+
+    // this.stateName = this.selectedFocusStates
+
+    event.chipInput!.clear();
+
+    this.sendData()
+  }
+
+  removeState(index: number): void {
+    if (index >= 0) {
+      this.stateName.splice(index, 1);
+    }
   }
 }

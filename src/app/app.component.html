@@ -1,8 +1,15 @@
 <div class="layout-container">
+    <!-- <div class="sidebar">
+        <app-sidebar [sidebarData]="sidebarData" (dataToParent)="onSidebarDataReceived($event)" 
+        (dataToParentStateNameOnly)="onSidebarDataReceivedStateNameOnly($event)" 
+        (downloadImageEmitter)="downloadImage()" 
+        (shareLinkEmitter)="shareLink()">
+        </app-sidebar>
+    </div> -->
     <div class="sidebar">
         <app-sidebar [sidebarData]="sidebarData" (dataToParent)="onSidebarDataReceived($event)" 
         (dataToParentStateNameOnly)="onSidebarDataReceivedStateNameOnly($event)" 
-        (downloadImageEmitter)="downloadImage()" (shareLinkEmitter)="shareLink()">
+        (shareLinkEmitter)="shareLink()">
         </app-sidebar>
     </div>
     <div class="main-content">

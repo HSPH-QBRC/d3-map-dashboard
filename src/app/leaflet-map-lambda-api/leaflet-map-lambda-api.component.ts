@@ -63,6 +63,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   // fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
 
   stateName = 'United States of America'
+  selectedBoundsArr = ['United States of America']
 
   colors = [
     "#e8e8e8", "#ace4e4", "#5ac8c8",
@@ -99,6 +100,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   prevSelectedCol1
   prevSelectedCol2
   prevStateName
+  prevBoundsArr = []
 
   constructor(
     private http: HttpClient,
@@ -112,13 +114,17 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.prevSelectedCol1 = this.selectedCol1
     this.prevSelectedCol2 = this.selectedCol2
     this.prevStateName = this.stateName
+    this.prevBoundsArr = this.selectedBoundsArr
 
     if (this.dataFromSidebar !== undefined) {
       this.selectedYear = this.dataFromSidebar['years']
       this.selectedCol1 = this.dataFromSidebar['col1']
       this.selectedCol2 = this.dataFromSidebar['col2']
       this.selectedMap = this.dataFromSidebar['map']
-      this.stateName = this.dataFromSidebar['stateName']
+
+      this.stateName = this.dataFromSidebar['stateName'][0]
+      this.selectedBoundsArr = this.dataFromSidebar['stateName']
+
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
 
       //if columns changed load reset and loadcsvdata
@@ -126,12 +132,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.resetVariables()
         this.loadCSVData()
       } else {
-        if (this.prevStateName !== this.stateName) {
-          this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-            this.currentZoomLevel = 3
-            this.currentBounds = boundsData[this.stateName.toLowerCase()]
-            this.loadAndInitializeMap()
-          });
+        // if (this.prevStateName !== this.stateName) {
+        if (this.prevBoundsArr.length === this.selectedBoundsArr.length && this.prevBoundsArr.every((value, index) => value === this.selectedBoundsArr[index])) {
+          this.currentZoomLevel = 3
+          this.calculateNewBounds()
+          this.loadAndInitializeMap()
         }
         else {
           //when overlay type changes
@@ -144,11 +149,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     //handles if state name only is changed
     if (this.dataFromSidebarStateNameOnly !== undefined) {
       this.currentZoomLevel = 3
-      this.stateName = this.dataFromSidebarStateNameOnly
-      this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-        this.currentBounds = boundsData[this.stateName.toLowerCase()]
-        this.loadAndInitializeMap()
-      });
+      this.stateName = this.dataFromSidebarStateNameOnly[0]
+      this.selectedBoundsArr = this.dataFromSidebar['stateName']
+
+      this.calculateNewBounds()
+      this.loadAndInitializeMap()
     }
 
   }
@@ -165,11 +170,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.selectedCol1 = params['col1'] || this.selectedCol1;
         this.selectedCol2 = params['col1'] && !params['col2'] ? '--' : (params['col2'] || this.selectedCol2)
         this.stateName = params['state'] || this.stateName;
+        // let tempStateName = params['state'] || this.stateName;
+        this.selectedBoundsArr = []
+        this.selectedBoundsArr.push(this.stateName)
+        // this.stateName = params['state'] || this.stateName;
         this.selectedYear = params['year'] || this.selectedYear;
-        this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-          this.currentBounds = boundsData[this.stateName.toLowerCase()]
-        });
-
+        this.calculateNewBounds()
 
         if (params['col1'] && !params['col2']) {
           this.selectedOverlay = 'Circles'
@@ -191,7 +197,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.http.get('./assets/maps/tiles_no_redline/mappinginequality.json').subscribe((geojsonData: any) => {
       this.redlineData = geojsonData
     })
-
   }
 
   sendData() {
@@ -201,28 +206,83 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       "columnsB": this.columnsB,
       "selectedYear": this.selectedYear,
       "selectedCol": [this.selectedCol1, this.selectedCol2],
-      "stateName": this.stateName,
+      // "stateName": this.stateName,
+      "stateName": this.selectedBoundsArr,
       "selectedOverlay": this.selectedOverlay
     }
     this.dataToSidebar.emit(this.sidebarData);
-
   }
 
-  downloadMap() {
-    this.isLoading = true
-    const printer = L.easyPrint({
-      title: 'Download Map',
-      filename: 'leaflet-map',
-      exportOnly: true, // Hides the print dialog
-      sizeModes: ['A4Landscape']
-    }).addTo(this.map);
+  calculateNewBounds() {
+    this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
+      let tempBounds = {}
+      for (let bound of this.selectedBoundsArr) {
+        tempBounds[bound] = boundsData[bound]
+      }
+      let minLat = Infinity, minLng = Infinity;
+      let maxLat = -Infinity, maxLng = -Infinity;
 
-    // Automatically trigger the download after the plugin is added
-    setTimeout(() => {
-      printer.printMap('CurrentSize', 'leaflet-map');
-      this.isLoading = false;
-    }, 200); // Delay to ensure the plugin initializes properly
+      if (Object.keys(tempBounds).length !== 0) {
+        Object.values(tempBounds).forEach((bounds) => {
+          const [bottomLeft, topRight] = bounds as [number[], number[]]; // Explicitly type the destructuring
+          const [lat1, lng1] = bottomLeft; // Min latitude & longitude
+          const [lat2, lng2] = topRight;   // Max latitude & longitude
+
+          minLat = Math.min(minLat, lat1);
+          minLng = Math.min(minLng, lng1);
+          maxLat = Math.max(maxLat, lat2);
+          maxLng = Math.max(maxLng, lng2);
+        });
+        this.currentBounds = [[minLat, minLng], [maxLat, maxLng]]
+      }
+    });
   }
+
+  //   getComputedGradientColor(): string {
+  //     return "#6baed6"; // Pick a middle color from your gradient stops
+  // }
+
+  // downloadMap() {
+  //   this.isLoading = true;
+
+  //   let container = this.selectedOverlay === 'Bivariate Choropleth' ? '.d3-legend-container' : '.d3-legend-container2'
+
+  //   // Select the legend element
+  //   const legend = document.querySelector(container) as HTMLElement;
+  //   let legendClone: HTMLElement | null = null;
+
+  //   if (legend) {
+  //       // Clone the legend and position it over the map
+  //       legendClone = legend.cloneNode(true) as HTMLElement;
+  //       legendClone.style.position = 'absolute';
+  //       legendClone.style.right = this.selectedOverlay === 'Bivariate Choropleth' ? '15px' : '10px';
+  //       legendClone.style.bottom = this.selectedOverlay === 'Bivariate Choropleth' ? '32px': '28px';
+  //       // legendClone.style.backgroundColor = 'white'; // Ensures visibility
+  //       legendClone.style.backgroundColor = this.selectedOverlay === 'Bivariate Choropleth' ? 'transparent' : 'white';
+  //       legendClone.style.padding = '5px';
+  //       legendClone.style.zIndex = '1000'; // Keeps it on top
+  //       this.map.getContainer().appendChild(legendClone);
+  //   }
+
+  //   const printer = L.easyPrint({
+  //       title: 'Download Map',
+  //       filename: 'leaflet-map',
+  //       exportOnly: true, // No print dialog
+  //       sizeModes: ['A4Landscape']
+  //   }).addTo(this.map);
+
+  //   setTimeout(() => {
+  //       printer.printMap('CurrentSize', 'leaflet-map');
+
+  //       // Remove the cloned legend AFTER a longer delay to ensure the download completes
+  //       setTimeout(() => {
+  //         if (legendClone) {
+  //             legendClone.remove();
+  //         }
+  //         this.isLoading = false;
+  //     }, 1000); // Give it extra time to finish the download
+  //   }, 500);
+  // }
 
   shareLink() {
     let baseUrl = 'http://map-dashboard-app.s3-website.us-east-2.amazonaws.com/data';

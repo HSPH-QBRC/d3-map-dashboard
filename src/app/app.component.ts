@@ -8,7 +8,7 @@ import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-m
 })
 
 export class AppComponent {
-  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], selectedYear: string, selectedCol: string[], useBivariate: boolean, stateName: string }>();
+  @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], selectedYear: string, selectedCol: string[], useBivariate: boolean, stateName: string[] }>();
   @Output() downloadImageEmitter = new EventEmitter<any>();
   @Output() shareLinkEmitter = new EventEmitter<any>();
   dataFromSidebar: any;
@@ -23,8 +23,8 @@ export class AppComponent {
     "columns": [],
     "selectedYear": '',
     "selectedCol": [],
-    useBivariate: false,
-    "stateName": ''
+    "useBivariate": false,
+    "stateName": []
   };
 
   onCountyMapDataReceived(data) {
@@ -37,14 +37,15 @@ export class AppComponent {
   }
 
   onSidebarDataReceivedStateNameOnly(data: any) {
+    console.log("from app: ", data)
     this.dataFromSidebarStateNameOnly = data;
   }
 
-  downloadImage() {
-    // console.log("in app")
-    // this.downloadImageEmitter.emit('hello')
-    this.leafletMap.downloadMap()
-  }
+  // downloadImage() {
+  //   // console.log("in app")
+  //   // this.downloadImageEmitter.emit('hello')
+  //   this.leafletMap.downloadMap()
+  // }
 
   shareLink() {
     this.leafletMap.shareLink()
