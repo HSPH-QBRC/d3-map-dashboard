@@ -26,6 +26,7 @@ import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-m
 import { RouterModule, Routes } from '@angular/router';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatChipsModule } from '@angular/material/chips';
+import {MatAutocompleteModule} from '@angular/material/autocomplete';
 
 const routes: Routes = [
   { path: 'data', component: AppComponent } // Define your route
@@ -37,7 +38,7 @@ const routes: Routes = [
     LoadingSpinnerComponent,
     SidebarComponent,
     LeafletMapComponent,
-    LeafletMapLambdaApiComponent
+    LeafletMapLambdaApiComponent,
   ],
   imports: [
     BrowserModule,
@@ -61,7 +62,8 @@ const routes: Routes = [
     MatInputModule,
     RouterModule.forRoot(routes),
     ClipboardModule,
-    MatChipsModule
+    MatChipsModule,
+    MatAutocompleteModule
   ],
   providers: [],
   bootstrap: [AppComponent]

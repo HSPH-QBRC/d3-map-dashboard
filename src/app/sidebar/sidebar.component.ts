@@ -3,7 +3,10 @@ import { MatSlider } from '@angular/material/slider';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
 import { MatChipInputEvent } from '@angular/material/chips';
-import { COMMA, ENTER } from '@angular/cdk/keycodes';
+import { ENTER } from '@angular/cdk/keycodes';
+import { FormControl } from '@angular/forms';
+import { Observable } from 'rxjs';
+// import { map, startWith } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
@@ -15,13 +18,13 @@ export class SidebarComponent implements OnChanges, OnInit {
   @ViewChild('slider') slider: MatSlider;
   @Output() dataToParent = new EventEmitter<any>();
   @Output() dataToParentStateNameOnly = new EventEmitter<any>();
-  // @Output() downloadImageEmitter = new EventEmitter<any>();
-  @Output() shareLinkEmitter = new EventEmitter<any>();
+
+  filteredStates: Observable<string[]>;
 
   constructor(
     private snackBar: MatSnackBar,
     private http: HttpClient,
-  ) { }
+  ) {}
 
   isLoading = true;
   yearCols = [];
@@ -70,10 +73,6 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.selectedCol1 = this.sidebarData['selectedCol'][0]
       this.selectedCol2 = this.sidebarData['selectedCol'][1]
       this.stateName = this.sidebarData['stateName']
-      // if(!this.selectedFocusStates.includes(this.sidebarData['stateName'])){
-      //   this.selectedFocusStates.push(this.sidebarData['stateName'])
-      // }
-      // console.log("selected focus: ", this.selectedFocusStates, this.sidebarData['stateName'])
 
       this.prevYear = this.sidebarData['selectedYear']
       this.prevCol1 = this.sidebarData['selectedCol'][0]
@@ -178,7 +177,7 @@ export class SidebarComponent implements OnChanges, OnInit {
 
       if (this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.stateName !== this.prevStateName) {
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-          
+
           if (boundsData[this.stateName[0]]) {
             console.log("statename only fromsidebar: ", this.stateName)
             this.dataToParentStateNameOnly.emit(this.stateName)
@@ -250,30 +249,39 @@ export class SidebarComponent implements OnChanges, OnInit {
   //   this.downloadImageEmitter.emit()
   // }
 
-  shareLink(){
-    this.shareLinkEmitter.emit()
-  }
+  // shareLink() {
+  //   this.shareLinkEmitter.emit()
+  // }
 
   separatorKeysCodes: number[] = [ENTER];
   // selectedFocusStates: string[] = [];
 
   addState(event: MatChipInputEvent): void {
+
     const value = (event.value || '').trim();
 
-    if (value) {
-      this.stateName.push(value);
-    }
-
-    // this.stateName = this.selectedFocusStates
+    this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
+      console.log("boundsdata: ", boundsData, value)
+      if (!boundsData[value]) {
+        let message = `"${value}" not found. Please enter a valid state name or abbreviation.`
+        this.onErrorSnackbar(message)
+      } else {
+        if (value) {
+          this.stateName.push(value);
+        }
+        this.sendData()
+      }
+    })
 
     event.chipInput!.clear();
-
-    this.sendData()
   }
+
 
   removeState(index: number): void {
     if (index >= 0) {
       this.stateName.splice(index, 1);
     }
   }
+
+  stateCtrl = new FormControl('');
 }

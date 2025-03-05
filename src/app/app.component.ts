@@ -10,7 +10,7 @@ import { LeafletMapLambdaApiComponent } from './leaflet-map-lambda-api/leaflet-m
 export class AppComponent {
   @Output() dataToSidebar = new EventEmitter<{ years: string[], columns: string[], selectedYear: string, selectedCol: string[], useBivariate: boolean, stateName: string[] }>();
   @Output() downloadImageEmitter = new EventEmitter<any>();
-  @Output() shareLinkEmitter = new EventEmitter<any>();
+  // @Output() shareLinkEmitter = new EventEmitter<any>();
   dataFromSidebar: any;
   dataFromSidebarStateNameOnly: any;
   @ViewChild(LeafletMapLambdaApiComponent) leafletMap!: LeafletMapLambdaApiComponent;
@@ -37,7 +37,6 @@ export class AppComponent {
   }
 
   onSidebarDataReceivedStateNameOnly(data: any) {
-    console.log("from app: ", data)
     this.dataFromSidebarStateNameOnly = data;
   }
 
@@ -47,8 +46,8 @@ export class AppComponent {
   //   this.leafletMap.downloadMap()
   // }
 
-  shareLink() {
-    this.leafletMap.shareLink()
-  }
+  // shareLink() {
+  //   this.leafletMap.shareLink()
+  // }
 
 }

@@ -39,6 +39,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   layerControl!: L.Control.Layers;
   resetZoomControl!: L.Control.Layers;
+  shareLinkControl!: L.Control.Layers;
 
   yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
   columnsA = ['tract_fips10', 'year', 'population', 'aland10', 'count_445110', 'count_sales_445110', 'count_emp_445110', 'popden_445110', 'popden_sales_445110', 'popden_emp_445110', 'aden_445110', 'aden_sales_445110', 'aden_emp_445110', 'count_4452', 'count_sales_4452', 'count_emp_4452', 'popden_4452', 'popden_sales_4452', 'popden_emp_4452', 'aden_4452', 'aden_sales_4452', 'aden_emp_4452', 'count_452311', 'count_sales_452311', 'count_emp_452311', 'popden_452311', 'popden_sales_452311', 'popden_emp_452311', 'aden_452311', 'aden_sales_452311', 'aden_emp_452311']
@@ -124,6 +125,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
       this.stateName = this.dataFromSidebar['stateName'][0]
       this.selectedBoundsArr = this.dataFromSidebar['stateName']
+      // }
 
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
 
@@ -161,6 +163,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   tileBounds: any = {}
   redlineData: any = []
   paramsFound = false;
+  latLongBounds: L.LatLng = null
 
   ngOnInit(): void {
     this.route.queryParams
@@ -170,17 +173,35 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.selectedCol1 = params['col1'] || this.selectedCol1;
         this.selectedCol2 = params['col1'] && !params['col2'] ? '--' : (params['col2'] || this.selectedCol2)
         this.stateName = params['state'] || this.stateName;
-        // let tempStateName = params['state'] || this.stateName;
         this.selectedBoundsArr = []
         this.selectedBoundsArr.push(this.stateName)
-        // this.stateName = params['state'] || this.stateName;
         this.selectedYear = params['year'] || this.selectedYear;
+
+        //Overlay needs to be capitalized (ie 'Heatmap Overlays')
+        this.selectedOverlay = params['overlay'] ? params['overlay'].split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : this.selectedOverlay;
+        this.currentZoomLevel = params['zoom'] || this.currentZoomLevel;
+
+        if (params['bounds']) {
+          let latlngBounds = params['bounds'];
+          const [neLat, neLng, swLat, swLng] = latlngBounds.split("_").map(Number);
+
+          // Format into an object
+          this.latLongBounds = {
+            northeast: { lat: neLat, lng: neLng },
+            southwest: { lat: swLat, lng: swLng }
+          };
+
+          console.log("boundz", this.latLongBounds);
+        } else {
+          this.latLongBounds = null
+        }
+
         this.calculateNewBounds()
 
         if (params['col1'] && !params['col2']) {
           this.selectedOverlay = 'Circles'
         }
-
+        console.log("new params: ", params)
         this.loadCSVData();
       });
 
@@ -214,28 +235,37 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   }
 
   calculateNewBounds() {
-    this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-      let tempBounds = {}
-      for (let bound of this.selectedBoundsArr) {
-        tempBounds[bound] = boundsData[bound]
-      }
-      let minLat = Infinity, minLng = Infinity;
-      let maxLat = -Infinity, maxLng = -Infinity;
+    if (this.latLongBounds) {
+      const lat1 = this.latLongBounds['southwest']['lat'];
+      const lng1 = this.latLongBounds['southwest']['lng'];
+      const lat2 = this.latLongBounds['northeast']['lat'];
+      const lng2 = this.latLongBounds['northeast']['lng'];
+      this.currentBounds = [[lat1, lng1], [lat2, lng2]];
+    } else {
+      this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
+        let tempBounds = {}
+        for (let bound of this.selectedBoundsArr) {
+          tempBounds[bound] = boundsData[bound]
+        }
+        let minLat = Infinity, minLng = Infinity;
+        let maxLat = -Infinity, maxLng = -Infinity;
 
-      if (Object.keys(tempBounds).length !== 0) {
-        Object.values(tempBounds).forEach((bounds) => {
-          const [bottomLeft, topRight] = bounds as [number[], number[]]; // Explicitly type the destructuring
-          const [lat1, lng1] = bottomLeft; // Min latitude & longitude
-          const [lat2, lng2] = topRight;   // Max latitude & longitude
+        if (Object.keys(tempBounds).length !== 0) {
+          Object.values(tempBounds).forEach((bounds) => {
+            const [bottomLeft, topRight] = bounds as [number[], number[]]; // Explicitly type the destructuring
+            const [lat1, lng1] = bottomLeft; // Min latitude & longitude
+            const [lat2, lng2] = topRight;   // Max latitude & longitude
 
-          minLat = Math.min(minLat, lat1);
-          minLng = Math.min(minLng, lng1);
-          maxLat = Math.max(maxLat, lat2);
-          maxLng = Math.max(maxLng, lng2);
-        });
-        this.currentBounds = [[minLat, minLng], [maxLat, maxLng]]
-      }
-    });
+            minLat = Math.min(minLat, lat1);
+            minLng = Math.min(minLng, lng1);
+            maxLat = Math.max(maxLat, lat2);
+            maxLng = Math.max(maxLng, lng2);
+          });
+          this.currentBounds = [[minLat, minLng], [maxLat, maxLng]]
+        }
+      });
+    }
+
   }
 
   //   getComputedGradientColor(): string {
@@ -299,6 +329,20 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
     if (this.selectedYear !== '--') {
       params.append('year', this.selectedYear);
+    }
+    if (this.selectedOverlay) {
+      params.append('overlay', this.selectedOverlay)
+    }
+    if (this.currentZoomLevel) {
+      let temp = this.map.getZoom();
+      params.append('zoom', temp)
+    }
+    const bounds = this.map.getBounds();
+    console.log("bounds: ", bounds)
+    let currBounds = `${bounds['_northEast']['lat']}_${bounds['_northEast']['lng']}_${bounds['_southWest']['lat']}_${bounds['_southWest']['lng']}`
+    // console.log("temp: ", tempBounds)
+    if (currBounds) {
+      params.append('bounds', currBounds)
     }
 
     let message = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
@@ -893,6 +937,27 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       };
 
       this.resetZoomControl.addTo(this.map);
+    }
+
+    if (this.shareLinkControl) {
+      this.map.removeControl(this.shareLinkControl);
+      delete this.shareLinkControl;
+    }
+
+    if (!this.shareLinkControl) {
+      //add reset zoom button
+      this.shareLinkControl = L.control({ position: 'topright' });
+
+      this.shareLinkControl.onAdd = (map) => {
+        const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-sharelink');
+        div.innerHTML = '<i class="fa-solid fa-link"></i>';
+        div.onclick = () => {
+          this.shareLink()
+        };
+        return div;
+      };
+
+      this.shareLinkControl.addTo(this.map);
     }
 
     let min1 = this.min1
@@ -1580,6 +1645,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     this.map.on("zoomstart", () => {
       this.previousZoomLevel = this.map.getZoom(); // Store previous zoom level at start of zoom
+      console.log("zoom start: ", this.previousZoomLevel)
     });
 
     this.map.on('zoomend', () => {
@@ -1599,6 +1665,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.useNewMap = true
         this.loadAndInitializeMap()
       }
+      console.log("zoom end: ", this.currentZoomLevel)
 
     });
 
