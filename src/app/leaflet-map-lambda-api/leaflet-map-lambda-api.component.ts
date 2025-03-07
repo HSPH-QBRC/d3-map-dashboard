@@ -130,6 +130,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
 
+      this.latLongBounds = null
+
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2) {
         this.resetVariables()
@@ -173,7 +175,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.paramsFound = true
         this.selectedCol1 = params['col1'] || this.selectedCol1;
         this.selectedCol2 = params['col1'] && !params['col2'] ? '--' : (params['col2'] || this.selectedCol2)
-        this.stateName = params['state'] || this.stateName;
+
+        // this.stateName = params['state'] || this.stateName;
         this.selectedBoundsArr = []
         this.selectedBoundsArr.push(this.stateName)
         this.selectedYear = params['year'] || this.selectedYear;
@@ -193,6 +196,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           };
         } else {
           this.latLongBounds = null
+        }
+
+        if (params['state']) {
+          this.stateName = params['state']
+        } else if (params['bounds']) {
+          this.stateName = ''
+          this.selectedBoundsArr = []
         }
 
         this.calculateNewBounds()
@@ -322,7 +332,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     if (this.selectedCol2 !== '--') {
       params.append('col2', this.selectedCol2);
     }
-    if (this.stateName !== '--') {
+    if (this.stateName !== '--' && this.latLongBounds !== null) {
       params.append('state', this.stateName);
     }
     if (this.selectedYear !== '--') {
@@ -332,8 +342,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       params.append('overlay', this.selectedOverlay)
     }
     if (this.currentZoomLevel) {
-      let temp = this.map.getZoom();
-      params.append('zoom', temp)
+      let currZoom = this.map.getZoom();
+      params.append('zoom', currZoom)
     }
     const bounds = this.map.getBounds();
     let currBounds = `${bounds['_northEast']['lat']}_${bounds['_northEast']['lng']}_${bounds['_southWest']['lat']}_${bounds['_southWest']['lng']}`
@@ -704,11 +714,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   clickVal2
 
   loadAndInitializeMap(): void {
-    console.log("gets to loadandinit")
     let currMap = []
     if (this.currentZoomLevel >= 9) {
       this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
-      console.log("currentcensus: ", this.currentCensusTractsMapArr)
       currMap = this.currentCensusTractsMapArr
     } else {
       currMap = this.fullMapArr
@@ -719,10 +727,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.useNewMap = index === 1 ? true : false
 
       let mapPath = this.currentZoomLevel >= 9 ? `tiles_no_redline/${map}` : map
-console.log("map path: ", mapPath)
       this.http.get(`./assets/maps/${mapPath}`).subscribe({
         next: (data) => {
-          // console.log("data: ", data)
           this.initializesMap(data);
           this.addD3Legend();
 
@@ -931,7 +937,7 @@ console.log("map path: ", mapPath)
           this.selectedBoundsArr = [this.stateName]
           this.sendData()
           map.fitBounds(defaultBounds);
-          
+
         };
         return div;
       };
@@ -1166,7 +1172,12 @@ console.log("map path: ", mapPath)
                 <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
-            let avgValue2 = avgDataCarmen[censusTract] && avgDataCarmen[censusTract]['mostFreq'] ? avgDataCarmen[censusTract]['mostFreq'] : 0
+            // let avgValue2 = avgDataCarmen[censusTract] && avgDataCarmen[censusTract]['mostFreq'] ? avgDataCarmen[censusTract]['mostFreq'] : 0
+            let avgValue2 = selectedCol2 !== '--' ? (avgData2[censusTract] && avgData2[censusTract]['avg'] ? avgData2[censusTract]['avg'] : 0) : 0
+
+            if (selectedCol2 != '--') {
+              nsdohProfileToolTip += `<strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>`
+            }
 
             if (profile !== 'N/A') {
               layer.on('click', function () {
@@ -1187,7 +1198,7 @@ console.log("map path: ", mapPath)
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-          } else {
+          } else if (currentZoom >= 9) {
             let state = feature.properties.STATE
             state = state.charAt(0) + state.slice(1).toLowerCase();
             let county = feature.properties.COUNTY
@@ -1203,6 +1214,9 @@ console.log("map path: ", mapPath)
               `;
 
             const val2 = Number(valuemap2.get(censusTract))
+            if (selectedCol2 != '--') {
+              nsdohProfileToolTip += `<strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>`
+            }
 
             if (profile !== undefined) {
               layer.on('click', function () {
@@ -1595,14 +1609,20 @@ console.log("map path: ", mapPath)
             const censusTract = parts[0];
             const county = parts[1];
             const state = parts[2];
-            const val1 = Number(valuemap1.get(fips))
+
+            const val1 = (selectedCol1 === 'Nsdoh_profiles')
+              ? (valuemapCarmen && valuemapCarmen instanceof Map && valuemapCarmen.get(fips) !== undefined
+                ? 0
+                : valuemapCarmen?.get(fips) ?? 'N/A')
+              : Number(valuemap1?.get(fips) ?? 0);
+
             const val2 = Number(valuemap2.get(fips))
             let censusTractTooltip = `
               <strong> State:</strong> ${state || 'N/A'}<br>
               <strong> County:</strong> ${county || 'N/A'}<br>
               <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
               <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-              <strong> ${selectedCol1}:</strong> ${val1.toFixed(2) || 'N/A'}<br>
+              <strong> ${selectedCol1}:</strong> ${val1 || 'N/A'}<br>
               <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
             `;
             layer.on('click', function () {
@@ -1625,9 +1645,13 @@ console.log("map path: ", mapPath)
               const latLng = layer.getBounds().getCenter();
               if (currBounds.contains(latLng)) {
                 if (selectedOverlay === "Circles") {
-                  addCircle(latLng, val2);
+                  if(val2 !== 0){
+                    addCircle(latLng, val2);
+                  }
                 } else if (selectedOverlay === "Spikes") {
-                  addSpike(latLng, val2);
+                  if(val2 !== 0){
+                    addSpike(latLng, val2);
+                  }
                 }
               }
 
@@ -1665,7 +1689,7 @@ console.log("map path: ", mapPath)
           [swBounds.lat, swBounds.lng],
           [neBounds.lat, neBounds.lng]
         ];
-        
+
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         this.useNewMap = true
         this.loadAndInitializeMap()
@@ -1803,7 +1827,7 @@ console.log("map path: ", mapPath)
         return div;
       };
 
-      // this.legendControl2.addTo(this.map);
+      this.legendControl2.addTo(this.map);
     }
   }
 

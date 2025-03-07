@@ -23,13 +23,13 @@
         <mat-form-field class="example-margin chipField" appearance="outline">
             <mat-label>Focus</mat-label>
             <mat-chip-list #chipList aria-label="Selected States">
-                <mat-chip *ngFor="let state of stateName; let i = index" [selectable]="true" [removable]="true"
+                <mat-chip *ngFor="let state of stateNameArr; let i = index" [selectable]="true" [removable]="true"
                     (removed)="removeState(i)">
                     {{ state }}
                     <mat-icon matChipRemove>close</mat-icon>
                 </mat-chip>
             </mat-chip-list>
-            <input matInput [matChipInputFor]="chipList" [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+            <input #inputField matInput [matChipInputFor]="chipList" [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
                 [matChipInputAddOnBlur]="true" (matChipInputTokenEnd)="addState($event)" placeholder="e.g. CA">
         </mat-form-field>
 

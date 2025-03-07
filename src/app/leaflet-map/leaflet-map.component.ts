@@ -115,7 +115,7 @@ export class LeafletMapComponent implements OnInit {
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2 || this.prevSelectedCol3 !== this.selectedCol3) {
-        console.log("cols changed: ", this.prevSelectedCol2, this.selectedCol2)
+        
         this.resetVariables()
         this.loadCSVData()
       } else {
@@ -150,7 +150,7 @@ export class LeafletMapComponent implements OnInit {
     const timerLabel = `api gateway timer`;
     console.time(timerLabel); // Start the timer
     this.http.get(`https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&column1=${this.selectedCol1}&column2=${this.selectedCol2}`).subscribe((data: any)=>{
-      console.log("data from my api: ", data)
+     
       console.timeEnd(timerLabel)
     })
     this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
@@ -478,7 +478,6 @@ export class LeafletMapComponent implements OnInit {
         }
 
       }
-      console.log("carmen data: ", this.dataCarmen, this.colorCategories, this.avgDataCat1)
 
       this.columns = Object.keys(groceryData[0])
       this.columns.push('--')

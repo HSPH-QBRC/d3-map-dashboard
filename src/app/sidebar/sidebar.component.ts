@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild, OnInit, ElementRef, AfterViewInit } from '@angular/core';
 import { MatSlider } from '@angular/material/slider';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
@@ -13,9 +13,10 @@ import { Observable } from 'rxjs';
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss']
 })
-export class SidebarComponent implements OnChanges, OnInit {
+export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
   @Input() sidebarData!: { years: string[], columns: string[], maps: string[] };
   @ViewChild('slider') slider: MatSlider;
+  @ViewChild('inputField') inputField!: ElementRef<HTMLInputElement>;
   @Output() dataToParent = new EventEmitter<any>();
   @Output() dataToParentStateNameOnly = new EventEmitter<any>();
 
@@ -24,7 +25,7 @@ export class SidebarComponent implements OnChanges, OnInit {
   constructor(
     private snackBar: MatSnackBar,
     private http: HttpClient,
-  ) {}
+  ) { }
 
   isLoading = true;
   yearCols = [];
@@ -33,7 +34,7 @@ export class SidebarComponent implements OnChanges, OnInit {
   selectedYear = '2000'
   selectedCol1 = ''
   selectedCol2 = ''
-  stateName = []
+  stateNameArr = []
 
   prevYear = '2000'
   prevCol1 = ''
@@ -72,7 +73,7 @@ export class SidebarComponent implements OnChanges, OnInit {
       this.selectedYear = this.sidebarData['selectedYear']
       this.selectedCol1 = this.sidebarData['selectedCol'][0]
       this.selectedCol2 = this.sidebarData['selectedCol'][1]
-      this.stateName = this.sidebarData['stateName']
+      this.stateNameArr = this.sidebarData['stateName']
 
       this.prevYear = this.sidebarData['selectedYear']
       this.prevCol1 = this.sidebarData['selectedCol'][0]
@@ -83,6 +84,13 @@ export class SidebarComponent implements OnChanges, OnInit {
 
       this.organizeData()
     }
+  }
+
+  ngAfterViewInit() {
+    // Ensure the input element exists before focusing
+    // if (this.inputField) {
+    //   this.inputField.nativeElement.focus();
+    // }
   }
 
   organizeData() {
@@ -169,18 +177,17 @@ export class SidebarComponent implements OnChanges, OnInit {
         years: this.selectedYear.toString(),
         col1: this.selectedCol1,
         col2: this.selectedCol2,
-        stateName: this.stateName,
+        stateName: this.stateNameArr,
         selectedOverlay: this.selectedOverlay
       }
       this.showMoreColsA = false;
       this.showMoreColsB = false;
 
-      if (this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.stateName !== this.prevStateName) {
+      if (this.selectedYear === this.prevYear && this.selectedCol1 === this.prevCol1 && this.selectedCol2 === this.prevCol2 && this.stateNameArr !== this.prevStateName) {
         this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
 
-          if (boundsData[this.stateName[0]]) {
-            console.log("statename only fromsidebar: ", this.stateName)
-            this.dataToParentStateNameOnly.emit(this.stateName)
+          if (boundsData[this.stateNameArr[0]]) {
+            this.dataToParentStateNameOnly.emit(this.stateNameArr)
           } else {
             let message = 'Could not find this location. Did you spell the State name correctly?'
             this.onErrorSnackbar(message)
@@ -207,7 +214,7 @@ export class SidebarComponent implements OnChanges, OnInit {
       years: this.selectedYear.toString(),
       col1: this.selectedCol1,
       col2: this.selectedCol2,
-      stateName: this.stateName,
+      stateName: this.stateNameArr,
       selectedOverlay: this.selectedOverlay
     }
 
@@ -261,13 +268,12 @@ export class SidebarComponent implements OnChanges, OnInit {
     const value = (event.value || '').trim();
 
     this.http.get('/assets/maps/tiles_no_redline/boundsDict.json').subscribe((boundsData) => {
-      console.log("boundsdata: ", boundsData, value)
-      if (!boundsData[value]) {
+      if (!boundsData[value] && value !== '') {
         let message = `"${value}" not found. Please enter a valid state name or abbreviation.`
         this.onErrorSnackbar(message)
       } else {
         if (value) {
-          this.stateName.push(value);
+          this.stateNameArr.push(value);
         }
         this.sendData()
       }
@@ -279,7 +285,7 @@ export class SidebarComponent implements OnChanges, OnInit {
 
   removeState(index: number): void {
     if (index >= 0) {
-      this.stateName.splice(index, 1);
+      this.stateNameArr.splice(index, 1);
     }
   }
 
