@@ -96,6 +96,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     [24.396308, -125.0], // Southwest corner (latitude, longitude)
     [49.384358, -66.93457], // Northeast corner
   ];
+  // currentBounds
 
   prevSelectedYear
   prevSelectedCol1
@@ -190,8 +191,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             northeast: { lat: neLat, lng: neLng },
             southwest: { lat: swLat, lng: swLng }
           };
-
-          console.log("boundz", this.latLongBounds);
         } else {
           this.latLongBounds = null
         }
@@ -201,7 +200,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         if (params['col1'] && !params['col2']) {
           this.selectedOverlay = 'Circles'
         }
-        console.log("new params: ", params)
         this.loadCSVData();
       });
 
@@ -338,9 +336,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       params.append('zoom', temp)
     }
     const bounds = this.map.getBounds();
-    console.log("bounds: ", bounds)
     let currBounds = `${bounds['_northEast']['lat']}_${bounds['_northEast']['lng']}_${bounds['_southWest']['lat']}_${bounds['_southWest']['lng']}`
-    // console.log("temp: ", tempBounds)
     if (currBounds) {
       params.append('bounds', currBounds)
     }
@@ -367,9 +363,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.min3 = Infinity;
     this.max3 = -Infinity;
 
-    // this.data1 = [];
-    // this.data2 = [];
-    // this.data3 = [];
     this.dataCarmen = [];
 
     this.avgData1 = {};
@@ -696,6 +689,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.columnsA.sort()
       this.columnsB.sort()
 
+
       this.sendData()
       this.loadAndInitializeMap()
     } catch (error) {
@@ -710,8 +704,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   clickVal2
 
   loadAndInitializeMap(): void {
+    console.log("gets to loadandinit")
     let currMap = []
     if (this.currentZoomLevel >= 9) {
+      this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
+      console.log("currentcensus: ", this.currentCensusTractsMapArr)
       currMap = this.currentCensusTractsMapArr
     } else {
       currMap = this.fullMapArr
@@ -722,9 +719,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.useNewMap = index === 1 ? true : false
 
       let mapPath = this.currentZoomLevel >= 9 ? `tiles_no_redline/${map}` : map
-
+console.log("map path: ", mapPath)
       this.http.get(`./assets/maps/${mapPath}`).subscribe({
         next: (data) => {
+          // console.log("data: ", data)
           this.initializesMap(data);
           this.addD3Legend();
 
@@ -930,8 +928,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             [24.396308, -125.0],
             [49.384358, -66.93457],
           ];
+          this.selectedBoundsArr = [this.stateName]
           this.sendData()
           map.fitBounds(defaultBounds);
+          
         };
         return div;
       };
@@ -1081,6 +1081,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     if (this.currentZoomLevel >= 9) {
       this.currentZoomLevel = this.map.getZoom()
     }
+
     let areaLayer = L.geoJSON(area, {
       style: function (d) {
         if (selectedOverlay === "Bivariate Choropleth") {
@@ -1645,14 +1646,26 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     this.map.on("zoomstart", () => {
       this.previousZoomLevel = this.map.getZoom(); // Store previous zoom level at start of zoom
-      console.log("zoom start: ", this.previousZoomLevel)
     });
 
     this.map.on('zoomend', () => {
       this.currentZoomLevel = this.map.getZoom();
       if (this.currentZoomLevel >= 9 && this.currentZoomLevel > this.previousZoomLevel) {
         const bounds = this.map.getBounds();
-        this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
+        // let swBounds = bounds.getSouthWest()
+        // let neBounds = bounds.getNorthEast()
+        // let swCorner = [swBounds['lat'], swBounds['lng']]
+        // let neCorner = [neBounds['lat'], neBounds['lng']]
+        // // this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
+        // this.currentBounds = [swCorner, neCorner]
+        const swBounds = bounds.getSouthWest();
+        const neBounds = bounds.getNorthEast();
+
+        this.currentBounds = [
+          [swBounds.lat, swBounds.lng],
+          [neBounds.lat, neBounds.lng]
+        ];
+        
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         this.useNewMap = true
         this.loadAndInitializeMap()
@@ -1665,14 +1678,25 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.useNewMap = true
         this.loadAndInitializeMap()
       }
-      console.log("zoom end: ", this.currentZoomLevel)
 
     });
 
     this.map.on('moveend', () => {
       if (this.currentZoomLevel >= 9) {
         const bounds = this.map.getBounds();
-        this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
+        // this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
+        // let swBounds = bounds.getSouthWest()
+        // let neBounds = bounds.getNorthEast()
+        // let swCorner = [swBounds['lat'], swBounds['lng']]
+        // let neCorner =[neBounds['lat'], neBounds['lng']]
+        // this.currentBounds = [swCorner, neCorner]
+        const swBounds = bounds.getSouthWest();
+        const neBounds = bounds.getNorthEast();
+
+        this.currentBounds = [
+          [swBounds.lat, swBounds.lng],
+          [neBounds.lat, neBounds.lng]
+        ];
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
@@ -1706,10 +1730,14 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   }
 
   findIntersectingTiles(currentBounds: [[number, number], [number, number]]) {
-    const currentSouth = currentBounds[0]['lat'];
-    const currentWest = currentBounds[0]['lng'];
-    const currentNorth = currentBounds[1]['lat'];
-    const currentEast = currentBounds[1]['lng'];
+    // const currentSouth = currentBounds[0]['lat'];
+    // const currentWest = currentBounds[0]['lng'];
+    // const currentNorth = currentBounds[1]['lat'];
+    // const currentEast = currentBounds[1]['lng'];
+    const currentSouth = currentBounds[0][0];
+    const currentWest = currentBounds[0][1];
+    const currentNorth = currentBounds[1][0];
+    const currentEast = currentBounds[1][1];
 
     const intersectingTiles = [];
 
@@ -1729,8 +1757,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       if (isIntersecting) {
         intersectingTiles.push(tileId);
       }
-    }
 
+    }
     return intersectingTiles;
   }
 
@@ -1775,7 +1803,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         return div;
       };
 
-      this.legendControl2.addTo(this.map);
+      // this.legendControl2.addTo(this.map);
     }
   }
 
