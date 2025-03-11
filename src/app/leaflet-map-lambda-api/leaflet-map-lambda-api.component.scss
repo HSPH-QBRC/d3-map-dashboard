@@ -162,4 +162,31 @@
     .input.mat-chip-input {
         margin: 8px;
     }
+
+    .timeline-icons {
+        font-size: 20px;
+        margin: 5px;
+    }
+
+    .timeline-icons:hover {
+        cursor: pointer;
+        opacity: 0.6;
+    }
+
+    .mat-slider-thumb {
+        background-color: #ffd740 !important;
+    }
+
+    .mat-slider-thumb-label {
+        background-color: #ffd740 !important;
+    }
+
+    .mat-slider-track-fill {
+        background-color: #ffd740 !important;
+    }
+
+    .disabled-slider {
+        pointer-events: none;  /* Disable interaction */
+        opacity: 0.8;  /* Optional: Apply some opacity for a "disabled" look */
+      }
 }

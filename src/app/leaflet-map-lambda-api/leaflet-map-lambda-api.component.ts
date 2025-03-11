@@ -126,7 +126,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
       this.stateName = this.dataFromSidebar['stateName'][0]
       this.selectedBoundsArr = this.dataFromSidebar['stateName']
-      // }
 
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
 
@@ -137,7 +136,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.resetVariables()
         this.loadCSVData()
       } else {
-        // if (this.prevStateName !== this.stateName) {
         if (this.prevBoundsArr.length === this.selectedBoundsArr.length && this.prevBoundsArr.every((value, index) => value === this.selectedBoundsArr[index])) {
           this.currentZoomLevel = 3
           this.calculateNewBounds()
@@ -355,6 +353,46 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     this.onErrorSnackbar('Copied to clipboard: ' + message)
     this.clipboard.copy(message);
+  }
+
+  isTimelinePlaying = false
+  timeouts: any[] = [];  // Track all setTimeout IDs
+  currentIndex = 0;      // Track which year we're on
+
+  playTimeline() {
+    this.isTimelinePlaying = !this.isTimelinePlaying;
+
+    if (this.isTimelinePlaying) {
+      // Start the timeline from the currentIndex (not from 0)
+      for (let i = this.currentIndex; i < this.yearCols.length; i++) {
+        let year = this.yearCols[i].toString();
+        let timeout = (i - this.currentIndex) * 5000; // Adjust timeout based on pause point
+
+        const timeoutId = setTimeout(() => {
+          this.onYearChange(year);
+          this.currentIndex = i + 1;  // Track the last completed year
+
+          // Automatically stop when the last year is reached
+          if (i === this.yearCols.length - 1) {
+            this.isTimelinePlaying = false;
+            this.currentIndex = 0; // Reset after finishing
+          }
+
+        }, timeout);
+
+        this.timeouts.push(timeoutId);
+      }
+    } else {
+      // Pause the timeline
+      this.clearAllTimeouts();
+    }
+  }
+
+  clearAllTimeouts() {
+    for (let timeoutId of this.timeouts) {
+      clearTimeout(timeoutId);
+    }
+    this.timeouts = [];
   }
 
   onErrorSnackbar(message): void {
@@ -1645,11 +1683,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               const latLng = layer.getBounds().getCenter();
               if (currBounds.contains(latLng)) {
                 if (selectedOverlay === "Circles") {
-                  if(val2 !== 0){
+                  if (val2 !== 0) {
                     addCircle(latLng, val2);
                   }
                 } else if (selectedOverlay === "Spikes") {
-                  if(val2 !== 0){
+                  if (val2 !== 0) {
                     addSpike(latLng, val2);
                   }
                 }
@@ -1788,10 +1826,25 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   onYearChange(year) {
     this.selectedYear = year.toString()
-    // this.loadAndInitializeMap()
+
+    if(!this.isTimelinePlaying){
+      this.currentIndex = this.yearCols.indexOf(year)
+    }
+    
     this.resetVariables()
     this.loadCSVData()
   }
+
+  // onYearChange2(year) {
+  //   this.selectedYear = year.toString()
+
+  //   // if(!this.isTimelinePlaying){
+  //   //   this.currentIndex = this.yearCols.indexOf(year)
+  //   // }
+    
+  //   this.resetVariables()
+  //   this.loadCSVData()
+  // }
 
   legendControl
   legendControl2
