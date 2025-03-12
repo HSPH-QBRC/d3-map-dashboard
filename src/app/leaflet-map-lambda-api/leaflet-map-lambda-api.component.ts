@@ -1378,8 +1378,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       const scaleValue = d3.scaleLinear().domain([min2, max2]).range([0, getSpikeZoomAdj(zoom) * 2])(value);
       const spikeHeight = scaleValue
 
-      // const spikeHeight = scaleRadius(value) * 0.0005 * height; // Convert to map units (degrees)
-      // const spikeWidth = spikeHeight / 5; // Adjust width relative to height
       const spikeWidth = getSpikeZoomAdj(zoom) / 8
 
       // Define the three points of the triangle (base and tip)
@@ -1397,8 +1395,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         weight: 1,
         pane: "spikePane"
       }).addTo(map);
-
-
     }
 
 
@@ -1489,13 +1485,13 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .attr("stroke-width", 2);
 
         } else if (selectedOverlay === "Spikes") {
-          const spikeHeights = [1, 5, 10, 15, 20];
+          const spikeHeights = [2, 10, 20, 30, 40];
           const xSpacingValues = [5, 22, 42, 67, 95];
           let spikeVal = val2 / (max2 - min2)
           let spikeIndex = Math.min(Math.floor(spikeVal * 5), 4);
-          const spikeWidth = spikeHeights[spikeIndex] / 5;
+          const spikeWidth = spikeHeights[spikeIndex] / 10;
           const x = xSpacingValues[spikeIndex];  // x position for this spike in the legend
-          const yBaseline = 85;         // Baseline y coordinate
+          const yBaseline = 100;         // Baseline y coordinate
           const triangleCoords = [
             { x: x - spikeWidth, y: yBaseline },  // Left base point
             { x: x + spikeWidth, y: yBaseline },  // Right base point
@@ -1746,22 +1742,19 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.map.on('moveend', () => {
       if (this.currentZoomLevel >= 9) {
         const bounds = this.map.getBounds();
-        // this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
-        // let swBounds = bounds.getSouthWest()
-        // let neBounds = bounds.getNorthEast()
-        // let swCorner = [swBounds['lat'], swBounds['lng']]
-        // let neCorner =[neBounds['lat'], neBounds['lng']]
-        // this.currentBounds = [swCorner, neCorner]
         const swBounds = bounds.getSouthWest();
         const neBounds = bounds.getNorthEast();
+
+        let prevBounds = this.currentBounds
 
         this.currentBounds = [
           [swBounds.lat, swBounds.lng],
           [neBounds.lat, neBounds.lng]
         ];
+        
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
-        if (JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) {
+        if ((JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) || (JSON.stringify(prevBounds) !== JSON.stringify(this.currentBounds))) {
           this.loadAndInitializeMap()
         }
       } else {
@@ -1885,15 +1878,17 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   }
 
   createD3Legend(container: HTMLElement, legendNumber: string): void {
+    console.log("legendNumber: ", legendNumber)
     let bivariateViewBox = [-15, -15, 100, 100]
     let heatmapViewBox = [0, 0, 100, 100]
     let nsdoh_mix = [0, 40, 100, 50]
+    let spikeViewBox = [0, 10, 100, 100]
     const svgLegend = d3
       .select(container)
       .append("svg")
       .attr("width", 80)
-      .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? (legendNumber === '2' ? 40 : 120) : 80)
-      .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '2' ? nsdoh_mix : heatmapViewBox))
+      .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? (legendNumber === '2' ? 40 : 120) : (this.selectedOverlay === 'Spikes' ? 90 : 80))
+      .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '2' ? nsdoh_mix : (this.selectedOverlay === 'Spikes' ? spikeViewBox : heatmapViewBox)))
 
     if (this.selectedOverlay === "Bivariate Choropleth") {
       // Create the grid for the legend
@@ -2248,14 +2243,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               .attr("font-weight", "bold")
               .text(`${this.selectedCol2 !== '--' ? `${this.selectedCol2.charAt(0).toUpperCase()}${this.selectedCol2.slice(1)}` : 'Column 2'}`);
 
-            const spikeHeights = [1, 5, 10, 15, 20];
+            // const spikeHeights = [1, 5, 10, 15, 20];
+            const spikeHeights = [2, 10, 20, 30, 40];
             const xSpacingValues = [5, 22, 42, 67, 95];
             const spikeValues = [this.min2, this.max2]; // Min & Max values
 
             spikeHeights.forEach((h, i) => {
-              const spikeWidth = h / 5;
+              const spikeWidth = h / 10;
               const x = xSpacingValues[i];  // x position for this spike in the legend
-              const yBaseline = 50;         // Baseline y coordinate
+              const yBaseline = 65;         // Baseline y coordinate
               const triangleCoords = [
                 { x: x - spikeWidth, y: yBaseline },  // Left base point
                 { x: x + spikeWidth, y: yBaseline },  // Right base point
@@ -2273,7 +2269,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             // // Min Value Label
             legendGroup.append("text")
               .attr("x", xSpacingValues[0] + 2)
-              .attr("y", 65)
+              .attr("y", 80)
               .attr("text-anchor", "middle")
               .attr("font-size", 8)
               .text(`${spikeValues[0].toFixed(1)}`);
@@ -2281,7 +2277,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             // Max Value Label
             legendGroup.append("text")
               .attr("x", xSpacingValues[4])
-              .attr("y", 65)
+              .attr("y", 80)
               .attr("text-anchor", "middle")
               .attr("font-size", 8)
               .text(`${spikeValues[1].toFixed(1)}`);
