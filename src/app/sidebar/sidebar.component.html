@@ -72,7 +72,7 @@
                         <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
                             [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
                             (change)="onCheckboxChange(i, col.checked, col.name)" class="wrap-checkbox">
-                            {{ groceryDataDictionary[col.name] ? groceryDataDictionary[col.name] : col.name}}
+                            {{ groceryDataDictionary[col.name] ? groceryDataDictionary[col.name]['description'] : col.name}}
                         </mat-checkbox>
                     </li>
                 </ul>
@@ -92,7 +92,7 @@
                         <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
                             [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
                             (change)="onCheckboxChange(i, col.checked, col.name)" class="wrap-checkbox">
-                            {{ groceryDataDictionary[col.name] ? groceryDataDictionary[col.name] : col.name}}
+                            {{ carmenDataDictionary[col.name] ? carmenDataDictionary[col.name]['description'] : col.name}}
                         </mat-checkbox>
                     </li>
                 </ul>

@@ -53,14 +53,47 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
   showMoreColsB = false
 
   groceryDataDictionary = {}
+  carmenDataDictionary = {}
 
   selectedOverlay = "Bivariate Choropleth"
   overlays = ["Bivariate Choropleth", "Heatmap Overlays", "Circles", "Spikes"]
+  datasetList = ['grocery', 'carmen']
 
   ngOnInit(): void {
-    this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {
-      this.groceryDataDictionary = data
-    });
+    // this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {
+    //   this.groceryDataDictionary = data
+    //   console.log("grocery dd: ", this.groceryDataDictionary)
+    // });
+
+    for (let name of this.datasetList) {
+      let dataset = name
+      let queryURL = `https://n06twbhwbk.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data-dictionary?dataset=${dataset}`;
+
+      this.http
+        .get(queryURL)
+        .toPromise()
+        .then((data: any) => {
+          for(let row of data){
+            let column_name = row['column_name']
+            if(dataset === 'grocery'){
+              this.groceryDataDictionary[column_name] = {
+                'description': row['description'],
+                'data_type': row['data_type']
+              }
+            }else if(dataset === 'carmen'){
+              this.carmenDataDictionary[column_name] = {
+                'description': row['description'],
+                'data_type': row['data_type']
+              }
+            }
+            
+          }
+        });
+    }
+    console.log("grocery dd: ", this.groceryDataDictionary)
+    console.log("carmen dd: ", this.carmenDataDictionary)
+
+
   }
 
   ngOnChanges(changes: SimpleChanges): void {

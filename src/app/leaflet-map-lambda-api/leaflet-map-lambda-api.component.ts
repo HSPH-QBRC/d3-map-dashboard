@@ -32,9 +32,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
 
   private map: L.Map | undefined;
-  // private data1: GroceryData[] = [];
-  // private data2: GroceryData[] = [];
-  // private data3: GroceryData[] = [];
   private dataCarmen: CarmenData[] = [];
 
   layerControl!: L.Control.Layers;
@@ -47,21 +44,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   minYear = 1900
   maxYear = 2099
   showYears = false
-  // showRedline: boolean = false
-  // useBivariate: boolean = true;
-  // useDashOverlay: boolean = false;
-  // useSpike: boolean = false;
   selectedOverlay = 'Bivariate Choropleth'
 
   selectedYear: string = '2017';
   selectedCol1: string = 'population';
-  // selectedCol1: string = 'nsdoh_profiles'
-  // selectedCol2: string = '--';
   selectedCol2: string = 'count_sales_445110';
-  // selectedCol3: string = '--';
   selectedMap = 'USA 2000 Mainland (County)';
-  // statesArr = ['USA 2000 Mainland (County)', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
-  // fullCountryArr = ['USA 2000 Mainland (County)', 'USA 2018 Mainland', 'USA 2020 Mainland', 'USA 2000 Mainland']
 
   stateName = 'United States of America'
   selectedBoundsArr = ['United States of America']
@@ -96,7 +84,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     [24.396308, -125.0], // Southwest corner (latitude, longitude)
     [49.384358, -66.93457], // Northeast corner
   ];
-  // currentBounds
 
   prevSelectedYear
   prevSelectedCol1
@@ -233,7 +220,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       "columnsB": this.columnsB,
       "selectedYear": this.selectedYear,
       "selectedCol": [this.selectedCol1, this.selectedCol2],
-      // "stateName": this.stateName,
       "stateName": this.selectedBoundsArr,
       "selectedOverlay": this.selectedOverlay
     }
