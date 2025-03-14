@@ -1696,12 +1696,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.currentZoomLevel = this.map.getZoom();
       if (this.currentZoomLevel >= 9 && this.currentZoomLevel > this.previousZoomLevel) {
         const bounds = this.map.getBounds();
-        // let swBounds = bounds.getSouthWest()
-        // let neBounds = bounds.getNorthEast()
-        // let swCorner = [swBounds['lat'], swBounds['lng']]
-        // let neCorner = [neBounds['lat'], neBounds['lng']]
-        // // this.currentBounds = [bounds.getSouthWest(), bounds.getNorthEast()]
-        // this.currentBounds = [swCorner, neCorner]
         const swBounds = bounds.getSouthWest();
         const neBounds = bounds.getNorthEast();
 
@@ -1864,7 +1858,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   }
 
   createD3Legend(container: HTMLElement, legendNumber: string): void {
-    console.log("legendNumber: ", legendNumber)
     let bivariateViewBox = [-15, -15, 100, 100]
     let heatmapViewBox = [0, 0, 100, 100]
     let nsdoh_mix = [0, 40, 100, 50]

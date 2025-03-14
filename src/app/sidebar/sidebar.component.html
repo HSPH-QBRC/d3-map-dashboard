@@ -10,6 +10,18 @@
             <mat-radio-button *ngFor="let overlay of overlays;" class="example-radio-button" [value]="overlay">
                 {{ overlay }}
             </mat-radio-button>
+            <!-- <mat-radio-button class="example-radio-button" [value]="'Bivariate Choropleth'">
+                Bivariate Choropleth
+            </mat-radio-button>
+            <mat-radio-button class="example-radio-button" [value]="'Heatmap Overlays'">
+                Heatmap Overlays
+            </mat-radio-button>
+            <mat-radio-button class="example-radio-button" [value]="'Circles'">
+                Circles
+            </mat-radio-button>
+            <mat-radio-button class="example-radio-button" [value]="'Spikes'">
+                Spikes
+            </mat-radio-button> -->
         </mat-radio-group>
         <!-- <br>
         <mat-form-field class="example-margin" appearance="outline">
@@ -29,8 +41,9 @@
                     <mat-icon matChipRemove>close</mat-icon>
                 </mat-chip>
             </mat-chip-list>
-            <input #inputField matInput [matChipInputFor]="chipList" [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-                [matChipInputAddOnBlur]="true" (matChipInputTokenEnd)="addState($event)" placeholder="e.g. CA">
+            <input #inputField matInput [matChipInputFor]="chipList"
+                [matChipInputSeparatorKeyCodes]="separatorKeysCodes" [matChipInputAddOnBlur]="true"
+                (matChipInputTokenEnd)="addState($event)" placeholder="e.g. CA">
         </mat-form-field>
 
         <!-- <mat-form-field class="example-margin chipField" appearance="outline">
@@ -71,8 +84,9 @@
                         style="list-style: none; margin: 4px 0;">
                         <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
                             [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
-                            (change)="onCheckboxChange(i, col.checked, col.name)" class="wrap-checkbox">
-                            {{ groceryDataDictionary[col.name] ? groceryDataDictionary[col.name]['description'] : col.name}}
+                            (change)="onCheckboxChange(i, col.checked, col.name, 'project1')" class="wrap-checkbox">
+                            {{ groceryDataDictionary[col.name] ? groceryDataDictionary[col.name]['description'] :
+                            col.name}}
                         </mat-checkbox>
                     </li>
                 </ul>
@@ -91,8 +105,9 @@
                         style="list-style: none; margin: 4px 0;">
                         <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
                             [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
-                            (change)="onCheckboxChange(i, col.checked, col.name)" class="wrap-checkbox">
-                            {{ carmenDataDictionary[col.name] ? carmenDataDictionary[col.name]['description'] : col.name}}
+                            (change)="onCheckboxChange(i, col.checked, col.name, 'project2')" class="wrap-checkbox">
+                            {{ carmenDataDictionary[col.name] ? carmenDataDictionary[col.name]['description'] :
+                            col.name}}
                         </mat-checkbox>
                     </li>
                 </ul>
@@ -101,8 +116,6 @@
                         'Show less...':'Show more...'}} </button></p>
             </div>
         </div>
-
-
     </mat-accordion>
 
     <div class="button-container">
@@ -110,10 +123,4 @@
             Update
         </button>
     </div>
-    <!-- <button mat-raised-button color="accent" (click)="downloadImage()" class="download-button">
-        Download Image <mat-icon class="download-icon">image</mat-icon>
-    </button> -->
-    <!-- <button mat-raised-button color="accent" (click)="shareLink()" class="download-button">
-        Share <mat-icon class="download-icon">link</mat-icon>
-    </button> -->
 </div>

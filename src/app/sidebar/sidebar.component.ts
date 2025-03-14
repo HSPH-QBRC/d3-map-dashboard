@@ -13,7 +13,7 @@ import { Observable } from 'rxjs';
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss']
 })
-export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
+export class SidebarComponent implements OnChanges, OnInit {
   @Input() sidebarData!: { years: string[], columns: string[], maps: string[] };
   @ViewChild('slider') slider: MatSlider;
   @ViewChild('inputField') inputField!: ElementRef<HTMLInputElement>;
@@ -34,6 +34,10 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
   selectedYear = '2000'
   selectedCol1 = ''
   selectedCol2 = ''
+  selectedType1 = ''
+  selectedType2 = ''
+  selectedProject1 = 'project1'
+  selectedProject2 = 'project1'
   stateNameArr = []
 
   prevYear = '2000'
@@ -57,7 +61,14 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
 
   selectedOverlay = "Bivariate Choropleth"
   overlays = ["Bivariate Choropleth", "Heatmap Overlays", "Circles", "Spikes"]
+  selectedOverlayFromParams = ''
   datasetList = ['grocery', 'carmen']
+  dataDictionaryMap: Record<string, any> = {
+    project1: this.groceryDataDictionary,
+    project2: this.carmenDataDictionary,
+  };
+
+  disableBivariate = false
 
   ngOnInit(): void {
     // this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {
@@ -73,27 +84,28 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
         .get(queryURL)
         .toPromise()
         .then((data: any) => {
-          for(let row of data){
+          for (let row of data) {
             let column_name = row['column_name']
-            if(dataset === 'grocery'){
-              this.groceryDataDictionary[column_name] = {
-                'description': row['description'],
-                'data_type': row['data_type']
-              }
-            }else if(dataset === 'carmen'){
-              this.carmenDataDictionary[column_name] = {
-                'description': row['description'],
-                'data_type': row['data_type']
-              }
-            }
-            
+            // if (dataset === 'grocery') {
+            //   this.groceryDataDictionary[column_name] = {
+            //     'description': row['description'].trim(),
+            //     'data_type': row['data_type'].trim()
+            //   }
+            // } else if (dataset === 'carmen') {
+            //   this.carmenDataDictionary[column_name] = {
+            //     'description': row['description'].trim(),
+            //     'data_type': row['data_type'].trim()
+            //   }
+            // }
+            let targetDictionary = dataset === 'grocery' ? this.groceryDataDictionary : this.carmenDataDictionary;
+
+            targetDictionary[column_name] = {
+              description: row['description']?.trim() || '',
+              data_type: row['data_type']?.trim() || ''
+            };
           }
         });
     }
-    console.log("grocery dd: ", this.groceryDataDictionary)
-    console.log("carmen dd: ", this.carmenDataDictionary)
-
-
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -113,17 +125,30 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
       this.prevCol2 = this.sidebarData['selectedCol'][1]
       this.prevStateName = this.sidebarData['stateName']
 
-      this.selectedOverlay = this.sidebarData['selectedOverlay']
+      this.selectedOverlayFromParams = this.sidebarData['selectedOverlay']
+
+      this.selectedType1 = this.dataDictionaryMap[this.selectedProject1]?.[this.selectedCol1]?.data_type;
+      this.selectedType2 = this.dataDictionaryMap[this.selectedProject2]?.[this.selectedCol2]?.data_type;
+
+      if (this.selectedType1 === 'Numeric' && this.selectedType2 === 'Numeric') {
+        this.selectedOverlay = 'Bivariate Choropleth';
+        if (this.selectedOverlayFromParams === 'Heatmap Overlays' || this.selectedOverlayFromParams === 'Circles' || this.selectedOverlayFromParams === 'Spikes') {
+          this.selectedOverlay = this.selectedOverlayFromParams
+        }
+      } else if (this.selectedType1 === 'Numeric' && this.selectedType2 === 'Numeric') {
+        console.log("need a new overlay to handle this??")
+      } else if (this.selectedType1 === 'Text' || this.selectedType2 === 'Text') {
+        this.disableBivariate = true
+        this.selectedOverlay = 'Circles'
+        if (this.selectedOverlayFromParams === 'Heatmap Overlays' || this.selectedOverlayFromParams === 'Spikes') {
+          this.selectedOverlay = this.selectedOverlayFromParams
+        }
+      } else {
+        console.log("is there another scenario i am forgetting?? ", this.selectedType1, this.selectedType2)
+      }
 
       this.organizeData()
     }
-  }
-
-  ngAfterViewInit() {
-    // Ensure the input element exists before focusing
-    // if (this.inputField) {
-    //   this.inputField.nativeElement.focus();
-    // }
   }
 
   organizeData() {
@@ -186,9 +211,8 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
       }
 
       if (this.selectedCol2 === 'nsdoh_profiles') {
-        let temp = this.selectedCol1
-        this.selectedCol1 = this.selectedCol2
-        this.selectedCol2 = temp
+        [this.selectedCol1, this.selectedCol2] = [this.selectedCol2, this.selectedCol1];
+        [this.selectedProject1, this.selectedProject2] = [this.selectedProject2, this.selectedProject1];
       }
     }
 
@@ -254,7 +278,7 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
     this.dataToParent.emit(data);
   }
 
-  onCheckboxChange(index, isCheck, name) {
+  onCheckboxChange(index, isCheck, name, project) {
     if (isCheck && this.selectedCol1 !== "--" && this.selectedCol2 !== "--") {
       let message = 'Currently we are only able to display 2 columns max right now'
       this.onErrorSnackbar(message)
@@ -263,15 +287,20 @@ export class SidebarComponent implements OnChanges, OnInit, AfterViewInit {
     if (isCheck) {
       if (this.selectedCol1 === "--") {
         this.selectedCol1 = name
+        this.selectedProject1 = project
       } else if (this.selectedCol2 === "--") {
         this.selectedCol2 = name
+        this.selectedProject2 = project
       }
     } else if (!isCheck) {
       if (index === 0) {
         this.selectedCol1 = this.selectedCol2
         this.selectedCol2 = '--'
+        this.selectedProject1 = this.selectedProject2
+        this.selectedProject2 = '--'
       } else if (index === 1) {
         this.selectedCol2 = '--'
+        this.selectedProject2 = '--'
       }
     }
     this.organizeData()
