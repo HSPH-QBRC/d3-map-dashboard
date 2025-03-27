@@ -10,27 +10,18 @@
             <mat-radio-button *ngFor="let overlay of overlays;" class="example-radio-button" [value]="overlay">
                 {{ overlay }}
             </mat-radio-button>
-            <!-- <mat-radio-button class="example-radio-button" [value]="'Bivariate Choropleth'">
-                Bivariate Choropleth
-            </mat-radio-button>
-            <mat-radio-button class="example-radio-button" [value]="'Heatmap Overlays'">
-                Heatmap Overlays
-            </mat-radio-button>
-            <mat-radio-button class="example-radio-button" [value]="'Circles'">
-                Circles
-            </mat-radio-button>
-            <mat-radio-button class="example-radio-button" [value]="'Spikes'">
-                Spikes
-            </mat-radio-button> -->
         </mat-radio-group>
-        <!-- <br>
-        <mat-form-field class="example-margin" appearance="outline">
-            <mat-label>Focus</mat-label>
-            <input matInput [(ngModel)]="stateName" placeholder="e.g. California" (keydown.enter)="sendData()">
-            <button *ngIf="stateName" matSuffix mat-icon-button aria-label="Clear" (click)="stateName=null">
-                <mat-icon>close</mat-icon>
-            </button>
-        </mat-form-field> -->
+
+        <br>
+        <div *ngIf="selectedOverlay === 'Bivariate Choropleth'">
+            <label id="radio-group-label">Color Scheme: </label>
+            <mat-radio-group aria-labelledby="example-radio-group-label" class="example-radio-group"
+                [(ngModel)]="selectedColorScheme" (change)="onChangeColorScheme()">
+                <mat-radio-button *ngFor="let color of colorSchemes;" class="example-radio-button" [value]="color">
+                    {{ color }}
+                </mat-radio-button>
+            </mat-radio-group>
+        </div>
         <br>
         <mat-form-field class="example-margin chipField" appearance="outline">
             <mat-label>Focus</mat-label>
@@ -45,29 +36,6 @@
                 [matChipInputSeparatorKeyCodes]="separatorKeysCodes" [matChipInputAddOnBlur]="true"
                 (matChipInputTokenEnd)="addState($event)" placeholder="e.g. CA">
         </mat-form-field>
-
-        <!-- <mat-form-field class="example-margin chipField" appearance="outline">
-            <mat-label>Focus</mat-label>
-            <mat-chip-list #chipList aria-label="Selected States">
-                <mat-chip *ngFor="let state of stateName; let i = index" [selectable]="true" [removable]="true"
-                    (removed)="removeState(i)">
-                    {{ state }}
-                    <mat-icon matChipRemove>close</mat-icon>
-                </mat-chip>
-            </mat-chip-list>
-
-            <input matInput #stateInput [formControl]="stateCtrl" [matChipInputFor]="chipList"
-                [matChipInputSeparatorKeyCodes]="separatorKeysCodes" [matChipInputAddOnBlur]="false"
-                (matChipInputTokenEnd)="addState($event)" [matAutocomplete]="auto" placeholder="e.g. CA" />
-
-            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectState($event)">
-                <mat-option *ngFor="let state of filteredStates | async" [value]="state">
-                    {{ state }}
-                </mat-option>
-            </mat-autocomplete>
-
-        </mat-form-field> -->
-
 
         <button mat-button class="btn-toggle align-items-center rounded treeButton" [attr.aria-expanded]="true"
             (click)="showMore('cols')">

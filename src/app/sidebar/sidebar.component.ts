@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild, OnInit, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild, OnInit, ElementRef } from '@angular/core';
 import { MatSlider } from '@angular/material/slider';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
@@ -6,7 +6,6 @@ import { MatChipInputEvent } from '@angular/material/chips';
 import { ENTER } from '@angular/cdk/keycodes';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
-// import { map, startWith } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
@@ -36,7 +35,7 @@ export class SidebarComponent implements OnChanges, OnInit {
   selectedCol2 = ''
   selectedType1 = ''
   selectedType2 = ''
-  selectedProject1 = 'project1'
+  selectedProject1 = 'project2'
   selectedProject2 = 'project1'
   stateNameArr = []
 
@@ -69,6 +68,8 @@ export class SidebarComponent implements OnChanges, OnInit {
   };
 
   disableBivariate = false
+  colorSchemes = ["default", "light", "muted", "vibrant"]
+  selectedColorScheme = "default"
 
   ngOnInit(): void {
     // this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {
@@ -86,17 +87,6 @@ export class SidebarComponent implements OnChanges, OnInit {
         .then((data: any) => {
           for (let row of data) {
             let column_name = row['column_name']
-            // if (dataset === 'grocery') {
-            //   this.groceryDataDictionary[column_name] = {
-            //     'description': row['description'].trim(),
-            //     'data_type': row['data_type'].trim()
-            //   }
-            // } else if (dataset === 'carmen') {
-            //   this.carmenDataDictionary[column_name] = {
-            //     'description': row['description'].trim(),
-            //     'data_type': row['data_type'].trim()
-            //   }
-            // }
             let targetDictionary = dataset === 'grocery' ? this.groceryDataDictionary : this.carmenDataDictionary;
 
             targetDictionary[column_name] = {
@@ -127,8 +117,10 @@ export class SidebarComponent implements OnChanges, OnInit {
 
       this.selectedOverlayFromParams = this.sidebarData['selectedOverlay']
 
+
       this.selectedType1 = this.dataDictionaryMap[this.selectedProject1]?.[this.selectedCol1]?.data_type;
       this.selectedType2 = this.dataDictionaryMap[this.selectedProject2]?.[this.selectedCol2]?.data_type;
+
 
       if (this.selectedType1 === 'Numeric' && this.selectedType2 === 'Numeric') {
         this.selectedOverlay = 'Bivariate Choropleth';
@@ -137,17 +129,18 @@ export class SidebarComponent implements OnChanges, OnInit {
         }
       } else if (this.selectedType1 === 'Numeric' && this.selectedType2 === 'Numeric') {
         console.log("need a new overlay to handle this??")
+      } else if (this.selectedType1 === 'Text' && this.selectedType2 === 'Text') {
+        console.log("use new type of overlay that i havent created yet")
       } else if (this.selectedType1 === 'Text' || this.selectedType2 === 'Text') {
         this.disableBivariate = true
         this.selectedOverlay = 'Circles'
         if (this.selectedOverlayFromParams === 'Heatmap Overlays' || this.selectedOverlayFromParams === 'Spikes') {
           this.selectedOverlay = this.selectedOverlayFromParams
         }
-      } else {
-        console.log("is there another scenario i am forgetting?? ", this.selectedType1, this.selectedType2)
       }
 
       this.organizeData()
+      this.sendData()
     }
   }
 
@@ -187,7 +180,16 @@ export class SidebarComponent implements OnChanges, OnInit {
             checked: (data === this.selectedCol1 || data === this.selectedCol2) ? true : false
           }
           if (this.selectedCol1 === data || this.selectedCol2 === data) {
-            tempArrColsB[0] = checkboxObj
+            // tempArrColsB[0] = checkboxObj
+            if (this.selectedCol1 === data) {
+              tempArrColsB[0] = checkboxObj
+            } else if (this.selectedCol2 === data) {
+              if (this.sidebarData[category].includes(this.selectedCol1)) {
+                tempArrColsB[1] = checkboxObj
+              } else {
+                tempArrColsB[0] = checkboxObj
+              }
+            }
           } else {
             this.columnsB.push(checkboxObj)
           }
@@ -204,7 +206,6 @@ export class SidebarComponent implements OnChanges, OnInit {
         }
       }
     }
-
     if (this.selectedCol1 === 'nsdoh_profiles' || this.selectedCol2 === 'nsdoh_profiles') {
       if (this.selectedOverlay === 'Bivariate Choropleth') {
         this.selectedOverlay = this.selectedCol2 !== '--' ? 'Circles' : 'Heatmap Overlays';
@@ -235,8 +236,15 @@ export class SidebarComponent implements OnChanges, OnInit {
         col1: this.selectedCol1,
         col2: this.selectedCol2,
         stateName: this.stateNameArr,
-        selectedOverlay: this.selectedOverlay
+        selectedOverlay: this.selectedOverlay,
+        colorScheme: this.selectedColorScheme,
+        selectedType1: this.selectedType1,
+        selectedType2: this.selectedType2,
+        dataDictionary: this.dataDictionaryMap,
+        selectedProject1: this.selectedProject1,
+        selectedProject2: this.selectedProject2
       }
+      console.log("datad: ", this.dataDictionaryMap)
       this.showMoreColsA = false;
       this.showMoreColsB = false;
 
@@ -272,7 +280,13 @@ export class SidebarComponent implements OnChanges, OnInit {
       col1: this.selectedCol1,
       col2: this.selectedCol2,
       stateName: this.stateNameArr,
-      selectedOverlay: this.selectedOverlay
+      selectedOverlay: this.selectedOverlay,
+      colorScheme: this.selectedColorScheme,
+      selectedType1: this.selectedType1,
+      selectedType2: this.selectedType2,
+      dataDictionary: this.dataDictionaryMap,
+      selectedProject1: this.selectedProject1,
+      selectedProject2: this.selectedProject2
     }
 
     this.dataToParent.emit(data);
@@ -283,6 +297,7 @@ export class SidebarComponent implements OnChanges, OnInit {
       let message = 'Currently we are only able to display 2 columns max right now'
       this.onErrorSnackbar(message)
     }
+
 
     if (isCheck) {
       if (this.selectedCol1 === "--") {
@@ -306,6 +321,25 @@ export class SidebarComponent implements OnChanges, OnInit {
     this.organizeData()
   }
 
+  onChangeColorScheme() {
+
+    const data = {
+      years: this.selectedYear.toString(),
+      col1: this.selectedCol1,
+      col2: this.selectedCol2,
+      stateName: this.stateNameArr,
+      selectedOverlay: this.selectedOverlay,
+      colorScheme: this.selectedColorScheme,
+      selectedType1: this.selectedType1,
+      selectedType2: this.selectedType2,
+      dataDictionary: this.dataDictionaryMap,
+      selectedProject1: this.selectedProject1,
+      selectedProject2: this.selectedProject2
+    }
+
+    this.dataToParent.emit(data);
+  }
+
   onErrorSnackbar(message): void {
     this.snackBar.open(message, 'Close', {
       duration: 3000,
@@ -314,16 +348,7 @@ export class SidebarComponent implements OnChanges, OnInit {
     });
   }
 
-  // downloadImage(){
-  //   this.downloadImageEmitter.emit()
-  // }
-
-  // shareLink() {
-  //   this.shareLinkEmitter.emit()
-  // }
-
   separatorKeysCodes: number[] = [ENTER];
-  // selectedFocusStates: string[] = [];
 
   addState(event: MatChipInputEvent): void {
 

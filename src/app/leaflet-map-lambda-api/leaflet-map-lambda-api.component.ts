@@ -9,6 +9,7 @@ import 'leaflet-easyprint';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Clipboard } from '@angular/cdk/clipboard';
 
+
 interface GroceryData {
   id: string;
   rate: number;
@@ -17,6 +18,7 @@ interface GroceryData {
 interface CarmenData {
   id: string;
   rate: string;
+  rate2: string;
 }
 
 @Component({
@@ -40,7 +42,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
   columnsA = ['tract_fips10', 'year', 'population', 'aland10', 'count_445110', 'count_sales_445110', 'count_emp_445110', 'popden_445110', 'popden_sales_445110', 'popden_emp_445110', 'aden_445110', 'aden_sales_445110', 'aden_emp_445110', 'count_4452', 'count_sales_4452', 'count_emp_4452', 'popden_4452', 'popden_sales_4452', 'popden_emp_4452', 'aden_4452', 'aden_sales_4452', 'aden_emp_4452', 'count_452311', 'count_sales_452311', 'count_emp_452311', 'popden_452311', 'popden_sales_452311', 'popden_emp_452311', 'aden_452311', 'aden_sales_452311', 'aden_emp_452311']
-  columnsB = ['nsdoh_profiles']
+  columnsB = ['nsdoh_profiles', 'nsdoh_profiles_scrambled']
   minYear = 1900
   maxYear = 2099
   showYears = false
@@ -49,16 +51,43 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   selectedYear: string = '2017';
   selectedCol1: string = 'population';
   selectedCol2: string = 'count_sales_445110';
+  selectedType1: string = 'Numeric';
+  selectedType2: string = 'Numeric';
   selectedMap = 'USA 2000 Mainland (County)';
 
   stateName = 'United States of America'
   selectedBoundsArr = ['United States of America']
+
+  //https://personal.sron.nl/~pault/#fig:scheme_marking
+  colorsList = {
+    default: [
+      "#e8e8e8", "#ace4e4", "#5ac8c8",
+      "#dfb0d6", "#a5add3", "#5698b9",
+      "#be64ac", "#8c62aa", "#3b4994"
+    ],
+    light: [
+      "#77aadd", "#99ddff", "#44bb99",
+      "#bbcc33", "#aaaa00", "#eedd88",
+      "#ee8866", "#ffaabb", "#dddddd"
+    ],
+    muted: [
+      "#332288", "#88ccee", "#44aa99",
+      "#117733", "#999933", "#ddcc77",
+      "#882255", "#aa4499", "#dddddd"
+    ],
+    vibrant: [
+      "#0077bb", "#33bbee", "#009988",
+      "#ee7733", "#cc3311", "#ee3377",
+      "#bbbbbb"
+    ]
+  }
 
   colors = [
     "#e8e8e8", "#ace4e4", "#5ac8c8",
     "#dfb0d6", "#a5add3", "#5698b9",
     "#be64ac", "#8c62aa", "#3b4994"
   ]
+
 
   min1: number = 10000000000;
   max1: number = 0;
@@ -72,6 +101,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   avgData2 = {};
   avgData3 = {};
   avgDataCat1 = {}
+  avgDataCat2 = {}
 
   colorCategories = []
   sidebarData = {};
@@ -90,6 +120,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   prevSelectedCol2
   prevStateName
   prevBoundsArr = []
+  selectedColorScheme = 'default'
 
   constructor(
     private http: HttpClient,
@@ -113,10 +144,22 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
       this.stateName = this.dataFromSidebar['stateName'][0]
       this.selectedBoundsArr = this.dataFromSidebar['stateName']
-
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
+      this.selectedColorScheme = this.dataFromSidebar['colorScheme']
+
+      // this.selectedType1 = this.dataFromSidebar['selectedType1']
+      // this.selectedType2 = this.dataFromSidebar['selectedType2']
+      let selectedProject1 = this.dataFromSidebar['selectedProject1']
+      let selectedProject2 = this.dataFromSidebar['selectedProject2']
+
+
+      this.selectedType1 = this.dataFromSidebar['dataDictionary'][selectedProject1]?.[this.selectedCol1]?.data_type
+      // this.selectedType2 = this.dataFromSidebar['dataDictionary'][selectedProject2][this.selectedCol2]['data_type']
+      this.selectedType2 = this.dataFromSidebar['dataDictionary'][selectedProject2]?.[this.selectedCol2]?.data_type
+
 
       this.latLongBounds = null
+
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2) {
@@ -124,7 +167,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.loadCSVData()
       } else {
         if (this.prevBoundsArr.length === this.selectedBoundsArr.length && this.prevBoundsArr.every((value, index) => value === this.selectedBoundsArr[index])) {
-          this.currentZoomLevel = 3
+          // this.currentZoomLevel = 3
           this.calculateNewBounds()
           this.loadAndInitializeMap()
         }
@@ -260,52 +303,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   }
 
-  //   getComputedGradientColor(): string {
-  //     return "#6baed6"; // Pick a middle color from your gradient stops
-  // }
-
-  // downloadMap() {
-  //   this.isLoading = true;
-
-  //   let container = this.selectedOverlay === 'Bivariate Choropleth' ? '.d3-legend-container' : '.d3-legend-container2'
-
-  //   // Select the legend element
-  //   const legend = document.querySelector(container) as HTMLElement;
-  //   let legendClone: HTMLElement | null = null;
-
-  //   if (legend) {
-  //       // Clone the legend and position it over the map
-  //       legendClone = legend.cloneNode(true) as HTMLElement;
-  //       legendClone.style.position = 'absolute';
-  //       legendClone.style.right = this.selectedOverlay === 'Bivariate Choropleth' ? '15px' : '10px';
-  //       legendClone.style.bottom = this.selectedOverlay === 'Bivariate Choropleth' ? '32px': '28px';
-  //       // legendClone.style.backgroundColor = 'white'; // Ensures visibility
-  //       legendClone.style.backgroundColor = this.selectedOverlay === 'Bivariate Choropleth' ? 'transparent' : 'white';
-  //       legendClone.style.padding = '5px';
-  //       legendClone.style.zIndex = '1000'; // Keeps it on top
-  //       this.map.getContainer().appendChild(legendClone);
-  //   }
-
-  //   const printer = L.easyPrint({
-  //       title: 'Download Map',
-  //       filename: 'leaflet-map',
-  //       exportOnly: true, // No print dialog
-  //       sizeModes: ['A4Landscape']
-  //   }).addTo(this.map);
-
-  //   setTimeout(() => {
-  //       printer.printMap('CurrentSize', 'leaflet-map');
-
-  //       // Remove the cloned legend AFTER a longer delay to ensure the download completes
-  //       setTimeout(() => {
-  //         if (legendClone) {
-  //             legendClone.remove();
-  //         }
-  //         this.isLoading = false;
-  //     }, 1000); // Give it extra time to finish the download
-  //   }, 500);
-  // }
-
   shareLink() {
     let baseUrl = 'http://map-dashboard-app.s3-website.us-east-2.amazonaws.com/data';
     let params = new URLSearchParams();
@@ -352,7 +349,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       // Start the timeline from the currentIndex (not from 0)
       for (let i = this.currentIndex; i < this.yearCols.length; i++) {
         let year = this.yearCols[i].toString();
-        let timeout = (i - this.currentIndex) * 5000; // Adjust timeout based on pause point
+        let timeout = (i - this.currentIndex) * 2000; // Adjust timeout based on pause point
 
         const timeoutId = setTimeout(() => {
           this.onYearChange(year);
@@ -413,13 +410,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.fullAvgData3 = {}
 
     this.offset = 0
-    if (this.selectedCol1 !== 'nsdoh_profiles') {
+    // if (this.selectedCol1 !== 'nsdoh_profiles') {
+    //   this.groceryData = []
+    // }
+    if (this.selectedType1 === 'Numeric' || this.selectedType2 === 'Numeric') {
       this.groceryData = []
     }
-
-    // this.map.remove();
-    // const mapContainer = document.getElementById('map-container');
-    // this.map = L.map(mapContainer);
 
   }
 
@@ -516,7 +512,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   async loadCSVData(): Promise<void> {
     try {
-      if (this.selectedCol1 === 'nsdoh_profiles') {
+      // if (this.selectedCol1 === 'nsdoh_profiles') {
+      if (this.selectedCol1 === 'nsdoh_profiles' || this.selectedCol2 === 'nsdoh_profiles') {
         console.time('fetching Carmen data')
         this.isLoading = true
         await this.fetchData('carmen', this.selectedCol1, this.selectedCol2)
@@ -531,7 +528,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           console.timeEnd('fetching Grocery data')
         }
 
-        this.selectedOverlay = 'Circles'
+        // this.selectedOverlay = 'Circles'
       } else {
         console.time('fetching Grocery data')
         this.isLoading = true
@@ -539,6 +536,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         this.isLoading = false
         console.timeEnd('fetching Grocery data')
       }
+
+
       const groceryData = this.groceryData
       const carmenData = this.carmenData
 
@@ -547,12 +546,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.maxYear = 2017
       this.showYears = true
 
+
       for (const d of carmenData) {
         const id = d['GEOID']
-        const rate = d['nsdoh_profiles']
+        const rate1 = d['nsdoh_profiles']
+        const rate2 = d['nsdoh_profiles_scrambled']
         this.dataCarmen.push({
           id: id,
-          rate: rate
+          rate: rate1,
+          rate2: rate2.replace(/\r/g, '')
         })
       }
       for (const d of groceryData) {
@@ -595,7 +597,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
 
       this.columnsUsed = 0
-      if (this.selectedCol1 !== '--' && this.selectedCol1 !== 'nsdoh_profiles') {
+      // if (this.selectedCol1 !== '--' && this.selectedCol1 !== 'nsdoh_profiles') {
+      if (this.selectedCol1 !== '--' && this.selectedType1 === 'Numeric') {
         this.columnsUsed += 1;
         let currYear = this.selectedYear
 
@@ -643,7 +646,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
       }
 
-      if (this.selectedCol2 !== '--') {
+      if (this.selectedCol2 !== '--' && this.selectedType2 === 'Numeric') {
 
         this.columnsUsed += 1;
         let currYear = this.selectedYear
@@ -690,8 +693,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
       }
 
-
-
       //collects info to find which profile appears the most in a County
       if (this.selectedCol1 === 'nsdoh_profiles') {
         for (let i of this.dataCarmen) {
@@ -716,6 +717,33 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           let arr = this.avgDataCat1[i]['rateArr']
           let topProfile = this.findMostFrequent(arr)
           this.avgDataCat1[i]['mostFreq'] = topProfile
+        }
+
+      }
+
+      if (this.selectedCol2 === 'nsdoh_profiles_scrambled') {
+        for (let i of this.dataCarmen) {
+          let id = i['id'].substring(0, 5);
+          let rate = i['rate']
+
+          if (!this.avgDataCat2[id]) {
+            this.avgDataCat2[id] = {
+              rateArr: []
+            }
+          }
+          this.avgDataCat2[id].rateArr.push(rate)
+
+          if (!this.colorCategories.includes(rate)) {
+            this.colorCategories.push(rate)
+          }
+        }
+
+        this.colorCategories = this.colorCategories.sort()
+
+        for (let i in this.avgDataCat2) {
+          let arr = this.avgDataCat2[i]['rateArr']
+          let topProfile = this.findMostFrequent(arr)
+          this.avgDataCat2[i]['mostFreq'] = topProfile
         }
 
       }
@@ -1007,36 +1035,31 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     let avgData1 = this.fullAvgData1[this.selectedYear]
     let avgData2 = this.fullAvgData2[this.selectedYear]
-    let avgDataCarmen = this.avgDataCat1
+    let avgDataCarmen1 = this.avgDataCat1
+    let avgDataCarmen2 = this.avgDataCat2
 
     const valuemap1 = this.selectedCol1 !== 'nsdoh_profiles' ? new Map(this.fullData1[this.selectedYear].map(d => [d.id, d.rate])) : undefined;
     const valuemap2 = this.selectedCol2 !== '--' ? new Map(this.fullData2[this.selectedYear].map(d => [d.id, d.rate])) : undefined;
     const valuemapCarmen = new Map(this.dataCarmen.map(d => [d.id, d.rate]));
 
-    let colors = this.colors
+    // let colors = this.colors
+    let colors = this.colorsList[this.selectedColorScheme]
     let currentZoom = this.currentZoomLevel
     let selectedCol1 = this.selectedCol1
     let selectedCol2 = this.selectedCol2
+    let selectedType1 = this.selectedType1
+    let selectedType2 = this.selectedType2
 
     let selectedOverlay = this.selectedOverlay
 
     const color2 = d3.scaleOrdinal()
       .domain(this.colorCategories)
+      // .range(d3.schemeCategory10)
       .range(d3.schemeSet3);
 
     let blues = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'];
+    let reds = ['#fff5f0', '#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#a50f15', '#67000d'];
 
-    let reds = [
-      '#fff5f0', // Very light red
-      '#fee0d2', // Light red
-      '#fcbba1', // Pale red
-      '#fc9272', // Soft red
-      '#fb6a4a', // Medium red
-      '#ef3b2c', // Vibrant red
-      '#cb181d', // Dark red
-      '#a50f15', // Very dark red
-      '#67000d', // Deep red
-    ];
     function getColor(value: number, min: number, max: number, chosenColor: string): string {
       let color = chosenColor === 'blue' ? blues : reds
       if (value < min) return color[0]; // Ensure we handle values below the range
@@ -1106,7 +1129,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
     }
 
-
     this.map.fitBounds(this.currentBounds);
     if (this.currentZoomLevel >= 9) {
       this.currentZoomLevel = this.map.getZoom()
@@ -1151,10 +1173,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             fillOpacity: .9
           };
         } else if (selectedOverlay === "Heatmap Overlays" || selectedOverlay === "Circles" || selectedOverlay === "Spikes") {
-          if (selectedCol1 === 'nsdoh_profiles') {
+          // if (selectedCol1 === 'nsdoh_profiles') {
+          if (selectedType1 === 'Text') {
             const pane = 'tractsPane';
             let id = currentZoom < 9 ? d['properties'].STCOFIPS : d['properties'].FIPS
-            const profile = currentZoom < 9 ? (avgDataCarmen[id] !== undefined ? avgDataCarmen[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
+            const profile = currentZoom < 9 ? (avgDataCarmen1[id] !== undefined ? avgDataCarmen1[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
+
             return {
               pane: pane,
               color: '#2a2a2a',
@@ -1163,6 +1187,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               fillColor: color2(profile),
               fillOpacity: .9,
             };
+
           } else {
             const pane = 'tractsPane';
             const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
@@ -1187,8 +1212,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             let county = feature.properties.COUNTY
             let censusTract = feature.properties.STCOFIPS
             let colName = selectedCol1
-            let profile = avgDataCarmen[censusTract] !== undefined ? avgDataCarmen[censusTract]['mostFreq'] : "N/A"
-
+            let profile = avgDataCarmen1[censusTract] !== undefined ? avgDataCarmen1[censusTract]['mostFreq'] : "N/A"
 
             let nsdohProfileToolTip = `
                 <strong> State:</strong> ${state || 'N/A'}<br>
@@ -1541,16 +1565,61 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           // const pane = 'tractsPane';
           const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
           const id = d['properties'][fips]
-          let val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
+          // console.log("d: ", d, fips, id)
+          let val1
+          let val2
+          // console.log("selcted types: ", selectedType1, selectedType2)
+          if (selectedType2 === 'Numeric') {
+            val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
+          }
+          if (selectedType1 === 'Numeric') {
+            val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
+          }
+
+
+          // let val1 = currentZoom < 9 ? (avgData1?.[id]?.['avg'] ?? -1) : valuemap1.get(id)
 
           // Add pattern to the map
           if (selectedOverlay === "Heatmap Overlays") {
+            // const dashPattern2 = new L.StripePattern({
+            //   weight: 2, // Thickness of stripes
+            //   color: getColor(val2, min2, max2, 'red'), // Color of stripes
+            //   spaceColor: 'white', // Space between stripes
+            //   opacity: 1,
+            //   angle: 45, // Angle of stripes
+            // });
+            // const randomNumber = Math.floor(Math.random() * 181);
+            const angles = [0, 45, 90, 135, 180, 225, 270, 315, 360];
+            const randomNumber = angles[Math.floor(Math.random() * angles.length)];
+
+            let colorx2 = getColor(val2, min2, max2, 'red')
+            // let colorx1 = getColor(val1, min1, max1, 'blue')
+            let colorx1 = 'purple' //remove this later
+            let profile1 = 'Profile 9 '
+            let profile2 = 'Profile 9 '
+            if (selectedType1 === 'Text') {
+              profile1 = currentZoom < 9 ? (avgDataCarmen1[id] !== undefined ? avgDataCarmen1[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
+              // profile2 = currentZoom < 9 ? (avgDataCarmen2[id] !== undefined ? avgDataCarmen2[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
+            }
+            if (selectedType2 === 'Text') {
+              profile2 = currentZoom < 9 ? (avgDataCarmen2[id] !== undefined ? avgDataCarmen2[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
+            }
+
+            // const dashPattern2 = new L.StripePattern({
+            //   angle: randomNumber,
+            //   weight: 4,
+            //   color: getColor(val2, min2, max2, 'red'),
+            //   opacity: 0.75,
+            //   spaceColor: getColor(val1, min1, max1, 'blue'),
+            //   spaceOpacity: 0.75,
+            // });
             const dashPattern2 = new L.StripePattern({
-              weight: 2, // Thickness of stripes
-              color: getColor(val2, min2, max2, 'red'), // Color of stripes
-              spaceColor: 'white', // Space between stripes
+              angle: randomNumber,
+              weight: 4,
+              color: selectedType1 === 'Text' ? color2(profile1) : colorx1,
               opacity: 1,
-              angle: 45, // Angle of stripes
+              spaceColor: selectedType2 === 'Text' ? color2(profile2) : colorx2,
+              spaceOpacity: 1,
             });
 
             dashPattern2.addTo(map);
@@ -1607,7 +1676,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               layer.closeTooltip(); // Close the tooltip when the mouse leaves the layer
             });
 
-            let profile = avgDataCarmen[fips] !== undefined ? avgDataCarmen[fips]['mostFreq'] : "N/A";
+            let profile = avgDataCarmen1[fips] !== undefined ? avgDataCarmen1[fips]['mostFreq'] : "N/A";
 
             if ((selectedCol1 === 'nsdoh_profiles' && profile !== 'N/A') || selectedCol1 !== 'nsdoh_profiles') {
               const latLng = layer.getBounds().getCenter();
@@ -1731,7 +1800,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           [swBounds.lat, swBounds.lng],
           [neBounds.lat, neBounds.lng]
         ];
-        
+
         let prevMapArr = this.currentCensusTractsMapArr
         this.currentCensusTractsMapArr = this.findIntersectingTiles(this.currentBounds)
         if ((JSON.stringify(prevMapArr) !== JSON.stringify(this.currentCensusTractsMapArr)) || (JSON.stringify(prevBounds) !== JSON.stringify(this.currentBounds))) {
@@ -1800,10 +1869,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   onYearChange(year) {
     this.selectedYear = year.toString()
 
-    if(!this.isTimelinePlaying){
+    if (!this.isTimelinePlaying) {
       this.currentIndex = this.yearCols.indexOf(year)
     }
-    
+
     this.resetVariables()
     this.loadCSVData()
   }
@@ -1814,7 +1883,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   //   // if(!this.isTimelinePlaying){
   //   //   this.currentIndex = this.yearCols.indexOf(year)
   //   // }
-    
+
   //   this.resetVariables()
   //   this.loadCSVData()
   // }
@@ -1862,6 +1931,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     let heatmapViewBox = [0, 0, 100, 100]
     let nsdoh_mix = [0, 40, 100, 50]
     let spikeViewBox = [0, 10, 100, 100]
+    let colors = this.colorsList[this.selectedColorScheme]
     const svgLegend = d3
       .select(container)
       .append("svg")
@@ -1877,6 +1947,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         .attr('font-family', 'sans-serif')
         .attr('font-size', 10)
 
+
+
       // Add the squares to the legend
       d3.cross(d3.range(n), d3.range(n)).forEach(([i, j]) => {
         legendGroup.append('rect')
@@ -1884,7 +1956,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           .attr('height', k)
           .attr('x', i * k)
           .attr('y', (n - 1 - j) * k)
-          .attr('fill', this.colors[j * n + i])
+          // .attr('fill', this.colors[j * n + i])
+          .attr('fill', colors[j * n + i])
       });
 
       // Add diagonal lines with arrows
@@ -1936,6 +2009,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         const color2 = d3.scaleOrdinal()
           .domain(this.colorCategories)
           .range(d3.schemeSet3);
+        // .range(d3.schemeCategory10)
 
         svgLegend
           .append("text")
