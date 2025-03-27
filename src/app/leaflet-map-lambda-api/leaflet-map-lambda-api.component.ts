@@ -157,9 +157,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       // this.selectedType2 = this.dataFromSidebar['dataDictionary'][selectedProject2][this.selectedCol2]['data_type']
       this.selectedType2 = this.dataFromSidebar['dataDictionary'][selectedProject2]?.[this.selectedCol2]?.data_type
 
-
       this.latLongBounds = null
 
+      if(this.selectedType1 === 'Text' && this.selectedType2 === 'Text'){
+        this.selectedOverlay = 'Heatmap Overlays'
+      }
 
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2) {
@@ -400,6 +402,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.avgData2 = {};
     this.avgData3 = {};
     this.avgDataCat1 = {}
+    this.avgDataCat2 = {}
 
     this.fullData1 = {}
     this.fullData2 = {}
@@ -537,7 +540,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         console.timeEnd('fetching Grocery data')
       }
 
-
       const groceryData = this.groceryData
       const carmenData = this.carmenData
 
@@ -557,6 +559,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           rate2: rate2.replace(/\r/g, '')
         })
       }
+
       for (const d of groceryData) {
         let currYear = this.selectedYear
         if (!this.fullData1[currYear]) {
@@ -571,7 +574,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
         let rate1 = Math.log(Number(d[this.selectedCol1]) + 1);
         let rate2 = Math.log(Number(d[this.selectedCol2]) + 1);
-        // let rate3 = Math.log(Number(d[this.selectedCol3]) + 1);
         let population = d['population'] !== undefined ? Number(d['population']) : 0
 
         if (!isNaN(rate1) && rate1 !== null && rate1 !== undefined && rate1 !== -1 && rate1 !== -Infinity) {
@@ -724,7 +726,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       if (this.selectedCol2 === 'nsdoh_profiles_scrambled') {
         for (let i of this.dataCarmen) {
           let id = i['id'].substring(0, 5);
-          let rate = i['rate']
+          let rate = i['rate2']
 
           if (!this.avgDataCat2[id]) {
             this.avgDataCat2[id] = {
@@ -1041,6 +1043,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     const valuemap1 = this.selectedCol1 !== 'nsdoh_profiles' ? new Map(this.fullData1[this.selectedYear].map(d => [d.id, d.rate])) : undefined;
     const valuemap2 = this.selectedCol2 !== '--' ? new Map(this.fullData2[this.selectedYear].map(d => [d.id, d.rate])) : undefined;
     const valuemapCarmen = new Map(this.dataCarmen.map(d => [d.id, d.rate]));
+    const valuemapCarmen2 = new Map(this.dataCarmen.map(d => [d.id, d.rate2]));
 
     // let colors = this.colors
     let colors = this.colorsList[this.selectedColorScheme]
@@ -1208,11 +1211,14 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       onEachFeature: function (feature, layer) {
         if (selectedCol1 === 'nsdoh_profiles') {
           if (currentZoom < 9) {
+
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
             let censusTract = feature.properties.STCOFIPS
             let colName = selectedCol1
             let profile = avgDataCarmen1[censusTract] !== undefined ? avgDataCarmen1[censusTract]['mostFreq'] : "N/A"
+            let profile2 = avgDataCarmen2[censusTract] !== undefined ? avgDataCarmen2[censusTract]['mostFreq'] : "N/A"
+
 
             let nsdohProfileToolTip = `
                 <strong> State:</strong> ${state || 'N/A'}<br>
@@ -1220,12 +1226,26 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                 <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
                 <strong> ${colName}:</strong> ${profile || 'N/A'}<br>
               `;
-            // let avgValue2 = avgDataCarmen[censusTract] && avgDataCarmen[censusTract]['mostFreq'] ? avgDataCarmen[censusTract]['mostFreq'] : 0
-            let avgValue2 = selectedCol2 !== '--' ? (avgData2[censusTract] && avgData2[censusTract]['avg'] ? avgData2[censusTract]['avg'] : 0) : 0
+
+
+            // let avgValue2 = selectedCol2 !== '--' && selectedType2 === 'Numeric'? (avgData2[censusTract] && avgData2[censusTract]['avg'] ? avgData2[censusTract]['avg'] : 0) : (avgDataCarmen2[censusTract] && selectedType2 === 'Text' ? avgDataCarmen2[censusTract]['mostFreq']:'0')
+            // let avgValue2 = 0 //remove latter
+
+            let avgValue2 = 0
+            if (selectedCol2 !== '--') {
+              if (selectedType2 === 'Numeric' && avgData2[censusTract] && avgData2[censusTract]['avg']) {
+                avgValue2 = avgData2[censusTract]['avg']
+              } else if (selectedType2 === 'Text' && avgDataCarmen2[censusTract] && avgDataCarmen2[censusTract]['mostFreq']) {
+                avgValue2 = avgDataCarmen2[censusTract]['mostFreq']
+              }
+            }
+
 
             if (selectedCol2 != '--') {
-              nsdohProfileToolTip += `<strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>`
+              nsdohProfileToolTip += `<strong> ${selectedCol2}:</strong> ${avgValue2 || 'N/A'}<br>`
             }
+
+            //check here
 
             if (profile !== 'N/A') {
               layer.on('click', function () {
@@ -1565,10 +1585,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           // const pane = 'tractsPane';
           const fips = currentZoom < 9 ? 'STCOFIPS' : 'FIPS'
           const id = d['properties'][fips]
-          // console.log("d: ", d, fips, id)
           let val1
           let val2
-          // console.log("selcted types: ", selectedType1, selectedType2)
           if (selectedType2 === 'Numeric') {
             val2 = currentZoom < 9 ? (avgData2?.[id]?.['avg'] ?? -1) : valuemap2.get(id)
           }
@@ -1581,38 +1599,22 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
           // Add pattern to the map
           if (selectedOverlay === "Heatmap Overlays") {
-            // const dashPattern2 = new L.StripePattern({
-            //   weight: 2, // Thickness of stripes
-            //   color: getColor(val2, min2, max2, 'red'), // Color of stripes
-            //   spaceColor: 'white', // Space between stripes
-            //   opacity: 1,
-            //   angle: 45, // Angle of stripes
-            // });
-            // const randomNumber = Math.floor(Math.random() * 181);
             const angles = [0, 45, 90, 135, 180, 225, 270, 315, 360];
             const randomNumber = angles[Math.floor(Math.random() * angles.length)];
 
             let colorx2 = getColor(val2, min2, max2, 'red')
-            // let colorx1 = getColor(val1, min1, max1, 'blue')
-            let colorx1 = 'purple' //remove this later
+            let colorx1 = getColor(val1, min1, max1, 'blue')
             let profile1 = 'Profile 9 '
             let profile2 = 'Profile 9 '
+
             if (selectedType1 === 'Text') {
-              profile1 = currentZoom < 9 ? (avgDataCarmen1[id] !== undefined ? avgDataCarmen1[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
-              // profile2 = currentZoom < 9 ? (avgDataCarmen2[id] !== undefined ? avgDataCarmen2[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
+              profile1 = currentZoom < 9 ? (avgDataCarmen1[id] ? avgDataCarmen1[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
             }
             if (selectedType2 === 'Text') {
-              profile2 = currentZoom < 9 ? (avgDataCarmen2[id] !== undefined ? avgDataCarmen2[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen.get(id)
+              profile2 = currentZoom < 9 ? (avgDataCarmen2[id] ? avgDataCarmen2[id]['mostFreq'] : "Profile 9 ") : valuemapCarmen2.get(id)
             }
+            //check here
 
-            // const dashPattern2 = new L.StripePattern({
-            //   angle: randomNumber,
-            //   weight: 4,
-            //   color: getColor(val2, min2, max2, 'red'),
-            //   opacity: 0.75,
-            //   spaceColor: getColor(val1, min1, max1, 'blue'),
-            //   spaceOpacity: 0.75,
-            // });
             const dashPattern2 = new L.StripePattern({
               angle: randomNumber,
               weight: 4,
@@ -1621,6 +1623,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               spaceColor: selectedType2 === 'Text' ? color2(profile2) : colorx2,
               spaceOpacity: 1,
             });
+
 
             dashPattern2.addTo(map);
 
@@ -1638,19 +1641,25 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             let state = feature.properties.STATE_NAME
             let county = feature.properties.COUNTY
             let fips = feature.properties.STCOFIPS
-            let avgValue1 = 0
-            if (selectedCol1 !== 'nsdoh_profiles') {
+            let avgValue1 = 0;
+            let avgValue2 = 0;
+            if (selectedType1 === 'Numeric') {
               avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
+            }else{
+              avgValue1 = avgDataCarmen1[fips] && avgDataCarmen1[fips]['mostFreq'] ? avgDataCarmen1[fips]['mostFreq'] : 0
             }
-
-            let avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
+            if (selectedType1 === 'Numeric') {
+              avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
+            }else{
+              avgValue2 = avgDataCarmen2[fips] && avgDataCarmen2[fips]['mostFreq'] ? avgDataCarmen2[fips]['mostFreq'] : 0
+            }
 
             let countyTooltip = `
             <strong> State:</strong> ${state || 'N/A'}<br>
             <strong> County:</strong> ${county || 'N/A'}<br>
-            <strong> FIPS:</strong> ${fips || 'N/A'}<br>
-            <strong> ${selectedCol1}:</strong> ${avgValue1.toFixed(2) || 'N/A'}<br>
-            <strong> ${selectedCol2}:</strong> ${avgValue2.toFixed(2) || 'N/A'}<br>
+            <strong> FIPS33:</strong> ${fips || 'N/A'}<br>
+            <strong> ${selectedCol1}:</strong> ${avgValue1 || 'N/A'}<br>
+            <strong> ${selectedCol2}:</strong> ${avgValue2 || 'N/A'}<br>
           `;
 
             layer.on('click', function () {
@@ -1699,7 +1708,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             const county = parts[1];
             const state = parts[2];
 
-            const val1 = (selectedCol1 === 'Nsdoh_profiles')
+            const val1 = (selectedType1 === 'Text')
               ? (valuemapCarmen && valuemapCarmen instanceof Map && valuemapCarmen.get(fips) !== undefined
                 ? 0
                 : valuemapCarmen?.get(fips) ?? 'N/A')
@@ -1712,7 +1721,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               <strong> Census Tract:</strong> ${censusTract || 'N/A'}<br>
               <strong> FIPS:</strong> ${fips || 'N/A'}<br>
               <strong> ${selectedCol1}:</strong> ${val1 || 'N/A'}<br>
-              <strong> ${selectedCol2}:</strong> ${val2.toFixed(2) || 'N/A'}<br>
+              <strong> ${selectedCol2}:</strong> ${val2 || 'N/A'}<br>
             `;
             layer.on('click', function () {
               layer.bindTooltip(censusTractTooltip, {

@@ -72,10 +72,6 @@ export class SidebarComponent implements OnChanges, OnInit {
   selectedColorScheme = "default"
 
   ngOnInit(): void {
-    // this.http.get('/assets/data/groceryDataDictionary.json').subscribe((data) => {
-    //   this.groceryDataDictionary = data
-    //   console.log("grocery dd: ", this.groceryDataDictionary)
-    // });
 
     for (let name of this.datasetList) {
       let dataset = name
