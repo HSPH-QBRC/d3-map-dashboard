@@ -122,6 +122,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   prevBoundsArr = []
   selectedColorScheme = 'default'
 
+  selectedProject1
+  selectedProject2
+
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
@@ -136,7 +139,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.prevStateName = this.stateName
     this.prevBoundsArr = this.selectedBoundsArr
 
-    if (this.dataFromSidebar !== undefined) {
+    if (this.dataFromSidebar) {
       this.selectedYear = this.dataFromSidebar['years']
       this.selectedCol1 = this.dataFromSidebar['col1']
       this.selectedCol2 = this.dataFromSidebar['col2']
@@ -147,19 +150,15 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       this.selectedOverlay = this.dataFromSidebar['selectedOverlay']
       this.selectedColorScheme = this.dataFromSidebar['colorScheme']
 
-      // this.selectedType1 = this.dataFromSidebar['selectedType1']
-      // this.selectedType2 = this.dataFromSidebar['selectedType2']
-      let selectedProject1 = this.dataFromSidebar['selectedProject1']
-      let selectedProject2 = this.dataFromSidebar['selectedProject2']
+      this.selectedProject1 = this.dataFromSidebar['selectedProject1']
+      this.selectedProject2 = this.dataFromSidebar['selectedProject2']
 
-
-      this.selectedType1 = this.dataFromSidebar['dataDictionary'][selectedProject1]?.[this.selectedCol1]?.data_type
-      // this.selectedType2 = this.dataFromSidebar['dataDictionary'][selectedProject2][this.selectedCol2]['data_type']
-      this.selectedType2 = this.dataFromSidebar['dataDictionary'][selectedProject2]?.[this.selectedCol2]?.data_type
+      this.selectedType1 = this.dataFromSidebar['dataDictionary'][this.selectedProject1]?.[this.selectedCol1]?.data_type
+      this.selectedType2 = this.dataFromSidebar['dataDictionary'][this.selectedProject2]?.[this.selectedCol2]?.data_type
 
       this.latLongBounds = null
 
-      if(this.selectedType1 === 'Text' && this.selectedType2 === 'Text'){
+      if (this.selectedType1 === 'Text' && this.selectedType2 === 'Text') {
         this.selectedOverlay = 'Heatmap Overlays'
       }
 
@@ -198,6 +197,10 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   paramsFound = false;
   latLongBounds: L.LatLng = null
 
+  datasetList = ['grocery', 'carmen']
+  groceryDataDictionary = {}
+  carmenDataDictionary = {}
+
   ngOnInit(): void {
     this.route.queryParams
       .pipe(filter(params => Object.keys(params).length > 0)) // Ignore empty params
@@ -235,13 +238,35 @@ export class LeafletMapLambdaApiComponent implements OnInit {
           this.selectedBoundsArr = []
         }
 
-        this.calculateNewBounds()
+        this.selectedProject1 = params['project1'] || this.selectedProject1;
+        this.selectedProject2 = params['project2'] || this.selectedProject2;
 
-        if (params['col1'] && !params['col2']) {
-          this.selectedOverlay = 'Circles'
-        }
-        this.loadCSVData();
+        this.calculateNewBounds()
+        // this.loadCSVData();
       });
+
+    //get datadictionary information
+    for (let name of this.datasetList) {
+      let dataset = name
+      let queryURL = `https://n06twbhwbk.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data-dictionary?dataset=${dataset}`;
+
+      this.http
+        .get(queryURL)
+        .toPromise()
+        .then((data: any) => {
+          for (let row of data) {
+            let column_name = row['column_name']
+            let targetDictionary = dataset === 'grocery' ? this.groceryDataDictionary : this.carmenDataDictionary;
+
+            targetDictionary[column_name] = {
+              description: row['description']?.trim() || '',
+              data_type: row['data_type']?.trim() || ''
+            };
+          }
+
+          this.loadCSVData();
+        });
+    }
 
     setTimeout(() => {
       if (!this.paramsFound) {
@@ -333,6 +358,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     if (currBounds) {
       params.append('bounds', currBounds)
     }
+    if (this.selectedProject1) {
+      params.append('project1', this.selectedProject1)
+    }
+    if (this.selectedProject2) {
+      params.append('project2', this.selectedProject2)
+    }
 
     let message = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
 
@@ -413,9 +444,6 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     this.fullAvgData3 = {}
 
     this.offset = 0
-    // if (this.selectedCol1 !== 'nsdoh_profiles') {
-    //   this.groceryData = []
-    // }
     if (this.selectedType1 === 'Numeric' || this.selectedType2 === 'Numeric') {
       this.groceryData = []
     }
@@ -516,28 +544,28 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   async loadCSVData(): Promise<void> {
     try {
       // if (this.selectedCol1 === 'nsdoh_profiles') {
-      if (this.selectedCol1 === 'nsdoh_profiles' || this.selectedCol2 === 'nsdoh_profiles') {
-        console.time('fetching Carmen data')
+      if (this.selectedProject1 === 'carmen' || this.selectedProject2 === 'carmen') {
+        // console.time('fetching Carmen data')
         this.isLoading = true
         await this.fetchData('carmen', this.selectedCol1, this.selectedCol2)
         this.isLoading = false
-        console.timeEnd('fetching Carmen data')
+        // console.timeEnd('fetching Carmen data')
 
         if (this.selectedCol2 !== '--') {
-          console.time('fetching Grocery data')
+          // console.time('fetching Grocery data')
           this.isLoading = true
           await this.fetchData('grocery', this.selectedCol2, '--')
           this.isLoading = false
-          console.timeEnd('fetching Grocery data')
+          // console.timeEnd('fetching Grocery data')
         }
 
         // this.selectedOverlay = 'Circles'
       } else {
-        console.time('fetching Grocery data')
+        // console.time('fetching Grocery data')
         this.isLoading = true
         await this.fetchData('grocery', this.selectedCol1, this.selectedCol2)
         this.isLoading = false
-        console.timeEnd('fetching Grocery data')
+        // console.timeEnd('fetching Grocery data')
       }
 
       const groceryData = this.groceryData
@@ -696,7 +724,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
 
       //collects info to find which profile appears the most in a County
-      if (this.selectedCol1 === 'nsdoh_profiles') {
+      // if (this.selectedCol1 === 'nsdoh_profiles') {
+      if (this.selectedType1 === 'Text') {
         for (let i of this.dataCarmen) {
           let id = i['id'].substring(0, 5);
           let rate = i['rate']
@@ -724,6 +753,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       }
 
       if (this.selectedCol2 === 'nsdoh_profiles_scrambled') {
+        // if (this.selectedType2 === 'Text') {
         for (let i of this.dataCarmen) {
           let id = i['id'].substring(0, 5);
           let rate = i['rate2']
@@ -1209,7 +1239,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         }
       },
       onEachFeature: function (feature, layer) {
-        if (selectedCol1 === 'nsdoh_profiles') {
+        // if (selectedCol1 === 'nsdoh_profiles') {
+        if (selectedType1 === 'Text') {
           if (currentZoom < 9) {
 
             let state = feature.properties.STATE_NAME
@@ -1255,7 +1286,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                   opacity: 1        // Make the tooltip fully opaque
                 });
                 layer.openTooltip(); // Display the tooltip immediately upon click
-                if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay !== 'Bivariate Choropleth') {
+                // if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay !== 'Bivariate Choropleth') {
+                if (selectedType1 === 'Text' && selectedOverlay !== 'Bivariate Choropleth') {
                   addPlacementMarkerLegend(avgValue2, avgValue2, '.d3-legend-container3');
                 }
               });
@@ -1294,7 +1326,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
                   opacity: 1        // Make the tooltip fully opaque
                 });
                 layer.openTooltip(); // Display the tooltip immediately upon click
-                if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay !== 'Bivariate Choropleth') {
+                // if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay !== 'Bivariate Choropleth') {
+                if (selectedType1 === 'Text' && selectedOverlay !== 'Bivariate Choropleth') {
                   addPlacementMarkerLegend(val2, val2, '.d3-legend-container3');
                 }
 
@@ -1482,7 +1515,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         let clampedX2 = Math.max(minX, rawX2); // Prevents going too far left
         clampedX2 = Math.min(maxX, clampedX2); // Prevents going too far right
 
-        if (selectedCol1 !== 'nsdoh_profiles') {
+        // if (selectedCol1 !== 'nsdoh_profiles') {
+        if (selectedType1 === 'Numeric') {
           svgLegend.append("circle")
             .attr("class", "placementCircle")
             .attr("cx", clampedX1)  // Middle of the rectangle 
@@ -1645,12 +1679,12 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             let avgValue2 = 0;
             if (selectedType1 === 'Numeric') {
               avgValue1 = avgData1[fips] && avgData1[fips]['avg'] ? avgData1[fips]['avg'] : 0
-            }else{
+            } else {
               avgValue1 = avgDataCarmen1[fips] && avgDataCarmen1[fips]['mostFreq'] ? avgDataCarmen1[fips]['mostFreq'] : 0
             }
             if (selectedType1 === 'Numeric') {
               avgValue2 = avgData2[fips] && avgData2[fips]['avg'] ? avgData2[fips]['avg'] : 0
-            }else{
+            } else {
               avgValue2 = avgDataCarmen2[fips] && avgDataCarmen2[fips]['mostFreq'] ? avgDataCarmen2[fips]['mostFreq'] : 0
             }
 
@@ -1672,7 +1706,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               });
               layer.openTooltip(); // Display the tooltip immediately upon click
 
-              if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay === 'Heatmap Overlays') {
+              // if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay === 'Heatmap Overlays') {
+              if (selectedType1 === 'Text' && selectedOverlay === 'Heatmap Overlays') {
                 addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container3');
               } else {
                 addPlacementMarkerLegend(avgValue1, avgValue2, '.d3-legend-container2');
@@ -1687,7 +1722,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
             let profile = avgDataCarmen1[fips] !== undefined ? avgDataCarmen1[fips]['mostFreq'] : "N/A";
 
-            if ((selectedCol1 === 'nsdoh_profiles' && profile !== 'N/A') || selectedCol1 !== 'nsdoh_profiles') {
+            // if ((selectedCol1 === 'nsdoh_profiles' && profile !== 'N/A') || selectedCol1 !== 'nsdoh_profiles') {
+            if ((selectedType1 === 'Text' && profile !== 'N/A') || selectedType1 === 'Numeric') {
               const latLng = layer.getBounds().getCenter();
               if (currBounds.contains(latLng)) {
                 if (selectedOverlay === "Circles") {
@@ -1732,14 +1768,16 @@ export class LeafletMapLambdaApiComponent implements OnInit {
               layer.openTooltip(); // Display the tooltip immediately upon click
 
               // addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
-              if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay === 'Heatmap Overlays') {
+              // if (selectedCol1 === 'nsdoh_profiles' && selectedOverlay === 'Heatmap Overlays') {
+              if (selectedType1 === 'Text' && selectedOverlay === 'Heatmap Overlays') {
                 addPlacementMarkerLegend(val1, val2, '.d3-legend-container3');
               } else {
                 addPlacementMarkerLegend(val1, val2, '.d3-legend-container2');
               }
             });
 
-            if ((selectedCol1 === 'nsdoh_profiles' && valuemapCarmen.get(fips) !== undefined) || selectedCol1 !== 'nsdoh_profiles') {
+            // if ((selectedCol1 === 'nsdoh_profiles' && valuemapCarmen.get(fips) !== undefined) || selectedCol1 !== 'nsdoh_profiles') {
+            if ((selectedType1 === 'Text' && valuemapCarmen.get(fips) !== undefined) || selectedType1 === 'Numeric') {
               const latLng = layer.getBounds().getCenter();
               if (currBounds.contains(latLng)) {
                 if (selectedOverlay === "Circles") {
@@ -1921,7 +1959,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
     this.legendControl.addTo(this.map);
 
-    if (this.selectedCol1 === 'nsdoh_profiles' && this.selectedCol2 !== '--') {
+    // if (this.selectedCol1 === 'nsdoh_profiles' && this.selectedCol2 !== '--') {
+    if (this.selectedType1 === 'Text' && this.selectedCol2 !== '--') {
       this.legendControl2 = L.control({ position: 'bottomright' });
 
       this.legendControl2.onAdd = () => {
@@ -1945,8 +1984,11 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       .select(container)
       .append("svg")
       .attr("width", 80)
-      .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? (legendNumber === '2' ? 40 : 120) : (this.selectedOverlay === 'Spikes' ? 90 : 80))
-      .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '2' ? nsdoh_mix : (this.selectedOverlay === 'Spikes' ? spikeViewBox : heatmapViewBox)))
+      // .attr("height", this.selectedCol1 === 'nsdoh_profiles' ? (legendNumber === '2' ? 40 : 120) : (this.selectedOverlay === 'Spikes' ? 90 : 80))
+      .attr("height", this.selectedType1 === 'Text' ? (legendNumber === '2' ? 40 : 120) : (this.selectedOverlay === 'Spikes' ? 90 : 80))
+      // .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '2' ? nsdoh_mix : (this.selectedOverlay === 'Spikes' ? spikeViewBox : heatmapViewBox)))
+      .attr("viewBox", this.selectedOverlay === "Bivariate Choropleth" ? bivariateViewBox : (this.selectedType1 === 'Text' && legendNumber === '2' ? nsdoh_mix : (this.selectedOverlay === 'Spikes' ? spikeViewBox : heatmapViewBox)))
+
 
     if (this.selectedOverlay === "Bivariate Choropleth") {
       // Create the grid for the legend
@@ -2013,7 +2055,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         .attr('text-anchor', 'middle')
         .text(`${this.selectedCol1.charAt(0).toUpperCase() + this.selectedCol1.slice(1)}`);
     } else {
-      if (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '1') {
+      // if (this.selectedCol1 === 'nsdoh_profiles' && legendNumber === '1') {
+      if (this.selectedType1 === 'Text' && legendNumber === '1') {
         //NSDOH profiles legend
         const color2 = d3.scaleOrdinal()
           .domain(this.colorCategories)
@@ -2046,7 +2089,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             .attr("alignment-baseline", "middle")
         }
 
-      } else if (legendNumber === '2' && this.selectedCol1 !== 'nsdoh_profiles') {
+        // } else if (legendNumber === '2' && this.selectedCol1 !== 'nsdoh_profiles') {
+      } else if (legendNumber === '2' && this.selectedType1 === 'Numeric') {
         if ((this.selectedOverlay === 'Circles' || this.selectedOverlay === 'Spikes' || (this.selectedOverlay === 'Heatmap Overlays' && this.selectedCol1 === 'nsdoh_profiles'))) {
           let legendWidth = 100
           let legendHeight = 75
@@ -2132,7 +2176,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         const legendGroup = svgLegend.append('g')
           .attr('font-family', 'sans-serif')
           .attr('font-size', 10)
-        if (this.selectedCol1 !== '--' && (this.selectedCol1 !== 'nsdoh_profiles')) {
+        // if (this.selectedCol1 !== '--' && (this.selectedCol1 !== 'nsdoh_profiles')) {
+        if (this.selectedCol1 !== '--' && (this.selectedType1 === 'Numeric')) {
           const blueGradient = legendGroup.append("linearGradient")
             .attr("id", "legendGradientBlue")
             .attr("x1", "0%")

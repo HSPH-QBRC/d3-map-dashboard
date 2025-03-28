@@ -35,8 +35,8 @@ export class SidebarComponent implements OnChanges, OnInit {
   selectedCol2 = ''
   selectedType1 = ''
   selectedType2 = ''
-  selectedProject1 = 'project2'
-  selectedProject2 = 'project1'
+  selectedProject1 = 'carmen'
+  selectedProject2 = 'grocery'
   stateNameArr = []
 
   prevYear = '2000'
@@ -63,8 +63,8 @@ export class SidebarComponent implements OnChanges, OnInit {
   selectedOverlayFromParams = ''
   datasetList = ['grocery', 'carmen']
   dataDictionaryMap: Record<string, any> = {
-    project1: this.groceryDataDictionary,
-    project2: this.carmenDataDictionary,
+    grocery: this.groceryDataDictionary,
+    carmen: this.carmenDataDictionary,
   };
 
   disableBivariate = false
@@ -113,7 +113,6 @@ export class SidebarComponent implements OnChanges, OnInit {
 
       this.selectedOverlayFromParams = this.sidebarData['selectedOverlay']
 
-
       this.selectedType1 = this.dataDictionaryMap[this.selectedProject1]?.[this.selectedCol1]?.data_type;
       this.selectedType2 = this.dataDictionaryMap[this.selectedProject2]?.[this.selectedCol2]?.data_type;
 
@@ -123,10 +122,8 @@ export class SidebarComponent implements OnChanges, OnInit {
         if (this.selectedOverlayFromParams === 'Heatmap Overlays' || this.selectedOverlayFromParams === 'Circles' || this.selectedOverlayFromParams === 'Spikes') {
           this.selectedOverlay = this.selectedOverlayFromParams
         }
-      } else if (this.selectedType1 === 'Numeric' && this.selectedType2 === 'Numeric') {
-        console.log("need a new overlay to handle this??")
       } else if (this.selectedType1 === 'Text' && this.selectedType2 === 'Text') {
-        console.log("use new type of overlay that i havent created yet")
+        this.selectedOverlay = 'Heatmap Overlays'
       } else if (this.selectedType1 === 'Text' || this.selectedType2 === 'Text') {
         this.disableBivariate = true
         this.selectedOverlay = 'Circles'
@@ -234,13 +231,12 @@ export class SidebarComponent implements OnChanges, OnInit {
         stateName: this.stateNameArr,
         selectedOverlay: this.selectedOverlay,
         colorScheme: this.selectedColorScheme,
-        selectedType1: this.selectedType1,
-        selectedType2: this.selectedType2,
+        // selectedType1: this.selectedType1,
+        // selectedType2: this.selectedType2,
         dataDictionary: this.dataDictionaryMap,
         selectedProject1: this.selectedProject1,
         selectedProject2: this.selectedProject2
       }
-      console.log("datad: ", this.dataDictionaryMap)
       this.showMoreColsA = false;
       this.showMoreColsB = false;
 
@@ -278,8 +274,8 @@ export class SidebarComponent implements OnChanges, OnInit {
       stateName: this.stateNameArr,
       selectedOverlay: this.selectedOverlay,
       colorScheme: this.selectedColorScheme,
-      selectedType1: this.selectedType1,
-      selectedType2: this.selectedType2,
+      // selectedType1: this.selectedType1,
+      // selectedType2: this.selectedType2,
       dataDictionary: this.dataDictionaryMap,
       selectedProject1: this.selectedProject1,
       selectedProject2: this.selectedProject2
@@ -326,8 +322,8 @@ export class SidebarComponent implements OnChanges, OnInit {
       stateName: this.stateNameArr,
       selectedOverlay: this.selectedOverlay,
       colorScheme: this.selectedColorScheme,
-      selectedType1: this.selectedType1,
-      selectedType2: this.selectedType2,
+      // selectedType1: this.selectedType1,
+      // selectedType2: this.selectedType2,
       dataDictionary: this.dataDictionaryMap,
       selectedProject1: this.selectedProject1,
       selectedProject2: this.selectedProject2

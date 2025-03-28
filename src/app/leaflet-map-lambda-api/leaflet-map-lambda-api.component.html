@@ -1,4 +1,4 @@
-<app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+<app-loading-spinner *ngIf="isLoading && !isTimelinePlaying"></app-loading-spinner>
 <div id="map-container" style="height: calc(100vh - 56px); width: 100%;"></div>
 <div class="timelineBar">
     <div *ngIf="showYears">

@@ -44,7 +44,7 @@
         <div style="padding-left: 16px">
             <button mat-button class="btn-toggle align-items-center rounded treeButton" [attr.aria-expanded]="true"
                 (click)="showMore('colsA')">
-                Project A
+                Grocery
             </button>
             <div *ngIf="showColsA">
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small" style="padding-left: 16px; margin: 0;">
@@ -52,7 +52,7 @@
                         style="list-style: none; margin: 4px 0;">
                         <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
                             [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
-                            (change)="onCheckboxChange(i, col.checked, col.name, 'project1')" class="wrap-checkbox">
+                            (change)="onCheckboxChange(i, col.checked, col.name, 'grocery')" class="wrap-checkbox">
                             {{ groceryDataDictionary[col.name] ? groceryDataDictionary[col.name]['description'] :
                             col.name}}
                         </mat-checkbox>
@@ -65,7 +65,7 @@
             <br>
             <button mat-button class="btn-toggle align-items-center rounded treeButton" [attr.aria-expanded]="true"
                 (click)="showMore('colsB')">
-                Project B
+                Carmen
             </button>
             <div *ngIf="showColsB">
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small" style="padding-left: 16px; margin: 0;">
@@ -73,7 +73,7 @@
                         style="list-style: none; margin: 4px 0;">
                         <mat-checkbox *ngIf="col.name !== '--'" [(ngModel)]="col.checked" style="display: block;"
                             [color]="i === 0 ? 'warn': (i === 1? 'primary':'accent')"
-                            (change)="onCheckboxChange(i, col.checked, col.name, 'project2')" class="wrap-checkbox">
+                            (change)="onCheckboxChange(i, col.checked, col.name, 'carmen')" class="wrap-checkbox">
                             {{ carmenDataDictionary[col.name] ? carmenDataDictionary[col.name]['description'] :
                             col.name}}
                         </mat-checkbox>
