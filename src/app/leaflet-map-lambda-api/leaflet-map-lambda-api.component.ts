@@ -42,7 +42,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
   yearCols = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
   columnsA = ['tract_fips10', 'year', 'population', 'aland10', 'count_445110', 'count_sales_445110', 'count_emp_445110', 'popden_445110', 'popden_sales_445110', 'popden_emp_445110', 'aden_445110', 'aden_sales_445110', 'aden_emp_445110', 'count_4452', 'count_sales_4452', 'count_emp_4452', 'popden_4452', 'popden_sales_4452', 'popden_emp_4452', 'aden_4452', 'aden_sales_4452', 'aden_emp_4452', 'count_452311', 'count_sales_452311', 'count_emp_452311', 'popden_452311', 'popden_sales_452311', 'popden_emp_452311', 'aden_452311', 'aden_sales_452311', 'aden_emp_452311']
-  columnsB = ['nsdoh_profiles', 'nsdoh_profiles_scrambled']
+  // columnsB = ['nsdoh_profiles', 'nsdoh_profiles_scrambled']
+  columnsB = ['nsdoh_profiles']
   minYear = 1900
   maxYear = 2099
   showYears = false
@@ -55,8 +56,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
   selectedType2: string = 'Numeric';
   selectedMap = 'USA 2000 Mainland (County)';
 
-  stateName = 'United States of America'
-  selectedBoundsArr = ['United States of America']
+  stateName = 'united states of america'
+  selectedBoundsArr = ['united states of america']
 
   //https://personal.sron.nl/~pault/#fig:scheme_marking
   colorsList = {
@@ -165,6 +166,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
       //if columns changed load reset and loadcsvdata
       if (this.prevSelectedCol1 !== this.selectedCol1 || this.prevSelectedCol2 !== this.selectedCol2) {
         this.resetVariables()
+        console.log("on change")
         this.loadCSVData()
       } else {
         if (this.prevBoundsArr.length === this.selectedBoundsArr.length && this.prevBoundsArr.every((value, index) => value === this.selectedBoundsArr[index])) {
@@ -248,7 +250,9 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     //get datadictionary information
     for (let name of this.datasetList) {
       let dataset = name
-      let queryURL = `https://n06twbhwbk.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data-dictionary?dataset=${dataset}`;
+      // let queryURL = `https://n06twbhwbk.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data-dictionary?dataset=${dataset}`;
+      //new queryURL from jq
+      let queryURL = `https://5nwv2ixuif.execute-api.us-east-1.amazonaws.com/default/dashboard-get-data-dictionary?dataset=${dataset}`;
 
       this.http
         .get(queryURL)
@@ -264,15 +268,18 @@ export class LeafletMapLambdaApiComponent implements OnInit {
             };
           }
 
-          this.loadCSVData();
+          console.log("on get dictionary")
+          // this.loadCSVData();
         });
     }
 
-    setTimeout(() => {
-      if (!this.paramsFound) {
-        this.loadCSVData();
-      }
-    }, 500)
+    this.loadCSVData();
+
+    // setTimeout(() => {
+    //   if (!this.paramsFound) {
+    //     this.loadCSVData();
+    //   }
+    // }, 500)
 
     this.http.get('/assets/maps/tiles_no_redline/tile_boundaries.json').subscribe((data) => {
       this.tileBounds = data
@@ -470,7 +477,8 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
       // Function to fetch a batch of data
       const fetchBatch = (offset) => {
-        let queryURL = `https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&offset=${offset}`;
+        // let queryURL = `https://304ve2frbd.execute-api.us-east-2.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&offset=${offset}`;
+        let queryURL = `https://ewpeck32z6.execute-api.us-east-1.amazonaws.com/default/dashboard-get-data?year=${this.selectedYear}&offset=${offset}`;
         if (col1 !== "--") {
           queryURL += `&column1=${col1}`;
         }
@@ -561,6 +569,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
 
         // this.selectedOverlay = 'Circles'
       } else {
+        console.log("fetchdata grocery: ", this.selectedCol1, this.selectedCol2)
         // console.time('fetching Grocery data')
         this.isLoading = true
         await this.fetchData('grocery', this.selectedCol1, this.selectedCol2)
@@ -1012,7 +1021,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
         const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-reset');
         div.innerHTML = '<i class="fa-solid fa-earth-americas"></i>';
         div.onclick = () => {
-          this.stateName = 'United States of America'
+          this.stateName = 'united states of america'
           this.currentZoomLevel = 4
           this.currentBounds = [
             [24.396308, -125.0],
@@ -1921,6 +1930,7 @@ export class LeafletMapLambdaApiComponent implements OnInit {
     }
 
     this.resetVariables()
+    console.log("on year change")
     this.loadCSVData()
   }
 
